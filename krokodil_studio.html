@@ -160,7 +160,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--min
 
 /* ── TABLES ── */
 table{width:100%;border-collapse:collapse}
-th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-l);padding:7px 11px;border-bottom:2px solid var(--cream)}
+th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-l);padding:7px 11px;border-bottom:2px solid var(--cream);white-space:normal;word-break:break-word}
 td{padding:11px 11px;border-bottom:1px solid var(--cream);font-size:13.5px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--cream)}
@@ -1357,7 +1357,7 @@ body.is-admin .ann-input-area{display:block}
         </select>
       </div>
       <div class="card"><table>
-        <thead><tr><th></th><th>Имя</th><th>Возр.</th><th>Зап.</th><th>Посещ.</th><th class="col-dates">Числа</th><th class="admin-col">Действия</th></tr></thead>
+        <thead><tr><th></th><th style="min-width:90px;max-width:130px">Имя</th><th>Возраст</th><th>Занятий</th><th>Посещ.</th><th class="col-dates">Записан на числа</th><th class="admin-col">Действия</th></tr></thead>
         <tbody id="students-tbody"></tbody>
       </table></div>
     </div>
@@ -3869,7 +3869,7 @@ function renderStudents(query=''){
     return `
     <tr>
       <td style="padding:8px 6px"><div style="background:${s.color};width:28px;height:28px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div></td>
-      <td><b>${s.name}</b>${subsHtml}</td><td style="white-space:nowrap">${s.age}</td>
+      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${s.name.split(' ').join('<br>')}</b>${subsHtml}</td><td style="white-space:nowrap">${s.age}</td>
       <td><span class="badge blue">${enrolled}</span></td>
       <td><span class="badge blue">${getAttPct(s.id)}</span></td>
       <td class="col-dates">${datesHtml}</td>
