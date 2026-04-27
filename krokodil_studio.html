@@ -707,6 +707,7 @@ body.is-admin .ann-input-area{display:block}
 .ph-upload-zone{border:2px dashed var(--peach);border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:var(--ink-l);font-size:13px;transition:background .15s}
 .ph-upload-zone:hover{background:var(--cream)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -1676,6 +1677,7 @@ function persist(){
   lsSave('photos', photos);
   lsSave('nextPhotoId', nextPhotoId);
   showSaved();
+  syncToSupabase();
 }
 
 function resetToDefaults(){
@@ -5645,9 +5647,83 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape') closeLightbox();
 });
 
-window.onload=()=>{
+// ══════════════════════════════════════════════════════════════
+//  SUPABASE SYNC
+// ══════════════════════════════════════════════════════════════
+const SUPA_URL = 'https://ryoyihzwezxoeyoibvmk.supabase.co';
+const SUPA_KEY = 'sb_publishable_bMsy5LojLuDSh77MkkmqrQ_rPcJ677W';
+const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
+  'dateEnrollments','announcements','nextAnnId','subscriptions','lessonCosts',
+  'globalLessonPrice','teacherReviews','photos','nextPhotoId',
+  'nextTId','nextSId','nextScId','dataVersion'];
+
+function loadStateFromStorage(){
+  teachers          = lsLoad('teachers',          DEFAULT_TEACHERS);
+  students          = lsLoad('students',          DEFAULT_STUDENTS);
+  schedule          = lsLoad('schedule',          DEFAULT_SCHEDULE);
+  attendance        = lsLoad('attendance',        {});
+  enrollments       = lsLoad('enrollments',       DEFAULT_ENROLLMENTS);
+  dateEnrollments   = lsLoad('dateEnrollments',   {});
+  announcements     = lsLoad('announcements',     []);
+  nextAnnId         = lsLoad('nextAnnId',         4);
+  subscriptions     = lsLoad('subscriptions',     {});
+  lessonCosts       = lsLoad('lessonCosts',        {});
+  globalLessonPrice = lsLoad('globalLessonPrice', 500);
+  teacherReviews    = lsLoad('teacherReviews',    {});
+  photos            = lsLoad('photos',            []);
+  nextPhotoId       = lsLoad('nextPhotoId',       1);
+  nextTId           = lsLoad('nextTId',           4);
+  nextSId           = lsLoad('nextSId',           1411);
+  nextScId          = lsLoad('nextScId',          37);
+  invalidateAttCache();
+}
+
+async function syncFromSupabase(){
+  try {
+    const {data, error} = await _supa.from('app_state').select('key,value');
+    if(error || !data || !data.length) return false;
+    data.forEach(row => { if(row.key !== '_ts') lsSave(row.key, row.value); });
+    const tsRow = data.find(r => r.key === '_ts');
+    if(tsRow) lsSave('_supaTs', tsRow.value);
+    return true;
+  } catch(e){ return false; }
+}
+
+async function syncToSupabase(){
+  try {
+    const ts = Date.now();
+    const rows = SYNC_KEYS.map(k => ({key: k, value: lsLoad(k, null)}))
+      .filter(r => r.value !== null);
+    rows.push({key: '_ts', value: ts});
+    const {error} = await _supa.from('app_state').upsert(rows, {onConflict:'key'});
+    if(!error) lsSave('_supaTs', ts);
+  } catch(e){ console.warn('Supabase sync error:', e); }
+}
+
+let _supaPolling = null;
+function startSupabasePolling(){
+  if(_supaPolling) return;
+  _supaPolling = setInterval(async () => {
+    try {
+      const {data} = await _supa.from('app_state').select('value').eq('key','_ts').single();
+      const remoteTs = data?.value || 0;
+      const localTs  = lsLoad('_supaTs', 0);
+      if(remoteTs > localTs){
+        const ok = await syncFromSupabase();
+        if(ok){ loadStateFromStorage(); renderAll(); toast('🔄 Данные обновлены'); }
+      }
+    } catch(e){}
+  }, 30000);
+}
+
+window.onload=async ()=>{
   document.getElementById('login-screen').classList.remove('hidden');
+  const synced = await syncFromSupabase();
+  if(synced) loadStateFromStorage();
   renderAll();
+  startSupabasePolling();
 };
 </script>
 </body>
