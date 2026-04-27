@@ -522,7 +522,8 @@ body.is-admin .ann-input-area{display:block}
 
   /* ── Tables: horizontal scroll ── */
   .card table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
-  th,td{padding:9px 10px;font-size:12.5px}
+  th,td{padding:7px 8px;font-size:12px}
+  #students-tbody td:first-child{padding:6px 4px}
 
   /* ── Page title ── */
   .page-title{font-size:30px}
@@ -624,6 +625,7 @@ body.is-admin .ann-input-area{display:block}
   .mob-topbar{padding:8px 10px;margin:-12px -10px 12px}
   .page-title{font-size:26px}
   .stat-value{font-size:30px}
+  .col-dates{display:none}
 }
 
 /* ── Mobile sidebar tweaks ── */
@@ -1355,7 +1357,7 @@ body.is-admin .ann-input-area{display:block}
         </select>
       </div>
       <div class="card"><table>
-        <thead><tr><th></th><th>Имя</th><th>Возраст</th><th>Направление</th><th>Занятий</th><th>Посещ.</th><th>Записан на числа</th><th>Оплата</th><th class="admin-col">Действия</th></tr></thead>
+        <thead><tr><th></th><th>Имя</th><th>Возр.</th><th>Зап.</th><th>Посещ.</th><th class="col-dates">Числа</th><th class="admin-col">Действия</th></tr></thead>
         <tbody id="students-tbody"></tbody>
       </table></div>
     </div>
@@ -3866,12 +3868,11 @@ function renderStudents(query=''){
     }
     return `
     <tr>
-      <td><div style="background:${s.color};width:30px;height:30px;font-size:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div></td>
-      <td><b>${s.name}</b>${subsHtml}</td><td>${s.age} лет</td><td>${s.dir}</td>
+      <td style="padding:8px 6px"><div style="background:${s.color};width:28px;height:28px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div></td>
+      <td><b>${s.name}</b>${subsHtml}</td><td style="white-space:nowrap">${s.age}</td>
       <td><span class="badge blue">${enrolled}</span></td>
       <td><span class="badge blue">${getAttPct(s.id)}</span></td>
-      <td>${datesHtml}</td>
-      <td><span class="badge ${payCls(s.pay)}">${payLabel(s.pay)}</span></td>
+      <td class="col-dates">${datesHtml}</td>
       <td class="admin-col">
         <button class="edit-btn" onclick="openEditStudent(${s.id})">✏️ Ред.</button>
       </td>
