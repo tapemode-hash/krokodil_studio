@@ -3292,8 +3292,12 @@ if(lsLoad('dataVersion', 0) < DATA_VERSION){
 
 let currentRole = 'guest';
 let selectedRole = 'guest';
-const ADMIN_PW  = 'krokodil2025';
-const PARENT_PW = 'roditel';
+const ADMIN_PW_H  = '9511aa000732a111985d7c746e454b746d7e4cd69c5c941ed0d5dac9c99c228b';
+const PARENT_PW_H = '0940ffe4cc965c4b3bdf70d53d1b6985df158e95689bca6e0097a08d6e7229b1';
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 
 // Attendance page state
 let attDate = new Date();
@@ -3374,14 +3378,15 @@ function showMobileUI(role){
   updateMobSheet(role);
 }
 
-function doLogin(){
+async function doLogin(){
+  const pw = document.getElementById('pw-input').value;
   if(selectedRole==='admin'){
-    if(document.getElementById('pw-input').value!==ADMIN_PW){
+    if(await sha256(pw) !== ADMIN_PW_H){
       document.getElementById('login-err').textContent='❌ Неверный пароль'; return;
     }
   }
   if(selectedRole==='parent'){
-    if(document.getElementById('pw-input').value!==PARENT_PW){
+    if(await sha256(pw) !== PARENT_PW_H){
       document.getElementById('login-err').textContent='❌ Неверный пароль'; return;
     }
   }
