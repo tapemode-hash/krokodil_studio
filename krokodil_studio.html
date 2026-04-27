@@ -694,6 +694,18 @@ body.is-admin .ann-input-area{display:block}
 @media(min-width:769px){
   .pay-cards{display:none}
 }
+.gal-thumb img{width:100%;height:100%;object-fit:cover}
+.gal-del{display:none;position:absolute;top:6px;right:6px;background:rgba(255,255,255,.9);border:none;border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;line-height:26px;text-align:center}
+.gal-item:hover .gal-del{display:block}
+.gal-item{position:relative}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+#lightbox.open{display:flex}
+#lightbox-img{max-width:90vw;max-height:75vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5);object-fit:contain}
+#lightbox-caption{color:white;margin-top:12px;text-align:center;font-size:14px}
+#lightbox-close{position:absolute;top:16px;right:20px;background:none;border:none;color:white;font-size:32px;cursor:pointer;line-height:1}
+.ph-preview-img{width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-top:8px}
+.ph-upload-zone{border:2px dashed var(--peach);border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:var(--ink-l);font-size:13px;transition:background .15s}
+.ph-upload-zone:hover{background:var(--cream)}
 </style>
 </head>
 <body>
@@ -1033,6 +1045,44 @@ body.is-admin .ann-input-area{display:block}
   <button class="mob-nav-btn" id="mbn-more" onclick="openMobMenu()">
     <span class="mn-icon">☰</span><span>Ещё</span>
   </button>
+</div>
+
+<!-- ══ PHOTO MODAL ══ -->
+<div class="modal-overlay" id="m-photo">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeM('m-photo')">✕</button>
+    <div class="modal-title">📸 Добавить работу</div>
+    <div class="form-group">
+      <label class="form-label">Название работы</label>
+      <input class="form-input" id="ph-title" placeholder="«Весенний сад»">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Автор / ученик</label>
+      <input class="form-input" id="ph-author" placeholder="Соня Белова">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Фотография</label>
+      <div class="ph-upload-zone" onclick="document.getElementById('ph-file').click()">
+        <div style="font-size:28px;margin-bottom:6px">📷</div>
+        <div>Нажмите чтобы выбрать фото</div>
+        <div style="font-size:11px;margin-top:4px">JPG, PNG · максимум ~3 МБ</div>
+      </div>
+      <input type="file" id="ph-file" accept="image/*" style="display:none" onchange="previewPhoto(this)">
+      <div id="ph-preview"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeM('m-photo')">Отмена</button>
+      <button class="btn btn-primary" id="ph-save-btn" onclick="savePhoto()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIGHTBOX ══ -->
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+  <div id="lightbox-caption"></div>
+  <button class="btn btn-danger btn-sm admin-only" style="margin-top:14px" onclick="deletePhotoFromLightbox()">🗑️ Удалить работу</button>
 </div>
 
 <!-- ══ LAYOUT ══════════════════════════════════════════════ -->
@@ -1386,17 +1436,10 @@ body.is-admin .ann-input-area{display:block}
     <!-- ── GALLERY ── -->
     <div class="page" id="page-gallery">
       <div class="topbar">
-        <div class="page-title">Галерея 🖼️<span>Апрель 2025</span></div>
-        <div class="topbar-actions"><button class="btn btn-primary admin-only" onclick="toast('📸 Работа добавлена!')">+ Работа</button></div>
+        <div class="page-title">Галерея 🖼️<span id="gallery-sub"></span></div>
+        <div class="topbar-actions"><button class="btn btn-primary admin-only" onclick="openAddPhoto()">+ Работа</button></div>
       </div>
-      <div class="gallery-grid">
-        <div class="gal-item"><div class="gal-thumb" style="background:linear-gradient(135deg,#FFD4B8,#FFB8A0)">🌸</div><div class="gal-info"><div class="gal-title">«Весенний сад»</div><div class="gal-meta">Соня Белова · Акварель</div></div></div>
-        <div class="gal-item"><div class="gal-thumb" style="background:linear-gradient(135deg,#B8F0D4,#5ECFA0)">🐸</div><div class="gal-info"><div class="gal-title">«Лесной пруд»</div><div class="gal-meta">Миша Орлов · Масло</div></div></div>
-        <div class="gal-item"><div class="gal-thumb" style="background:linear-gradient(135deg,#D4C4F0,#9B84D8)">🦋</div><div class="gal-info"><div class="gal-title">«Городские огни»</div><div class="gal-meta">Алиса Кузьмина · Графика</div></div></div>
-        <div class="gal-item"><div class="gal-thumb" style="background:linear-gradient(135deg,#C4E4F8,#5BAED6)">🌊</div><div class="gal-info"><div class="gal-title">«Морская история»</div><div class="gal-meta">Егор Тихонов · Лепка</div></div></div>
-        <div class="gal-item"><div class="gal-thumb" style="background:linear-gradient(135deg,#FFE97A,#E8C840)">🌻</div><div class="gal-info"><div class="gal-title">«Солнечный день»</div><div class="gal-meta">Катя Жукова · Батик</div></div></div>
-        <div class="gal-item"><div class="gal-thumb" style="background:linear-gradient(135deg,#FFD4E8,#FF9CC0)">🌹</div><div class="gal-info"><div class="gal-title">«Розовый этюд»</div><div class="gal-meta">Лиза Морозова · Акварель</div></div></div>
-      </div>
+      <div class="gallery-grid" id="gallery-grid"></div>
     </div>
 
     <!-- ── EXHIBITIONS ── -->
@@ -1630,6 +1673,8 @@ function persist(){
   lsSave('lessonCosts',lessonCosts);
   lsSave('globalLessonPrice', globalLessonPrice);
   lsSave('teacherReviews', teacherReviews);
+  lsSave('photos', photos);
+  lsSave('nextPhotoId', nextPhotoId);
   showSaved();
 }
 
@@ -3188,6 +3233,8 @@ let globalLessonPrice = lsLoad('globalLessonPrice', 500);
 let activePromo = lsLoad('activePromo', {type:'', value:0, name:''});
 // teacherReviews: { teacherId: [{stars, comment, role, date}, ...] }
 let teacherReviews = lsLoad('teacherReviews', {});
+let photos     = lsLoad('photos', []);
+let nextPhotoId = lsLoad('nextPhotoId', 1);
 let nextTId    = lsLoad('nextTId', 4);
 let nextSId    = lsLoad('nextSId', 1411);
 let nextScId   = lsLoad('nextScId', 37);
@@ -3378,6 +3425,7 @@ function nav(page, btn){
   if(page==='students') renderStudents();
   if(page==='schedule') renderSchedule();
   if(page==='teachers') renderTeachers();
+  if(page==='gallery') renderGallery();
   setMobActive(page);
   window.scrollTo(0,0);
 }
@@ -3432,6 +3480,7 @@ function renderAll(){
   else if(currentPage==='payments')  renderPayments();
   else if(currentPage==='reports')   renderReportTable();
   else if(currentPage==='attendance'){ attTab(_attTab||'mark'); renderAttendance(); }
+  else if(currentPage==='gallery') renderGallery();
   const gpi=document.getElementById('global-price-input');
   if(gpi) gpi.value=globalLessonPrice;
   syncPromoUI();
@@ -5449,6 +5498,135 @@ function initChart(){
 }
 
 // ══════════════════════════════════════════════════════════════
+//  GALLERY
+// ══════════════════════════════════════════════════════════════
+let _lightboxPhotoId = null;
+
+function renderGallery(){
+  const grid = document.getElementById('gallery-grid');
+  const sub  = document.getElementById('gallery-sub');
+  if(!grid) return;
+  if(sub) sub.textContent = photos.length ? `${photos.length} работ` : '';
+  if(!photos.length){
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--ink-l)">
+      <div style="font-size:40px;margin-bottom:10px">🖼️</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">Галерея пуста</div>
+      <div style="font-size:13px">Нажмите <b>+ Работа</b> чтобы добавить первое фото</div>
+    </div>`;
+    return;
+  }
+  const isAdmin = document.body.classList.contains('is-admin');
+  grid.innerHTML = photos.map(p=>`
+    <div class="gal-item" onclick="openLightbox(${p.id})">
+      <div class="gal-thumb">${p.dataUrl
+        ? `<img src="${p.dataUrl}" alt="${p.title}" loading="lazy">`
+        : `<span style="font-size:48px">🎨</span>`}
+      </div>
+      <div class="gal-info">
+        <div class="gal-title">${p.title||'Без названия'}</div>
+        <div class="gal-meta">${p.author||''}${p.author&&p.date?' · ':''}${p.date||''}</div>
+      </div>
+      ${isAdmin?`<button class="gal-del" onclick="event.stopPropagation();deletePhoto(${p.id})" title="Удалить">✕</button>`:''}
+    </div>`).join('');
+}
+
+function openAddPhoto(){
+  document.getElementById('ph-title').value='';
+  document.getElementById('ph-author').value='';
+  document.getElementById('ph-file').value='';
+  document.getElementById('ph-preview').innerHTML='';
+  document.getElementById('ph-save-btn').disabled=false;
+  openM('m-photo');
+}
+
+function previewPhoto(input){
+  if(!input.files||!input.files[0])return;
+  const file = input.files[0];
+  if(file.size > 10*1024*1024){ toast('⚠️ Файл слишком большой (макс. 10 МБ)'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('ph-preview').innerHTML =
+      `<img src="${e.target.result}" class="ph-preview-img" alt="preview">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function compressImage(file, cb){
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if(w > MAX){ h = Math.round(h * MAX / w); w = MAX; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', 0.78));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function savePhoto(){
+  const title  = document.getElementById('ph-title').value.trim();
+  const author = document.getElementById('ph-author').value.trim();
+  const file   = document.getElementById('ph-file').files[0];
+  if(!title && !author && !file){ toast('⚠️ Заполните хотя бы одно поле'); return; }
+  const btn = document.getElementById('ph-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняю...';
+  const now = new Date();
+  const dateStr = `${now.getDate()} ${['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][now.getMonth()]} ${now.getFullYear()}`;
+  const finish = (dataUrl) => {
+    try {
+      photos.unshift({ id: nextPhotoId++, title, author, dataUrl, date: dateStr });
+      persist();
+      renderGallery();
+      closeM('m-photo');
+      toast('✅ Работа добавлена в галерею!');
+    } catch(e){
+      toast('⚠️ Не удалось сохранить — возможно, закончилось место в хранилище');
+      btn.disabled = false; btn.textContent = 'Добавить';
+    }
+  };
+  if(file) compressImage(file, finish);
+  else finish('');
+}
+
+function deletePhoto(id){
+  if(!confirm('Удалить эту работу из галереи?')) return;
+  photos = photos.filter(p=>p.id!==id);
+  persist(); renderGallery(); toast('🗑️ Работа удалена');
+}
+
+function openLightbox(id){
+  const p = photos.find(x=>x.id===id);
+  if(!p) return;
+  _lightboxPhotoId = id;
+  document.getElementById('lightbox-img').src = p.dataUrl||'';
+  document.getElementById('lightbox-img').style.display = p.dataUrl?'block':'none';
+  document.getElementById('lightbox-caption').innerHTML =
+    `<b style="font-size:16px">${p.title||'Без названия'}</b>${p.author?`<br><span style="opacity:.7">${p.author}</span>`:''}${p.date?`<br><span style="opacity:.5;font-size:12px">${p.date}</span>`:''}`;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow='';
+  _lightboxPhotoId = null;
+}
+
+function deletePhotoFromLightbox(){
+  if(!_lightboxPhotoId) return;
+  if(!confirm('Удалить эту работу из галереи?')) return;
+  photos = photos.filter(p=>p.id!==_lightboxPhotoId);
+  persist(); closeLightbox(); renderGallery(); toast('🗑️ Работа удалена');
+}
+
+// ══════════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════════
 let _clockInterval=null;
@@ -5462,6 +5640,10 @@ function startClock(){
     else if(currentRole==='guest') renderTodayList('guest-today-list','guest-live-badge');
   }, 60000);
 }
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeLightbox();
+});
 
 window.onload=()=>{
   document.getElementById('login-screen').classList.remove('hidden');
