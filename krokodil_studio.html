@@ -707,7 +707,6 @@ body.is-admin .ann-input-area{display:block}
 .ph-upload-zone{border:2px dashed var(--peach);border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:var(--ink-l);font-size:13px;transition:background .15s}
 .ph-upload-zone:hover{background:var(--cream)}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -5648,11 +5647,11 @@ document.addEventListener('keydown', e=>{
 });
 
 // ══════════════════════════════════════════════════════════════
-//  SUPABASE SYNC
+//  SUPABASE SYNC  (прямые fetch-запросы, без CDN)
 // ══════════════════════════════════════════════════════════════
 const SUPA_URL = 'https://ryoyihzwezxoeyoibvmk.supabase.co';
 const SUPA_KEY = 'sb_publishable_bMsy5LojLuDSh77MkkmqrQ_rPcJ677W';
-const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+const SUPA_H   = {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
   'dateEnrollments','announcements','nextAnnId','subscriptions','lessonCosts',
@@ -5669,7 +5668,7 @@ function loadStateFromStorage(){
   announcements     = lsLoad('announcements',     []);
   nextAnnId         = lsLoad('nextAnnId',         4);
   subscriptions     = lsLoad('subscriptions',     {});
-  lessonCosts       = lsLoad('lessonCosts',        {});
+  lessonCosts       = lsLoad('lessonCosts',       {});
   globalLessonPrice = lsLoad('globalLessonPrice', 500);
   teacherReviews    = lsLoad('teacherReviews',    {});
   photos            = lsLoad('photos',            []);
@@ -5682,25 +5681,29 @@ function loadStateFromStorage(){
 
 async function syncFromSupabase(){
   try {
-    const {data, error} = await _supa.from('app_state').select('key,value');
-    if(error){ console.error('[Supabase] Ошибка загрузки:', error.message); return false; }
-    if(!data || !data.length){ console.warn('[Supabase] Таблица пуста или не существует'); return false; }
+    const res = await fetch(SUPA_URL+'/rest/v1/app_state?select=key,value', {headers: SUPA_H});
+    if(!res.ok){ console.error('[Supabase] Ошибка загрузки:', res.status, res.statusText); return false; }
+    const data = await res.json();
+    if(!Array.isArray(data) || !data.length){ console.warn('[Supabase] Таблица пуста или не создана'); return false; }
     data.forEach(row => { if(row.key !== '_ts') lsSave(row.key, row.value); });
     const tsRow = data.find(r => r.key === '_ts');
     if(tsRow) lsSave('_supaTs', tsRow.value);
     console.log('[Supabase] Загружено', data.length, 'записей');
     return true;
-  } catch(e){ console.error('[Supabase] Исключение:', e); return false; }
+  } catch(e){ console.error('[Supabase] Исключение при загрузке:', e); return false; }
 }
 
 async function syncToSupabase(){
   try {
-    const ts = Date.now();
-    const rows = SYNC_KEYS.map(k => ({key: k, value: lsLoad(k, null)}))
-      .filter(r => r.value !== null);
-    rows.push({key: '_ts', value: ts});
-    const {error} = await _supa.from('app_state').upsert(rows, {onConflict:'key'});
-    if(error){ console.error('[Supabase] Ошибка сохранения:', error.message); }
+    const ts   = Date.now();
+    const rows = SYNC_KEYS.map(k => ({key:k, value:lsLoad(k,null)})).filter(r=>r.value!==null);
+    rows.push({key:'_ts', value:ts});
+    const res = await fetch(SUPA_URL+'/rest/v1/app_state', {
+      method:'POST',
+      headers:{...SUPA_H, 'Prefer':'resolution=merge-duplicates'},
+      body: JSON.stringify(rows)
+    });
+    if(!res.ok){ const t=await res.text(); console.error('[Supabase] Ошибка сохранения:', res.status, t); }
     else { lsSave('_supaTs', ts); console.log('[Supabase] Сохранено', rows.length, 'записей'); }
   } catch(e){ console.error('[Supabase] Исключение при сохранении:', e); }
 }
@@ -5710,8 +5713,10 @@ function startSupabasePolling(){
   if(_supaPolling) return;
   _supaPolling = setInterval(async () => {
     try {
-      const {data} = await _supa.from('app_state').select('value').eq('key','_ts').single();
-      const remoteTs = data?.value || 0;
+      const res = await fetch(SUPA_URL+'/rest/v1/app_state?select=value&key=eq._ts', {headers: SUPA_H});
+      if(!res.ok) return;
+      const data = await res.json();
+      const remoteTs = data?.[0]?.value || 0;
       const localTs  = lsLoad('_supaTs', 0);
       if(remoteTs > localTs){
         const ok = await syncFromSupabase();
