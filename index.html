@@ -4030,14 +4030,19 @@ function renderSubList(){
   el.innerHTML = subs.map((sub,i)=>{
     const pct = Math.round(sub.used/sub.total*100);
     const left = sub.total - sub.used;
+    const exhausted = left <= 0;
     return `<div class="sub-card">
       <div class="sub-icon">🎫</div>
       <div class="sub-info">
         <div class="sub-name">${sub.groupName}</div>
         <div class="sub-meta">${sub.price?sub.price.toLocaleString('ru')+' ₽ · ':''} Осталось: ${left} из ${sub.total} занятий · Добавлен ${sub.createdAt}</div>
         <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="background:var(--lav);color:var(--lav-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${exhausted?'disabled':''} onclick="deductSub(${sid},${i})" title="Списать 1 занятие вручную">– Списать занятие</button>
+          <button class="btn btn-sm" style="background:var(--mint);color:var(--mint-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${sub.used<=0?'disabled':''} onclick="restoreSub(${sid},${i})" title="Вернуть 1 занятие">+ Вернуть</button>
+        </div>
       </div>
-      <div class="sub-count">${left}</div>
+      <div class="sub-count" style="color:${exhausted?'var(--coral)':'var(--mint-d)'}">${left}</div>
       <button class="sub-del" onclick="deleteSubscription(${sid},${i})" title="Удалить">✕</button>
     </div>`;
   }).join('');
@@ -4065,6 +4070,20 @@ function deleteSubscription(sid, idx){
   if(!confirm('Удалить абонемент?')) return;
   subscriptions[sid].splice(idx,1);
   persist(); renderSubList(); toast('🗑️ Абонемент удалён');
+}
+function deductSub(sid, idx){
+  const sub = (subscriptions[sid]||[])[idx];
+  if(!sub || sub.used >= sub.total){ toast('⚠️ Занятия в абонементе закончились'); return; }
+  sub.used++;
+  persist(); renderSubList();
+  toast(`🎫 Занятие списано · осталось ${sub.total-sub.used}`);
+}
+function restoreSub(sid, idx){
+  const sub = (subscriptions[sid]||[])[idx];
+  if(!sub || sub.used <= 0) return;
+  sub.used--;
+  persist(); renderSubList();
+  toast(`↩️ Занятие возвращено · осталось ${sub.total-sub.used}`);
 }
 
 function onDobChange(){
@@ -4597,6 +4616,7 @@ function renderAttendance(){
         <div class="att-controls">
           <button class="att-mark present${cur==='p'?' active':''}" onclick="markAtt(${s.id},'p',this)">✓ Присутствует</button>
           <button class="att-mark absent${cur==='a'?' active':''}" onclick="markAtt(${s.id},'a',this)">✗ Отсутствует</button>
+          ${cur==='p' ? `<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${s.id})" title="${(lessonCosts[key]||{})[s.id+'_via_sub']?'Сменить на разовое':'Списать по абонементу'}">${(lessonCosts[key]||{})[s.id+'_via_sub']?'🎫 По абон.':'→ 🎫 Абон.'}</button>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -4816,6 +4836,43 @@ function markAtt(sid, mark, btn){
 
 function saveAttendance(){
   invalidateAttCache(); persist(); toast('✅ Посещение сохранено!');
+}
+
+function toggleSubMark(sid){
+  const key = fmtDate(attDate);
+  if(!lessonCosts[key]) lessonCosts[key]={};
+  const costs = lessonCosts[key];
+  const isViaSub = costs[sid+'_via_sub'];
+  if(isViaSub){
+    // Switch to single: restore sub
+    const subIdx = costs[sid+'_subIdx'];
+    const subs = subscriptions[sid]||[];
+    if(subIdx!==undefined && subs[subIdx] && subs[subIdx].used>0) subs[subIdx].used--;
+    delete costs[sid+'_subIdx']; delete costs[sid+'_via_sub'];
+    delete costs[sid+'_sub_price']; delete costs[sid+'_sub_total'];
+    const baseP = effectivePrice(sid, true);
+    const promoP = effectivePrice(sid);
+    costs[sid] = promoP; costs[sid+'_auto'] = true;
+    if(activePromo && activePromo.type && promoP !== baseP){
+      costs[sid+'_promo'] = activePromo.name||'Акция';
+      costs[sid+'_base_price'] = baseP;
+    }
+    toast('💵 Переключено на разовое');
+  } else {
+    // Switch to sub: deduct from active sub
+    const sub = getActiveSub(sid);
+    if(!sub){ toast('⚠️ Нет активного абонемента'); return; }
+    // Remove single cost metadata
+    delete costs[sid+'_promo']; delete costs[sid+'_base_price']; delete costs[sid+'_auto'];
+    sub.used++;
+    const subIdx = (subscriptions[sid]||[]).indexOf(sub);
+    const perLesson = sub.total>0 ? sub.price/sub.total : 0;
+    costs[sid+'_subIdx'] = subIdx; costs[sid+'_via_sub'] = true;
+    costs[sid+'_sub_price'] = sub.price; costs[sid+'_sub_total'] = sub.total;
+    costs[sid] = perLesson;
+    toast(`🎫 Переключено на абонемент · осталось ${sub.total-sub.used}`);
+  }
+  renderAttendance();
 }
 
 // ══════════════════════════════════════════════════════════════
