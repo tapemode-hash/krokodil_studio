@@ -1194,6 +1194,12 @@ body.is-admin .ann-input-area{display:block}
           <div class="ann-list" id="ann-list-parent"></div>
         </div>
 
+        <!-- TODAY'S CLASSES for parents -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-title">🗓️ Занятия сегодня <span class="live-badge" id="parent-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+          <div class="sch-list" id="parent-today-list"></div>
+        </div>
+
         <!-- NEWS + SCHEDULE grid -->
         <div class="parent-grid" style="margin-bottom:18px">
 
@@ -1271,6 +1277,12 @@ body.is-admin .ann-input-area{display:block}
           <div class="stat-card lav"><span class="stat-icon">🎓</span><div class="stat-value" id="guest-stat-teachers">—</div><div class="stat-label">Педагогов</div></div>
           <div class="stat-card yel"><span class="stat-icon">🏆</span><div class="stat-value">3</div><div class="stat-label">Победы в апреле</div></div>
           <div class="stat-card peach"><span class="stat-icon">🎨</span><div class="stat-value">5</div><div class="stat-label">Направлений</div></div>
+        </div>
+
+        <!-- TODAY'S CLASSES for guests -->
+        <div class="card" style="margin-bottom:22px">
+          <div class="card-title">🗓️ Занятия сегодня <span class="live-badge" id="guest-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+          <div class="sch-list" id="guest-today-list"></div>
         </div>
 
         <!-- Teachers mini-block for guest/parent -->
@@ -1687,6 +1699,8 @@ function syncFromStorage(){
   teacherReviews = lsLoad('teacherReviews', {});
   renderAll();
   if(currentRole==='admin') renderTodaySchedule();
+  else if(currentRole==='parent') renderTodayList('parent-today-list','parent-live-badge');
+  else if(currentRole==='guest') renderTodayList('guest-today-list','guest-live-badge');
   toast('🔄 Данные обновлены из другой вкладки');
 }
 window.addEventListener('storage', e => {
@@ -2031,6 +2045,7 @@ function renderDashboard(){
     const activeGroups=schedule.filter(s=>s.status==='Активна').length;
     const gEl=document.getElementById('guest-stat-groups'); if(gEl)gEl.textContent=activeGroups||'—';
     const tEl=document.getElementById('guest-stat-teachers'); if(tEl)tEl.textContent=teachers.length||'—';
+    renderTodayList('guest-today-list','guest-live-badge');
   }
 
   if(currentRole==='parent'){
@@ -2043,6 +2058,7 @@ function renderDashboard(){
       badge.className='badge '+(s.pay==='paid'?'green':s.pay==='debt'?'red':'yellow');
     }
     renderParentUpcoming();
+    renderTodayList('parent-today-list','parent-live-badge');
   }
 }
 
@@ -2056,14 +2072,13 @@ function timeToMin(t){
 // Get dot color for a schedule entry (cycle through palette)
 const DOT_COLORS=['var(--mint-d)','var(--coral)','var(--lav-d)','var(--sky-d)','var(--yel-d)','#4CAF50','#FF9800'];
 
-function renderTodaySchedule(){
-  const el=document.getElementById('dash-today-list'); if(!el)return;
+function renderTodayList(elId, liveElId){
+  const el=document.getElementById(elId); if(!el)return;
   const now=new Date();
   const nowMin=now.getHours()*60+now.getMinutes();
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
   const todayDow=now.getDay();
 
-  // Filter schedule entries that run today
   const todayItems=[];
   schedule.forEach(sc=>{
     if(sc.status==='Завершена')return;
@@ -2071,17 +2086,14 @@ function renderTodaySchedule(){
       if(DAY_MAP[d.trim()]===todayDow) todayItems.push(sc);
     });
   });
-
-  // Sort by start time
   todayItems.sort((a,b)=>timeToMin(a.time)-timeToMin(b.time));
 
-  // Live indicator: show if any class is running now
   const anyLive=todayItems.some(sc=>{
     const [startStr,endStr]=(sc.time||'').split('–');
     const start=timeToMin(startStr), end=timeToMin(endStr||startStr)+90;
     return nowMin>=start && nowMin<end;
   });
-  const liveEl=document.getElementById('dash-live-badge');
+  const liveEl=liveElId?document.getElementById(liveElId):null;
   if(liveEl)liveEl.style.display=anyLive?'inline-flex':'none';
 
   if(!todayItems.length){
@@ -2115,6 +2127,10 @@ function renderTodaySchedule(){
       ${tagHtml}
     </div>`;
   }).join('');
+}
+
+function renderTodaySchedule(){
+  renderTodayList('dash-today-list','dash-live-badge');
 }
 
 function renderParentUpcoming(){
@@ -3906,6 +3922,8 @@ function startClock(){
   // Refresh today's schedule every 60 seconds so "Идёт/Было/Скоро" stays accurate
   _clockInterval=setInterval(()=>{
     if(currentRole==='admin') renderTodaySchedule();
+    else if(currentRole==='parent') renderTodayList('parent-today-list','parent-live-badge');
+    else if(currentRole==='guest') renderTodayList('guest-today-list','guest-live-badge');
   }, 60000);
 }
 
