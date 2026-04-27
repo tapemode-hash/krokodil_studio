@@ -338,6 +338,7 @@ body.is-admin .admin-only-block{display:block!important}
 
 /* ── ATTENDANCE PAGE ── */
 .att-page-grid{display:grid;grid-template-columns:1fr 280px;gap:20px}
+body:not(.is-admin) .att-page-grid{grid-template-columns:1fr}
 .att-date-header{font-family:'Caveat',cursive;font-size:20px;font-weight:700;margin-bottom:12px;color:var(--ink-l)}
 .att-student-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:var(--cream);margin-bottom:8px}
 .att-group-hdr{display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:var(--lavender);border-radius:10px;margin:14px 0 6px;font-size:13px;font-weight:700}
@@ -1420,7 +1421,7 @@ body.is-admin .ann-input-area{display:block}
             <div class="card-title" id="att-list-title">Записаны на этот день</div>
             <div id="att-list"></div>
           </div>
-          <div class="card">
+          <div class="card admin-only-block">
             <div class="card-title">📊 Сводка</div>
             <div id="att-summary"></div>
           </div>
@@ -4678,12 +4679,12 @@ function renderAttendance(){
         <div class="att-student-name" style="flex:1">
           <div style="display:flex;align-items:center;gap:7px">${s.name} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
         </div>
-        <div style="margin-right:10px;text-align:right">${priceHint}</div>
-        <div class="att-controls">
+        ${currentRole==='admin'?`<div style="margin-right:10px;text-align:right">${priceHint}</div>`:''}
+        ${currentRole==='admin'?`<div class="att-controls">
           <button class="att-mark present${cur==='p'?' active':''}" onclick="markAtt(${s.id},'p',this)">✓ Присутствует</button>
           <button class="att-mark absent${cur==='a'?' active':''}" onclick="markAtt(${s.id},'a',this)">✗ Отсутствует</button>
           ${cur==='p'?`<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${s.id})" title="${(lessonCosts[key]||{})[s.id+'_via_sub']?'Сменить на разовое':'Списать по абонементу'}">${(lessonCosts[key]||{})[s.id+'_via_sub']?'🎫 По абон.':'→ 🎫 Абон.'}</button>`:''}
-        </div>
+        </div>`:''}
       </div>`;
     };
 
