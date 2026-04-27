@@ -2671,7 +2671,7 @@ function teacherCardHTML(t){
   const reviews = teacherReviews[t.id]||[];
   const avgRating = reviews.length
     ? (reviews.reduce((s,r)=>s+r.stars,0)/reviews.length).toFixed(1)
-    : t.rating;
+    : parseFloat(t.rating).toFixed(1);
   const reviewCount = reviews.length ? `${reviews.length} отз.` : 'нет отзывов';
   return `
   <div class="tc">
@@ -2709,7 +2709,7 @@ function renderTeachers(){
     const reviews = teacherReviews[t.id]||[];
     const avgRating = reviews.length
       ? (reviews.reduce((s,r)=>s+r.stars,0)/reviews.length).toFixed(1)
-      : t.rating;
+      : parseFloat(t.rating).toFixed(1);
     const starsHtml = '⭐'.repeat(Math.round(avgRating)) + (avgRating%1>=.5?'':'');
     const reviewCount = reviews.length ? `${reviews.length} отз.` : 'нет отзывов';
     return `
@@ -2785,7 +2785,7 @@ function openRateTeacher(tid){
   const t = teachers.find(x=>x.id===tid); if(!t) return;
   _selectedStar = 0;
   document.getElementById('rate-tid').value = tid;
-  document.getElementById('rate-title').textContent = '⭐ ' + t.name;
+  document.getElementById('m-rate-title').textContent = '⭐ ' + t.name;
   document.getElementById('rate-ava').textContent = t.avatar;
   document.getElementById('rate-ava').style.background = t.color;
   document.getElementById('rate-name').textContent = t.name;
@@ -2798,7 +2798,7 @@ function openRateTeacher(tid){
   const reviews = teacherReviews[tid]||[];
   const avg = reviews.length
     ? (reviews.reduce((s,r)=>s+r.stars,0)/reviews.length).toFixed(1)
-    : t.rating;
+    : parseFloat(t.rating).toFixed(1);
   document.getElementById('rate-cur').textContent = `Текущий рейтинг: ${'⭐'.repeat(Math.round(avg))} ${avg}`;
   renderReviewsInModal(tid);
   // open without admin check — all roles can rate
