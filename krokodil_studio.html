@@ -340,6 +340,8 @@ body.is-admin .admin-only-block{display:block!important}
 .att-page-grid{display:grid;grid-template-columns:1fr 280px;gap:20px}
 .att-date-header{font-family:'Caveat',cursive;font-size:20px;font-weight:700;margin-bottom:12px;color:var(--ink-l)}
 .att-student-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:var(--cream);margin-bottom:8px}
+.att-group-hdr{display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:var(--lavender);border-radius:10px;margin:14px 0 6px;font-size:13px;font-weight:700}
+.att-group-hdr span{font-size:11px;font-weight:400;color:var(--ink-l)}
 .att-student-name{flex:1;font-weight:700;font-size:14px}
 .att-controls{display:flex;gap:6px}
 .att-mark{padding:6px 14px;border-radius:20px;border:2px solid;font-weight:700;font-size:12px;cursor:pointer;background:white;transition:all .15s;font-family:'Nunito',sans-serif}
@@ -4643,44 +4645,54 @@ function renderAttendance(){
         <div style="font-size:13px">Запишите учеников на конкретные числа во вкладке <b>Ученики → 🗓️ Числа</b></div>
       </div>`;
   } else {
-    document.getElementById('att-list').innerHTML=listToShow.map(s=>{
-      const cur=dayAtt[s.id]||'';
+    // группируем по расписанию
+    const groupMap = new Map();
+    listToShow.forEach(s => {
       const enrolled = (enrollments[s.id]||[]);
-      const isExtra = !dateEnrolledStudents.find(x=>x.id===s.id); // already-marked but not in date list
-      const groupHint = enrolled.length
-        ? schedule.filter(sc=>enrolled.includes(sc.id)).map(sc=>sc.name).join(', ')
-        : s.group || s.dir;
-      const sub = getActiveSub(s.id);
-      const subBadge = sub
-        ? `<span class="badge purple" title="Активный абонемент: ${sub.groupName}">🎫 ${sub.total-sub.used} ост.</span>`
-        : '';
-      const basePrice = effectivePrice(s.id, true);
-      const promoPrice = effectivePrice(s.id);
-      const hasPromo = activePromo && activePromo.type && promoPrice !== basePrice;
-      const subPerLesson = sub && sub.total>0 ? Math.round(sub.price/sub.total) : 0;
-      const displayPrice = sub ? subPerLesson : ((lessonCosts[key]||{})[s.id] !== undefined ? +((lessonCosts[key]||{})[s.id]) : promoPrice);
-      const priceHint = sub && cur==='p'
-        ? `<span style="font-size:11px;color:var(--lav-d);font-weight:700">🎫 ${subPerLesson?subPerLesson.toLocaleString('ru')+' ₽':''}</span>`
-        : cur==='p'
-        ? `<span style="font-size:11px;color:var(--mint-d);font-weight:700">+${displayPrice.toLocaleString('ru')} ₽${hasPromo?` <span style="color:#E07800">🏷️</span>`:''}</span>`
-        : hasPromo && !sub
-        ? `<span style="font-size:11px;color:var(--ink-l)"><s style="opacity:.5">${basePrice.toLocaleString('ru')}</s> <b style="color:#E07800">${promoPrice.toLocaleString('ru')} ₽</b> 🏷️</span>`
-        : `<span style="font-size:11px;color:var(--ink-l)">${(sub?subPerLesson:basePrice).toLocaleString('ru')} ₽/зан.</span>`;
+      const sc = schedule.find(sc => enrolled.includes(sc.id));
+      const gKey = sc ? sc.id : 0;
+      if(!groupMap.has(gKey)) groupMap.set(gKey, {sc: sc||{name:'Без группы',time:'',teacher:''}, students:[]});
+      groupMap.get(gKey).students.push(s);
+    });
 
+    const studentRow = s => {
+      const cur=dayAtt[s.id]||'';
+      const enrolled=(enrollments[s.id]||[]);
+      const isExtra=!dateEnrolledStudents.find(x=>x.id===s.id);
+      const sub=getActiveSub(s.id);
+      const subBadge=sub?`<span class="badge purple" title="Активный абонемент: ${sub.groupName}">🎫 ${sub.total-sub.used} ост.</span>`:'';
+      const basePrice=effectivePrice(s.id,true);
+      const promoPrice=effectivePrice(s.id);
+      const hasPromo=activePromo&&activePromo.type&&promoPrice!==basePrice;
+      const subPerLesson=sub&&sub.total>0?Math.round(sub.price/sub.total):0;
+      const displayPrice=sub?subPerLesson:((lessonCosts[key]||{})[s.id]!==undefined?+((lessonCosts[key]||{})[s.id]):promoPrice);
+      const priceHint=sub&&cur==='p'
+        ?`<span style="font-size:11px;color:var(--lav-d);font-weight:700">🎫 ${subPerLesson?subPerLesson.toLocaleString('ru')+' ₽':''}</span>`
+        :cur==='p'
+        ?`<span style="font-size:11px;color:var(--mint-d);font-weight:700">+${displayPrice.toLocaleString('ru')} ₽${hasPromo?` <span style="color:#E07800">🏷️</span>`:''}</span>`
+        :hasPromo&&!sub
+        ?`<span style="font-size:11px;color:var(--ink-l)"><s style="opacity:.5">${basePrice.toLocaleString('ru')}</s> <b style="color:#E07800">${promoPrice.toLocaleString('ru')} ₽</b> 🏷️</span>`
+        :`<span style="font-size:11px;color:var(--ink-l)">${(sub?subPerLesson:basePrice).toLocaleString('ru')} ₽/зан.</span>`;
       return `<div class="att-student-row" style="border-left:3px solid ${isExtra?'var(--yel-d)':'var(--mint-d)'};padding-left:11px;background:linear-gradient(90deg,${isExtra?'#FFFDF0':'#F0FFF8'},var(--cream))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
         <div class="att-student-name" style="flex:1">
           <div style="display:flex;align-items:center;gap:7px">${s.name} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
-          <div style="font-size:11px;color:var(--ink-l);margin-top:2px">${groupHint}</div>
         </div>
         <div style="margin-right:10px;text-align:right">${priceHint}</div>
         <div class="att-controls">
           <button class="att-mark present${cur==='p'?' active':''}" onclick="markAtt(${s.id},'p',this)">✓ Присутствует</button>
           <button class="att-mark absent${cur==='a'?' active':''}" onclick="markAtt(${s.id},'a',this)">✗ Отсутствует</button>
-          ${cur==='p' ? `<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${s.id})" title="${(lessonCosts[key]||{})[s.id+'_via_sub']?'Сменить на разовое':'Списать по абонементу'}">${(lessonCosts[key]||{})[s.id+'_via_sub']?'🎫 По абон.':'→ 🎫 Абон.'}</button>` : ''}
+          ${cur==='p'?`<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${s.id})" title="${(lessonCosts[key]||{})[s.id+'_via_sub']?'Сменить на разовое':'Списать по абонементу'}">${(lessonCosts[key]||{})[s.id+'_via_sub']?'🎫 По абон.':'→ 🎫 Абон.'}</button>`:''}
         </div>
       </div>`;
-    }).join('');
+    };
+
+    let html='';
+    for(const {sc, students:gs} of groupMap.values()){
+      html+=`<div class="att-group-hdr">${sc.name}<span>${[sc.time,sc.teacher].filter(Boolean).join(' · ')}</span></div>`;
+      html+=gs.map(studentRow).join('');
+    }
+    document.getElementById('att-list').innerHTML=html;
   }
 
   const dayAttObj = attendance[key]||{};
@@ -5030,6 +5042,8 @@ function renderPayments(){
   // ── Per-student rows ──
   document.getElementById('payments-tbody').innerHTML=students.map(s=>{
     const {total, viaSub, single, revenue, subRevProrata} = countLessons(s.id);
+    const hasSubs = (subscriptions[s.id]||[]).length > 0;
+    if(total === 0 && !hasSubs) return '';
     const activeSubs = (subscriptions[s.id]||[]).filter(sb=>sb.total-sb.used>0);
     const subBadge = activeSubs.length
       ? activeSubs.map(sb=>{
@@ -5087,6 +5101,7 @@ function renderPayments(){
     let mobTotalRev=0;
     mobStudCards.innerHTML = students.map(s=>{
       const {total,viaSub,single,revenue,subRevProrata} = countLessons(s.id);
+      if(total === 0 && !(subscriptions[s.id]||[]).length) return '';
       const totalRev = Math.round(revenue+subRevProrata);
       mobTotalRev += totalRev;
       const activeSubs = (subscriptions[s.id]||[]).filter(sb=>sb.total-sb.used>0);
