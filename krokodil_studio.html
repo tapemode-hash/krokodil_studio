@@ -974,6 +974,34 @@ body.is-admin .ann-input-area{display:block}
   </div>
 </div>
 
+<!-- Achievement modal -->
+<div class="modal-overlay" id="m-achievement">
+  <div class="modal">
+    <button class="modal-close" onclick="closeM('m-achievement')">✕</button>
+    <div class="modal-title" id="ach-modal-title">🏆 Достижение</div>
+    <input type="hidden" id="ach-edit-id">
+    <div class="form-group"><label class="form-label">Медаль</label>
+      <select class="form-select" id="ach-medal">
+        <option value="🥇">🥇 Первое место</option>
+        <option value="🥈">🥈 Второе место</option>
+        <option value="🥉">🥉 Третье место</option>
+        <option value="🎖️">🎖️ Диплом</option>
+        <option value="🏆">🏆 Победа</option>
+        <option value="🌟">🌟 Отличие</option>
+        <option value="🎨">🎨 Выставка</option>
+        <option value="🎪">🎪 Событие</option>
+      </select></div>
+    <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="ach-name-inp" placeholder="Например: 1 место · Городской конкурс"></div>
+    <div class="form-group"><label class="form-label">Ученик / группа</label><input class="form-input" id="ach-stu-inp" placeholder="Имя ученика или описание"></div>
+    <div class="form-group"><label class="form-label">Дата</label><input class="form-input" id="ach-date-inp" placeholder="Например: 20 апр"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="ach-del-btn" style="margin-right:auto" onclick="deleteAchievement(+document.getElementById('ach-edit-id').value)">🗑️ Удалить</button>
+      <button class="btn btn-ghost" onclick="closeM('m-achievement')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveAchievement()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- Announcement modal -->
 <div class="modal-overlay" id="m-announce">
   <div class="modal">
@@ -1177,13 +1205,11 @@ body.is-admin .ann-input-area{display:block}
             <div class="cal-grid" id="mini-cal"></div>
           </div>
           <div class="card">
-            <div class="card-title">🏆 Достижения</div>
-            <div class="ach-list">
-              <div class="ach"><div class="ach-medal">🥇</div><div><div class="ach-name">1 место · Городской конкурс</div><div class="ach-stu">Алиса Кузьмина</div></div><div class="ach-date">20 апр</div></div>
-              <div class="ach"><div class="ach-medal">🎖️</div><div><div class="ach-name">Лучшая работа месяца</div><div class="ach-stu">Соня Белова</div></div><div class="ach-date">18 апр</div></div>
-              <div class="ach"><div class="ach-medal">🌟</div><div><div class="ach-name">100% посещаемость</div><div class="ach-stu">Лиза Морозова</div></div><div class="ach-date">15 апр</div></div>
-              <div class="ach"><div class="ach-medal">🎨</div><div><div class="ach-name">Выставка «Весна»</div><div class="ach-stu">5 учеников</div></div><div class="ach-date">10 апр</div></div>
+            <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+              🏆 Достижения
+              <button class="btn btn-ghost btn-sm admin-only" onclick="openAddAchievement()">+ Добавить</button>
             </div>
+            <div class="ach-list" id="ach-list-admin"></div>
           </div>
         </div>
 
@@ -1323,11 +1349,7 @@ body.is-admin .ann-input-area{display:block}
         </div>
         <div class="card">
           <div class="card-title">🏆 Достижения</div>
-          <div class="ach-list">
-            <div class="ach"><div class="ach-medal">🥇</div><div><div class="ach-name">1 место · Городской конкурс</div><div class="ach-stu">Алиса Кузьмина</div></div><div class="ach-date">20 апр</div></div>
-            <div class="ach"><div class="ach-medal">🎖️</div><div><div class="ach-name">Лучшая работа месяца</div><div class="ach-stu">Соня Белова</div></div><div class="ach-date">18 апр</div></div>
-            <div class="ach"><div class="ach-medal">🌟</div><div><div class="ach-name">100% посещаемость</div><div class="ach-stu">Лиза Морозова</div></div><div class="ach-date">15 апр</div></div>
-          </div>
+          <div class="ach-list" id="ach-list-public"></div>
         </div>
 
         <!-- ── CONTACTS FOOTER ── -->
@@ -1678,6 +1700,8 @@ function persist(){
   lsSave('teacherReviews', teacherReviews);
   lsSave('photos', photos);
   lsSave('nextPhotoId', nextPhotoId);
+  lsSave('achievements', achievements);
+  lsSave('nextAchId', nextAchId);
   showSaved();
   syncToFirebase();
 }
@@ -3227,6 +3251,13 @@ let announcements = lsLoad('announcements', [
   {id:3, type:'info',  title:'Новое направление: акрил', body:'С июня открываем группу акриловой живописи для детей 8–12 лет. Запись открыта!', date:'с июня', createdAt:'2025-04-15'},
 ]);
 let nextAnnId = lsLoad('nextAnnId', 4);
+let achievements = lsLoad('achievements', [
+  {id:1, medal:'🥇', name:'1 место · Городской конкурс', student:'Алиса Кузьмина', date:'20 апр'},
+  {id:2, medal:'🎖️', name:'Лучшая работа месяца',        student:'Соня Белова',    date:'18 апр'},
+  {id:3, medal:'🌟', name:'100% посещаемость',           student:'Лиза Морозова',  date:'15 апр'},
+  {id:4, medal:'🎨', name:'Выставка «Весна»',            student:'5 учеников',     date:'10 апр'},
+]);
+let nextAchId = lsLoad('nextAchId', 5);
 // subscriptions: { studentId: [{id, groupName, total, used, price, createdAt}, ...] }
 let subscriptions = lsLoad('subscriptions', {});
 // lessonCosts: { 'YYYY-MM-DD': { studentId: cost } }
@@ -3477,6 +3508,7 @@ function showSaved(){
 // ══════════════════════════════════════════════════════════════
 function renderAll(){
   renderAnnouncements();
+  renderAchievements();
   renderDashboard();
   if(currentPage==='students')  renderStudents();
   else if(currentPage==='schedule')  renderSchedule();
@@ -3835,6 +3867,82 @@ function dateCalNext(){
 // ══════════════════════════════════════════════════════════════
 //  ANNOUNCEMENTS
 // ══════════════════════════════════════════════════════════════
+// ── ACHIEVEMENTS ──────────────────────────────────────────────
+function renderAchievements(){
+  const isAdmin = currentRole === 'admin';
+  const html = achievements.length
+    ? achievements.map(a=>`
+      <div class="ach">
+        <div class="ach-medal">${a.medal}</div>
+        <div style="flex:1">
+          <div class="ach-name">${a.name}</div>
+          <div class="ach-stu">${a.student}</div>
+        </div>
+        <div class="ach-date">${a.date}</div>
+        ${isAdmin?`<button class="edit-btn" style="margin-left:6px;flex-shrink:0" onclick="openEditAchievement(${a.id})">✏️</button>`:''}
+      </div>`).join('')
+    : '<div style="color:var(--ink-l);font-size:13px;padding:8px 0">Нет достижений</div>';
+  const admin = document.getElementById('ach-list-admin');
+  const pub   = document.getElementById('ach-list-public');
+  if(admin) admin.innerHTML = html;
+  if(pub)   pub.innerHTML   = achievements.map(a=>`
+    <div class="ach">
+      <div class="ach-medal">${a.medal}</div>
+      <div style="flex:1"><div class="ach-name">${a.name}</div><div class="ach-stu">${a.student}</div></div>
+      <div class="ach-date">${a.date}</div>
+    </div>`).join('') || '<div style="color:var(--ink-l);font-size:13px;padding:8px 0">Нет достижений</div>';
+}
+
+function openAddAchievement(){
+  document.getElementById('ach-edit-id').value = '';
+  document.getElementById('ach-modal-title').textContent = '🏆 Новое достижение';
+  document.getElementById('ach-medal').value = '🥇';
+  document.getElementById('ach-name-inp').value = '';
+  document.getElementById('ach-stu-inp').value = '';
+  document.getElementById('ach-date-inp').value = '';
+  document.getElementById('ach-del-btn').style.display = 'none';
+  openM('m-achievement');
+}
+
+
+
+function openEditAchievement(id){
+  const a = achievements.find(x=>x.id===id);
+  if(!a) return;
+  document.getElementById('ach-edit-id').value = id;
+  document.getElementById('ach-modal-title').textContent = '✏️ Редактировать достижение';
+  document.getElementById('ach-medal').value = a.medal;
+  document.getElementById('ach-name-inp').value = a.name;
+  document.getElementById('ach-stu-inp').value = a.student;
+  document.getElementById('ach-date-inp').value = a.date;
+  document.getElementById('ach-del-btn').style.display = '';
+  openM('m-achievement');
+}
+
+function saveAchievement(){
+  const medal   = document.getElementById('ach-medal').value;
+  const name    = document.getElementById('ach-name-inp').value.trim();
+  const student = document.getElementById('ach-stu-inp').value.trim();
+  const date    = document.getElementById('ach-date-inp').value.trim();
+  if(!name){ toast('⚠️ Введите название достижения'); return; }
+  const editId = +document.getElementById('ach-edit-id').value;
+  if(editId){
+    const a = achievements.find(x=>x.id===editId);
+    if(a){ a.medal=medal; a.name=name; a.student=student; a.date=date; }
+  } else {
+    achievements.unshift({id:nextAchId++, medal, name, student, date});
+  }
+  persist(); renderAchievements(); closeM('m-achievement');
+  toast(editId ? '✅ Достижение обновлено' : '🏆 Достижение добавлено');
+}
+
+function deleteAchievement(id){
+  if(!confirm('Удалить это достижение?')) return;
+  achievements = achievements.filter(a=>a.id!==id);
+  persist(); renderAchievements(); closeM('m-achievement');
+  toast('🗑️ Достижение удалено');
+}
+
 const ANN_ICONS={pin:'📌',info:'ℹ️',event:'🎉'};
 
 function renderAnnouncements(){
@@ -5670,7 +5778,7 @@ const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
   'dateEnrollments','announcements','nextAnnId','subscriptions','lessonCosts',
   'globalLessonPrice','teacherReviews','photos','nextPhotoId',
-  'nextTId','nextSId','nextScId','dataVersion'];
+  'achievements','nextAchId','nextTId','nextSId','nextScId','dataVersion'];
 
 function loadStateFromStorage(){
   teachers          = lsLoad('teachers',          DEFAULT_TEACHERS);
@@ -5687,6 +5795,8 @@ function loadStateFromStorage(){
   teacherReviews    = lsLoad('teacherReviews',    {});
   photos            = lsLoad('photos',            []);
   nextPhotoId       = lsLoad('nextPhotoId',       1);
+  achievements      = lsLoad('achievements',      []);
+  nextAchId         = lsLoad('nextAchId',         5);
   nextTId           = lsLoad('nextTId',           4);
   nextSId           = lsLoad('nextSId',           1411);
   nextScId          = lsLoad('nextScId',          37);
