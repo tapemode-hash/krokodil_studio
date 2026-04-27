@@ -749,13 +749,15 @@ body.is-admin .ann-input-area{display:block}
         <div class="form-group"><label class="form-label">Фамилия</label><input class="form-input" id="s-last" placeholder="Фамилия"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Возраст</label><input class="form-input" type="number" id="s-age" min="3" max="18" placeholder="лет"></div>
-        <div class="form-group"><label class="form-label">Направление</label>
-          <select class="form-select" id="s-dir"><option>Акварель</option><option>Масло</option><option>Графика</option><option>Лепка</option><option>Батик</option></select></div>
+        <div class="form-group"><label class="form-label">Дата рождения</label><input class="form-input" type="date" id="s-dob" onchange="onDobChange()"></div>
+        <div class="form-group"><label class="form-label">Возраст, лет</label><input class="form-input" type="number" id="s-age" min="3" max="18" placeholder="лет"></div>
       </div>
       <div class="form-row">
+        <div class="form-group"><label class="form-label">Имя родителя</label><input class="form-input" id="s-parent" placeholder="Имя и фамилия"></div>
         <div class="form-group"><label class="form-label">Телефон родителя</label><input class="form-input" id="s-phone" placeholder="+7 (___) ___-__-__"></div>
       </div>
+      <div class="form-group"><label class="form-label">Направление <span style="font-weight:400;color:var(--ink-l)">(необязательно)</span></label>
+        <select class="form-select" id="s-dir"><option value="">— не выбрано —</option><option>Акварель</option><option>Масло</option><option>Графика</option><option>Лепка</option><option>Батик</option></select></div>
       <input type="hidden" id="s-pay" value="paid">
       <div class="form-group">
         <label class="form-label">Цена разового занятия, ₽ <span style="font-weight:400;color:var(--ink-l)">(0 = использовать глобальную)</span></label>
@@ -2034,7 +2036,7 @@ function renderDashboard(){
     if(el)el.innerHTML=students.slice(0,6).map(s=>`
       <div class="stu-row" onclick="nav('students',document.querySelector('[onclick*=students]'))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
-        <div><div class="stu-name">${s.name}</div><div class="stu-age">${s.age} лет · ${s.dir}</div></div>
+        <div><div class="stu-name">${s.name}</div><div class="stu-age">${s.age} лет${s.dir?' · '+s.dir:''}</div></div>
         <span class="badge ${payCls(s.pay)}">${s.pay==='paid'?'✓':s.pay==='debt'?'✗':'~'}</span>
       </div>`).join('');
 
@@ -2052,7 +2054,7 @@ function renderDashboard(){
     const s=students[0];
     if(s){
       document.getElementById('parent-hello').textContent='Добрый день!';
-      document.getElementById('parent-sub').textContent='Студия Крокодил · '+s.dir+' · '+s.name;
+      document.getElementById('parent-sub').textContent='Студия Крокодил'+(s.dir?' · '+s.dir:'')+' · '+s.name;
       const badge=document.getElementById('parent-pay-badge');
       badge.textContent=s.pay==='paid'?'✓ Оплачено':s.pay==='debt'?'✗ Долг':'~ Частично';
       badge.className='badge '+(s.pay==='paid'?'green':s.pay==='debt'?'red':'yellow');
@@ -2625,11 +2627,29 @@ function deleteSubscription(sid, idx){
   persist(); renderSubList(); toast('🗑️ Абонемент удалён');
 }
 
+function onDobChange(){
+  const dob=document.getElementById('s-dob').value;
+  const ageEl=document.getElementById('s-age');
+  if(dob){
+    const today=new Date(), birth=new Date(dob);
+    let age=today.getFullYear()-birth.getFullYear();
+    const m=today.getMonth()-birth.getMonth();
+    if(m<0||(m===0&&today.getDate()<birth.getDate()))age--;
+    ageEl.value=age<0?0:age;
+    ageEl.readOnly=true;
+    ageEl.style.cssText='background:var(--cream);color:var(--ink-l)';
+  } else {
+    ageEl.readOnly=false;
+    ageEl.style.cssText='';
+  }
+}
 function openNewStudent(){
   document.getElementById('m-student-title').textContent='🦊 Новый ученик';
   document.getElementById('s-id').value='';
-  ['s-first','s-last','s-phone'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('s-age').value='';
+  ['s-first','s-last','s-phone','s-parent','s-dob'].forEach(id=>document.getElementById(id).value='');
+  const ageEl=document.getElementById('s-age');
+  ageEl.value=''; ageEl.readOnly=false; ageEl.style.cssText='';
+  document.getElementById('s-dir').value='';
   document.getElementById('s-del-btn').style.display='none';
   stuTab('info');
   openM('m-student');
@@ -2641,10 +2661,14 @@ function openEditStudent(id){
   const parts=s.name.split(' ');
   document.getElementById('s-first').value=parts[0]||'';
   document.getElementById('s-last').value=parts.slice(1).join(' ')||'';
-  document.getElementById('s-age').value=s.age;
-  document.getElementById('s-dir').value=s.dir;
+  document.getElementById('s-dob').value=s.dob||'';
+  document.getElementById('s-parent').value=s.parentName||'';
+  document.getElementById('s-phone').value=s.phone||'';
+  document.getElementById('s-dir').value=s.dir||'';
   document.getElementById('s-pay').value=s.pay;
   document.getElementById('s-price').value=s.pricePerLesson||0;
+  onDobChange();
+  if(!s.dob) document.getElementById('s-age').value=s.age||'';
   document.getElementById('s-del-btn').style.display='inline-flex';
   stuTab('info');
   openM('m-student');
@@ -2654,9 +2678,13 @@ function saveStudent(){
   const last=document.getElementById('s-last').value.trim();
   if(!first||!last){toast('⚠️ Введите имя и фамилию');return;}
   const id=document.getElementById('s-id').value;
+  const dob=document.getElementById('s-dob').value;
   const obj={
     name:first+' '+last,
+    dob:dob||'',
     age:parseInt(document.getElementById('s-age').value)||0,
+    parentName:document.getElementById('s-parent').value.trim(),
+    phone:document.getElementById('s-phone').value.trim(),
     dir:document.getElementById('s-dir').value,
     group: id ? (students.find(x=>x.id==id)||{}).group||'' : '',
     pay:document.getElementById('s-pay').value,
