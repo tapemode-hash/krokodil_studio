@@ -160,6 +160,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--min
 
 /* ── TABLES ── */
 table{width:100%;border-collapse:collapse}
+.mob-overlay,.mob-menu-sheet,.mob-bottom-nav{display:none}
 th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-l);padding:7px 11px;border-bottom:2px solid var(--cream);white-space:normal;word-break:break-word}
 td{padding:11px 11px;border-bottom:1px solid var(--cream);font-size:13.5px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
@@ -1015,33 +1016,6 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- ══ MOBILE BOTTOM NAV ══ -->
-<!-- ══ MOBILE MENU SHEET ══ -->
-<div class="mob-menu-sheet" id="mob-menu-sheet">
-  <div class="mob-sheet-handle"></div>
-  <div class="mob-sheet-user">
-    <div class="mob-sheet-ava" id="ms-ava">👁️</div>
-    <div>
-      <div class="mob-sheet-name" id="ms-name">Гость</div>
-      <div class="mob-sheet-role" id="ms-role">Просмотр</div>
-    </div>
-  </div>
-  <div class="mob-sheet-label">Главное</div>
-  <button class="mob-sheet-item" onclick="mobNav('dashboard')"><span class="ms-icon">🏠</span>Дашборд</button>
-  <button class="mob-sheet-item" onclick="mobNav('schedule')"><span class="ms-icon">📅</span>Расписание</button>
-  <button class="mob-sheet-item" onclick="mobNav('teachers')"><span class="ms-icon">👩‍🏫</span>Педагоги</button>
-  <button class="mob-sheet-item" onclick="mobNav('gallery')"><span class="ms-icon">🖼️</span>Галерея</button>
-  <button class="mob-sheet-item" id="ms-attendance" onclick="mobNav('attendance')"><span class="ms-icon">✅</span>Посещение</button>
-  <button class="mob-sheet-item" id="ms-students" onclick="mobNav('students')"><span class="ms-icon">👦</span>Ученики</button>
-  <div class="mob-sheet-sep"></div>
-  <div class="mob-sheet-label">Творчество</div>
-  <button class="mob-sheet-item" id="ms-exhibitions" onclick="mobNav('exhibitions')"><span class="ms-icon">🎭</span>Выставки</button>
-  <button class="mob-sheet-item" id="ms-materials" onclick="mobNav('materials')"><span class="ms-icon">🎒</span>Материалы</button>
-  <div class="mob-sheet-sep"></div>
-  <div class="mob-sheet-label" id="ms-finance-label">Финансы</div>
-  <button class="mob-sheet-item" id="ms-payments" onclick="mobNav('payments')"><span class="ms-icon">💰</span>Оплаты</button>
-  <button class="mob-sheet-item" id="ms-reports" onclick="mobNav('reports')"><span class="ms-icon">📊</span>Отчёты</button>
-  <button class="mob-sheet-logout" onclick="logout()">🚪 Выйти из аккаунта</button>
-</div>
 
 <div class="mob-bottom-nav" id="mob-bottom-nav" style="display:none">
   <button class="mob-nav-btn active" id="mbn-dashboard" onclick="mobNav('dashboard')">
