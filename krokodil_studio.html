@@ -1661,14 +1661,15 @@ function resetToDefaults(){
   const keys=['teachers','students','schedule','attendance','enrollments','dateEnrollments',
     'announcements','nextAnnId','subscriptions','lessonCosts','teacherReviews',
     'nextTId','nextSId','nextScId','globalLessonPrice'];
-  keys.forEach(k=>localStorage.removeItem('krokodil_'+k));
+  keys.forEach(k=>localStorage.removeItem(LS+k));
   teachers=JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
   students=JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
   schedule=JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
-  attendance={}; enrollments={}; dateEnrollments={};
+  attendance={}; enrollments=JSON.parse(JSON.stringify(DEFAULT_ENROLLMENTS)); dateEnrollments={};
   subscriptions={}; lessonCosts={}; teacherReviews={};
-  nextTId=4; nextSId=7; nextScId=27;
+  nextTId=4; nextSId=1411; nextScId=37;
   globalLessonPrice=500;
+  lsSave('dataVersion', DATA_VERSION);
   announcements=[
     {id:1,type:'event',title:'Выставка «Весна в Крокодиле»',body:'Приглашаем всех на открытие выставки 1 мая в Городском культурном центре.',date:'1 мая',createdAt:'2025-04-20'},
     {id:2,type:'pin',  title:'Майские каникулы',body:'С 1 по 5 мая занятия не проводятся. Студия возобновляет работу 6 мая.',date:'1–5 мая',createdAt:'2025-04-18'},
@@ -3213,6 +3214,23 @@ let teacherReviews = lsLoad('teacherReviews', {});
 let nextTId    = lsLoad('nextTId', 4);
 let nextSId    = lsLoad('nextSId', 1411);
 let nextScId   = lsLoad('nextScId', 37);
+
+// Data version migration: force-reload real data if stored version is outdated
+const DATA_VERSION = 2;
+if(lsLoad('dataVersion', 0) < DATA_VERSION){
+  students    = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+  schedule    = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  enrollments = JSON.parse(JSON.stringify(DEFAULT_ENROLLMENTS));
+  nextSId  = 1411;
+  nextScId = 37;
+  lsSave('students', students);
+  lsSave('schedule', schedule);
+  lsSave('enrollments', enrollments);
+  lsSave('nextSId', nextSId);
+  lsSave('nextScId', nextScId);
+  lsSave('dataVersion', DATA_VERSION);
+}
+
 let currentRole = 'guest';
 let selectedRole = 'guest';
 const ADMIN_PW  = 'krokodil2025';
