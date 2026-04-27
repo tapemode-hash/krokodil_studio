@@ -1676,7 +1676,7 @@ function persist(){
   lsSave('photos', photos);
   lsSave('nextPhotoId', nextPhotoId);
   showSaved();
-  syncToSupabase();
+  syncToFirebase();
 }
 
 function resetToDefaults(){
@@ -5647,11 +5647,9 @@ document.addEventListener('keydown', e=>{
 });
 
 // ══════════════════════════════════════════════════════════════
-//  SUPABASE SYNC  (прямые fetch-запросы, без CDN)
+//  FIREBASE SYNC  (прямые fetch-запросы, без CDN)
 // ══════════════════════════════════════════════════════════════
-const SUPA_URL = 'https://ryoyihzwezxoeyoibvmk.supabase.co';
-const SUPA_KEY = 'sb_publishable_bMsy5LojLuDSh77MkkmqrQ_rPcJ677W';
-const SUPA_H   = {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
   'dateEnrollments','announcements','nextAnnId','subscriptions','lessonCosts',
@@ -5679,47 +5677,45 @@ function loadStateFromStorage(){
   invalidateAttCache();
 }
 
-async function syncFromSupabase(){
+async function syncFromFirebase(){
   try {
-    const res = await fetch(SUPA_URL+'/rest/v1/app_state?select=key,value', {headers: SUPA_H});
-    if(!res.ok){ console.error('[Supabase] Ошибка загрузки:', res.status, res.statusText); return false; }
+    const res = await fetch(FB_URL + '.json');
+    if(!res.ok){ console.error('[Firebase] Ошибка загрузки:', res.status); return false; }
     const data = await res.json();
-    if(!Array.isArray(data) || !data.length){ console.warn('[Supabase] Таблица пуста или не создана'); return false; }
-    data.forEach(row => { if(row.key !== '_ts') lsSave(row.key, row.value); });
-    const tsRow = data.find(r => r.key === '_ts');
-    if(tsRow) lsSave('_supaTs', tsRow.value);
-    console.log('[Supabase] Загружено', data.length, 'записей');
+    if(!data){ console.warn('[Firebase] База пуста'); return false; }
+    SYNC_KEYS.forEach(k => { if(data[k] !== undefined) lsSave(k, data[k]); });
+    if(data._ts) lsSave('_fbTs', data._ts);
+    console.log('[Firebase] Загружено успешно');
     return true;
-  } catch(e){ console.error('[Supabase] Исключение при загрузке:', e); return false; }
+  } catch(e){ console.error('[Firebase] Исключение при загрузке:', e); return false; }
 }
 
-async function syncToSupabase(){
+async function syncToFirebase(){
   try {
-    const ts   = Date.now();
-    const rows = SYNC_KEYS.map(k => ({key:k, value:lsLoad(k,null)})).filter(r=>r.value!==null);
-    rows.push({key:'_ts', value:ts});
-    const res = await fetch(SUPA_URL+'/rest/v1/app_state', {
-      method:'POST',
-      headers:{...SUPA_H, 'Prefer':'resolution=merge-duplicates'},
-      body: JSON.stringify(rows)
+    const payload = {};
+    SYNC_KEYS.forEach(k => { const v = lsLoad(k, null); if(v !== null) payload[k] = v; });
+    payload._ts = Date.now();
+    const res = await fetch(FB_URL + '.json', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
     });
-    if(!res.ok){ const t=await res.text(); console.error('[Supabase] Ошибка сохранения:', res.status, t); }
-    else { lsSave('_supaTs', ts); console.log('[Supabase] Сохранено', rows.length, 'записей'); }
-  } catch(e){ console.error('[Supabase] Исключение при сохранении:', e); }
+    if(!res.ok){ console.error('[Firebase] Ошибка сохранения:', res.status); }
+    else { lsSave('_fbTs', payload._ts); console.log('[Firebase] Сохранено успешно'); }
+  } catch(e){ console.error('[Firebase] Исключение при сохранении:', e); }
 }
 
-let _supaPolling = null;
-function startSupabasePolling(){
-  if(_supaPolling) return;
-  _supaPolling = setInterval(async () => {
+let _fbPolling = null;
+function startFirebasePolling(){
+  if(_fbPolling) return;
+  _fbPolling = setInterval(async () => {
     try {
-      const res = await fetch(SUPA_URL+'/rest/v1/app_state?select=value&key=eq._ts', {headers: SUPA_H});
+      const res = await fetch(FB_URL + '/_ts.json');
       if(!res.ok) return;
-      const data = await res.json();
-      const remoteTs = data?.[0]?.value || 0;
-      const localTs  = lsLoad('_supaTs', 0);
+      const remoteTs = await res.json() || 0;
+      const localTs  = lsLoad('_fbTs', 0);
       if(remoteTs > localTs){
-        const ok = await syncFromSupabase();
+        const ok = await syncFromFirebase();
         if(ok){ loadStateFromStorage(); renderAll(); toast('🔄 Данные обновлены'); }
       }
     } catch(e){}
@@ -5729,10 +5725,10 @@ function startSupabasePolling(){
 window.onload=()=>{
   document.getElementById('login-screen').classList.remove('hidden');
   renderAll();
-  syncFromSupabase().then(synced => {
+  syncFromFirebase().then(synced => {
     if(synced){ loadStateFromStorage(); renderAll(); }
   });
-  startSupabasePolling();
+  startFirebasePolling();
 };
 </script>
 </body>
