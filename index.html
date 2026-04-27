@@ -974,6 +974,39 @@ body.is-admin .ann-input-area{display:block}
   </div>
 </div>
 
+<!-- Request modal (for parents) -->
+<div class="modal-overlay" id="m-request">
+  <div class="modal">
+    <button class="modal-close" onclick="closeM('m-request')">✕</button>
+    <div class="modal-title">📝 Запись на занятие</div>
+    <div id="m-request-form">
+      <div class="form-group"><label class="form-label">Имя ребёнка *</label><input class="form-input" id="req-child-name" placeholder="Имя и фамилия"></div>
+      <div style="display:flex;gap:10px">
+        <div class="form-group" style="flex:1"><label class="form-label">Дата рождения</label><input class="form-input" id="req-dob" type="date" onchange="reqDobChange()"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">Возраст</label><input class="form-input" id="req-age" type="number" min="1" max="18" placeholder="лет"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Имя родителя *</label><input class="form-input" id="req-parent-name" placeholder="Ваше имя и фамилия"></div>
+      <div class="form-group"><label class="form-label">Телефон *</label><input class="form-input" id="req-phone" type="tel" placeholder="+7 (___) ___-__-__"></div>
+      <div class="form-group"><label class="form-label">Интересующее направление</label>
+        <select class="form-select" id="req-direction">
+          <option value="">— не выбрано —</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Комментарий</label><textarea class="form-input" id="req-comment" rows="2" placeholder="Дополнительная информация..." style="resize:vertical"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeM('m-request')">Отмена</button>
+        <button class="btn btn-primary" onclick="submitRequest()">Отправить заявку</button>
+      </div>
+    </div>
+    <div id="m-request-success" style="display:none;text-align:center;padding:24px 0">
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <div style="font-family:'Caveat',cursive;font-size:22px;font-weight:700;margin-bottom:8px">Заявка отправлена!</div>
+      <div style="font-size:13px;color:var(--ink-l);margin-bottom:20px">Мы свяжемся с вами в ближайшее время для уточнения деталей.</div>
+      <button class="btn btn-primary" onclick="closeM('m-request')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <!-- Achievement modal -->
 <div class="modal-overlay" id="m-achievement">
   <div class="modal">
@@ -1174,6 +1207,14 @@ body.is-admin .ann-input-area{display:block}
             <button class="btn btn-primary admin-only" onclick="openNewStudent()">+ Ученик</button>
           </div>
         </div>
+        <!-- REQUESTS BOARD -->
+        <div id="requests-board" style="display:none;margin-bottom:18px">
+          <div class="ann-header">
+            <div class="ann-title">📝 Заявки на запись <span id="req-count-badge" class="badge" style="background:var(--coral);color:white;margin-left:6px"></span></div>
+          </div>
+          <div id="req-list-admin"></div>
+        </div>
+
         <!-- ANNOUNCEMENTS BOARD -->
         <div class="ann-board" id="ann-board-admin">
           <div class="ann-header">
@@ -1249,6 +1290,16 @@ body.is-admin .ann-input-area{display:block}
         <div class="ann-board" style="margin-bottom:18px">
           <div class="ann-header"><div class="ann-title">📢 Объявления студии</div></div>
           <div class="ann-list" id="ann-list-parent"></div>
+        </div>
+
+        <!-- ENROLLMENT CTA -->
+        <div style="background:linear-gradient(135deg,var(--lav),#c8b8f8);border-radius:18px;padding:20px 22px;margin-bottom:18px;display:flex;align-items:center;gap:16px">
+          <div style="font-size:36px">📝</div>
+          <div style="flex:1">
+            <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">Записать ребёнка</div>
+            <div style="font-size:13px;opacity:.85;margin-top:2px">Заполните форму — мы свяжемся и подберём удобное время</div>
+          </div>
+          <button class="btn" style="background:white;color:var(--lav-d);font-weight:700;white-space:nowrap" onclick="openRequestForm()">Подать заявку</button>
         </div>
 
         <!-- TODAY'S CLASSES for parents -->
@@ -1702,6 +1753,8 @@ function persist(){
   lsSave('nextPhotoId', nextPhotoId);
   lsSave('achievements', achievements);
   lsSave('nextAchId', nextAchId);
+  lsSave('requests', requests);
+  lsSave('nextReqId', nextReqId);
   showSaved();
   syncToFirebase();
 }
@@ -3258,6 +3311,8 @@ let achievements = lsLoad('achievements', [
   {id:4, medal:'🎨', name:'Выставка «Весна»',            student:'5 учеников',     date:'10 апр'},
 ]);
 let nextAchId = lsLoad('nextAchId', 5);
+let requests  = lsLoad('requests', []);
+let nextReqId = lsLoad('nextReqId', 1);
 // subscriptions: { studentId: [{id, groupName, total, used, price, createdAt}, ...] }
 let subscriptions = lsLoad('subscriptions', {});
 // lessonCosts: { 'YYYY-MM-DD': { studentId: cost } }
@@ -3514,6 +3569,7 @@ function showSaved(){
 function renderAll(){
   renderAnnouncements();
   renderAchievements();
+  renderRequests();
   renderDashboard();
   if(currentPage==='students')  renderStudents();
   else if(currentPage==='schedule')  renderSchedule();
@@ -3872,6 +3928,123 @@ function dateCalNext(){
 // ══════════════════════════════════════════════════════════════
 //  ANNOUNCEMENTS
 // ══════════════════════════════════════════════════════════════
+// ── REQUESTS ──────────────────────────────────────────────────
+function openRequestForm(){
+  document.getElementById('m-request-form').style.display = '';
+  document.getElementById('m-request-success').style.display = 'none';
+  document.getElementById('req-child-name').value = '';
+  document.getElementById('req-dob').value = '';
+  document.getElementById('req-age').value = '';
+  document.getElementById('req-parent-name').value = '';
+  document.getElementById('req-phone').value = '';
+  document.getElementById('req-comment').value = '';
+  // populate directions from schedule
+  const sel = document.getElementById('req-direction');
+  sel.innerHTML = '<option value="">— не выбрано —</option>' +
+    schedule.filter(sc=>sc.status==='Активна').map(sc=>`<option value="${sc.name}">${sc.name} (${sc.days}, ${sc.time})</option>`).join('');
+  openM('m-request');
+}
+
+function reqDobChange(){
+  const dob = document.getElementById('req-dob').value;
+  if(!dob) return;
+  const age = Math.floor((new Date() - new Date(dob)) / (365.25*24*3600*1000));
+  document.getElementById('req-age').value = age;
+}
+
+function submitRequest(){
+  const childName  = document.getElementById('req-child-name').value.trim();
+  const parentName = document.getElementById('req-parent-name').value.trim();
+  const phone      = document.getElementById('req-phone').value.trim();
+  if(!childName)  { toast('⚠️ Введите имя ребёнка'); return; }
+  if(!parentName) { toast('⚠️ Введите имя родителя'); return; }
+  if(!phone)      { toast('⚠️ Введите телефон'); return; }
+  const req = {
+    id: nextReqId++,
+    status: 'pending',
+    childName,
+    dob:       document.getElementById('req-dob').value,
+    age:       +document.getElementById('req-age').value || null,
+    parentName,
+    phone,
+    direction: document.getElementById('req-direction').value,
+    comment:   document.getElementById('req-comment').value.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  requests.push(req);
+  persist(); renderRequests();
+  document.getElementById('m-request-form').style.display = 'none';
+  document.getElementById('m-request-success').style.display = '';
+}
+
+function renderRequests(){
+  const pending = requests.filter(r=>r.status==='pending');
+  const board = document.getElementById('requests-board');
+  const list  = document.getElementById('req-list-admin');
+  const badge = document.getElementById('req-count-badge');
+  if(!board) return;
+  if(!pending.length){ board.style.display='none'; return; }
+  board.style.display = '';
+  if(badge) badge.textContent = pending.length;
+  const RU_MONTHS=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  if(list) list.innerHTML = pending.map(r=>{
+    const d = new Date(r.createdAt);
+    const dateStr = `${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
+    return `<div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--coral)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:15px">${r.childName}${r.age?` · ${r.age} лет`:''}</div>
+          <div style="font-size:12px;color:var(--ink-l);margin-top:3px">
+            👨‍👩‍👧 ${r.parentName} · 📞 <a href="tel:${r.phone}" style="color:var(--lav-d)">${r.phone}</a>
+          </div>
+          ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${r.direction}</div>`:''}
+          ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${r.comment}</div>`:''}
+          <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Поступила: ${dateStr}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button class="btn btn-green btn-sm" onclick="approveRequest(${r.id})">✅ Принять</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--coral);border-color:var(--coral)" onclick="rejectRequest(${r.id})">✗ Отклонить</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function approveRequest(id){
+  const r = requests.find(x=>x.id===id);
+  if(!r) return;
+  // create student from request
+  const COLORS=['#FFDAB9','#B5EAD7','#C7CEEA','#FFB7B2','#FFDAC1','#E2F0CB','#B5D8EB'];
+  const EMOJIS=['🎨','🖌️','✏️','🌟','🎭','🦋','🌈','🐊'];
+  const newS = {
+    id: nextSId++,
+    name: r.childName,
+    age: r.age || '',
+    dob: r.dob || '',
+    parent: r.parentName,
+    phone: r.phone,
+    dir: r.direction || '',
+    group: '',
+    status: 'active',
+    pay: 'paid',
+    pricePerLesson: 0,
+    color: COLORS[nextSId % COLORS.length],
+    emoji: EMOJIS[nextSId % EMOJIS.length],
+  };
+  students.push(newS);
+  r.status = 'approved';
+  persist(); renderRequests(); invalidateAttCache();
+  toast(`✅ Ученик ${r.childName} добавлен`);
+}
+
+function rejectRequest(id){
+  if(!confirm('Отклонить заявку?')) return;
+  const r = requests.find(x=>x.id===id);
+  if(r) r.status = 'rejected';
+  persist(); renderRequests();
+  toast('✗ Заявка отклонена');
+}
+
 // ── ACHIEVEMENTS ──────────────────────────────────────────────
 function renderAchievements(){
   const isAdmin = currentRole === 'admin';
@@ -5783,7 +5956,8 @@ const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
   'dateEnrollments','announcements','nextAnnId','subscriptions','lessonCosts',
   'globalLessonPrice','teacherReviews','photos','nextPhotoId',
-  'achievements','nextAchId','nextTId','nextSId','nextScId','dataVersion'];
+  'achievements','nextAchId','requests','nextReqId',
+  'nextTId','nextSId','nextScId','dataVersion'];
 
 function loadStateFromStorage(){
   teachers          = lsLoad('teachers',          DEFAULT_TEACHERS);
@@ -5802,6 +5976,8 @@ function loadStateFromStorage(){
   nextPhotoId       = lsLoad('nextPhotoId',       1);
   achievements      = lsLoad('achievements',      []);
   nextAchId         = lsLoad('nextAchId',         5);
+  requests          = lsLoad('requests',          []);
+  nextReqId         = lsLoad('nextReqId',         1);
   nextTId           = lsLoad('nextTId',           4);
   nextSId           = lsLoad('nextSId',           1411);
   nextScId          = lsLoad('nextScId',          37);
