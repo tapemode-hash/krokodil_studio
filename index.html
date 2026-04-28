@@ -185,6 +185,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--min
 .cal-d.today{background:var(--coral);color:white;font-family:'Caveat',cursive;font-size:15px}
 .cal-d.has::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--mint-d);position:absolute;bottom:2px;left:50%;transform:translateX(-50%)}
 .cal-d.om{color:#CCC}
+.cal-d.selected{background:var(--lav);color:var(--lav-d);font-weight:700}
 
 /* ── ACHIEVEMENTS ── */
 .ach-list{display:flex;flex-direction:column;gap:9px}
@@ -1280,7 +1281,7 @@ body.is-admin .ann-input-area{display:block}
         </div>
         <div class="content-grid">
           <div class="card">
-            <div class="card-title">🗓️ Занятия сегодня <span class="live-badge" id="dash-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+            <div class="card-title">🗓️ <span id="dash-today-label">Занятия сегодня</span> <span class="live-badge" id="dash-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
             <div class="sch-list" id="dash-today-list"></div>
           </div>
           <div class="card">
@@ -1321,7 +1322,7 @@ body.is-admin .ann-input-area{display:block}
             </div>
             <div class="contact-card hours" style="cursor:default">
               <div class="cc-icon">🕐</div>
-              <div><div class="cc-label">Режим работы</div><div class="cc-val">Пн–Сб, 9:00–20:00</div></div>
+              <div><div class="cc-label">Режим работы</div><div class="cc-val" id="working-hours-val">—</div></div>
             </div>
           </div>
         </div>
@@ -1480,7 +1481,7 @@ body.is-admin .ann-input-area{display:block}
             </div>
             <div class="contact-card hours" style="cursor:default">
               <div class="cc-icon">🕐</div>
-              <div><div class="cc-label">Режим работы</div><div class="cc-val">Пн–Сб, 9:00–20:00</div></div>
+              <div><div class="cc-label">Режим работы</div><div class="cc-val" id="working-hours-val">—</div></div>
             </div>
           </div>
         </div>
@@ -3625,10 +3626,46 @@ function showSaved(){
 // ══════════════════════════════════════════════════════════════
 //  RENDER ALL
 // ══════════════════════════════════════════════════════════════
+function renderWorkingHours(){
+  const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
+  const DAY_ORDER=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const dayTimes={};
+  schedule.forEach(sc=>{
+    if(sc.status==='Завершена') return;
+    const [startStr,endStr]=(sc.time||'').split('–');
+    const start=timeToMin(startStr), end=timeToMin(endStr||startStr);
+    if(isNaN(start)) return;
+    sc.days.split(',').forEach(d=>{
+      const day=d.trim();
+      if(!dayTimes[day]) dayTimes[day]={start:999,end:0};
+      dayTimes[day].start=Math.min(dayTimes[day].start,start);
+      dayTimes[day].end  =Math.max(dayTimes[day].end,  end);
+    });
+  });
+  const activeDays=DAY_ORDER.filter(d=>dayTimes[d]);
+  let str='Нет активных занятий';
+  if(activeDays.length){
+    const minStart=Math.min(...activeDays.map(d=>dayTimes[d].start));
+    const maxEnd  =Math.max(...activeDays.map(d=>dayTimes[d].end));
+    const fmt=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+    // compact consecutive days
+    const groups=[];let run=[activeDays[0]];
+    for(let i=1;i<activeDays.length;i++){
+      if(DAY_ORDER.indexOf(activeDays[i])===DAY_ORDER.indexOf(activeDays[i-1])+1) run.push(activeDays[i]);
+      else{ groups.push(run); run=[activeDays[i]]; }
+    }
+    groups.push(run);
+    const daysStr=groups.map(g=>g.length>2?g[0]+'–'+g[g.length-1]:g.join(', ')).join(', ');
+    str=`${daysStr} · ${fmt(minStart)}–${fmt(maxEnd)}`;
+  }
+  document.querySelectorAll('#working-hours-val').forEach(el=>{ if(el) el.textContent=str; });
+}
+
 function renderAll(){
   renderAnnouncements();
   renderAchievements();
   renderRequests();
+  renderWorkingHours();
   renderDashboard();
   if(currentPage==='students')  renderStudents();
   else if(currentPage==='schedule')  renderSchedule();
@@ -3712,23 +3749,25 @@ function timeToMin(t){
 // Get dot color for a schedule entry (cycle through palette)
 const DOT_COLORS=['var(--mint-d)','var(--coral)','var(--lav-d)','var(--sky-d)','var(--yel-d)','#4CAF50','#FF9800'];
 
-function renderTodayList(elId, liveElId){
+function renderTodayList(elId, liveElId, dateKey){
   const el=document.getElementById(elId); if(!el)return;
   const now=new Date();
   const nowMin=now.getHours()*60+now.getMinutes();
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
-  const todayDow=now.getDay();
+  const targetDate = dateKey ? new Date(dateKey+'T12:00:00') : now;
+  const targetDow  = targetDate.getDay();
+  const isToday    = fmtDate(targetDate) === fmtDate(now);
 
   const todayItems=[];
   schedule.forEach(sc=>{
     if(sc.status==='Завершена')return;
     sc.days.split(',').forEach(d=>{
-      if(DAY_MAP[d.trim()]===todayDow) todayItems.push(sc);
+      if(DAY_MAP[d.trim()]===targetDow) todayItems.push(sc);
     });
   });
   todayItems.sort((a,b)=>timeToMin(a.time)-timeToMin(b.time));
 
-  const anyLive=todayItems.some(sc=>{
+  const anyLive=isToday&&todayItems.some(sc=>{
     const [startStr,endStr]=(sc.time||'').split('–');
     const start=timeToMin(startStr), end=timeToMin(endStr||startStr)+90;
     return nowMin>=start && nowMin<end;
@@ -3737,7 +3776,7 @@ function renderTodayList(elId, liveElId){
   if(liveEl)liveEl.style.display=anyLive?'inline-flex':'none';
 
   if(!todayItems.length){
-    el.innerHTML=`<div style="color:var(--ink-l);font-size:13px;padding:14px;text-align:center">Сегодня занятий нет</div>`;
+    el.innerHTML=`<div style="color:var(--ink-l);font-size:13px;padding:14px;text-align:center">В этот день занятий нет</div>`;
     return;
   }
 
@@ -3745,8 +3784,8 @@ function renderTodayList(elId, liveElId){
     const [startStr,endStr]=(sc.time||'').split('–');
     const start=timeToMin(startStr);
     const end=timeToMin(endStr||startStr)+90;
-    const isNow=nowMin>=start && nowMin<end;
-    const isDone=nowMin>=end;
+    const isNow=isToday&&nowMin>=start&&nowMin<end;
+    const isDone=isToday&&nowMin>=end;
     const color=DOT_COLORS[i%DOT_COLORS.length];
 
     let tagHtml;
@@ -3770,7 +3809,18 @@ function renderTodayList(elId, liveElId){
 }
 
 function renderTodaySchedule(){
-  renderTodayList('dash-today-list','dash-live-badge');
+  const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const todayKey=fmtDate(new Date());
+  const labelEl=document.getElementById('dash-today-label');
+  if(labelEl){
+    if(_calSelectedDate===todayKey){
+      labelEl.textContent='Занятия сегодня';
+    } else {
+      const d=new Date(_calSelectedDate+'T12:00:00');
+      labelEl.textContent=`Занятия ${d.getDate()} ${RU_MON[d.getMonth()]}`;
+    }
+  }
+  renderTodayList('dash-today-list','dash-live-badge',_calSelectedDate);
 }
 
 function renderParentUpcoming(){
@@ -3806,9 +3856,16 @@ function renderParentUpcoming(){
   }).join('')||`<div style="color:var(--ink-l);font-size:13px;padding:10px">Нет занятий в ближайшие 2 недели</div>`;
 }
 
+let _calSelectedDate = fmtDate(new Date());
+
+function calSelectDate(dateKey){
+  _calSelectedDate = dateKey;
+  renderMiniCal();
+  renderTodaySchedule();
+}
+
 function renderMiniCal(){
   const el=document.getElementById('mini-cal'); if(!el)return;
-  // Build set of days-of-week that have active classes
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
   const activeDows=new Set();
   schedule.forEach(sc=>{
@@ -3819,31 +3876,27 @@ function renderMiniCal(){
 
   const now=new Date();
   const year=now.getFullYear(), month=now.getMonth();
-  const todayDate=now.getDate();
-  // First day of month (0=Sun)
+  const todayKey=fmtDate(now);
   const firstDow=new Date(year,month,1).getDay();
-  // Mon-based offset: Mon=0
   const offset=(firstDow+6)%7;
   const daysInMonth=new Date(year,month+1,0).getDate();
   const daysInPrevMonth=new Date(year,month,0).getDate();
   const RU_DN=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   const RU_MON=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-  // Update title
   const titleEl=document.getElementById('mini-cal-title');
   if(titleEl)titleEl.textContent=RU_MON[month]+' '+year;
 
   let html=RU_DN.map(d=>`<div class="cal-dn">${d}</div>`).join('');
-  // prev month tail
   for(let i=offset-1;i>=0;i--) html+=`<div class="cal-d om">${daysInPrevMonth-i}</div>`;
-  // current month
   for(let i=1;i<=daysInMonth;i++){
     const dow=new Date(year,month,i).getDay();
     const hasClass=activeDows.has(dow);
-    const isToday=i===todayDate;
-    html+=`<div class="cal-d${isToday?' today':''}${hasClass&&!isToday?' has':''}">${i}</div>`;
+    const key=`${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+    const isToday=key===todayKey;
+    const isSelected=key===_calSelectedDate&&!isToday;
+    html+=`<div class="cal-d${isToday?' today':''}${isSelected?' selected':''}${hasClass&&!isToday&&!isSelected?' has':''}" onclick="calSelectDate('${key}')">${i}</div>`;
   }
-  // next month head
   const total=offset+daysInMonth;
   const remaining=(7-total%7)%7;
   for(let i=1;i<=remaining;i++) html+=`<div class="cal-d om">${i}</div>`;
