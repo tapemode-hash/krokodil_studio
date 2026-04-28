@@ -1351,10 +1351,16 @@ body.is-admin .ann-input-area{display:block}
           <button class="btn" style="background:white;color:var(--lav-d);font-weight:700;white-space:nowrap" onclick="openRequestForm()">Подать заявку</button>
         </div>
 
-        <!-- TODAY'S CLASSES for parents -->
-        <div class="card" style="margin-bottom:18px">
-          <div class="card-title">🗓️ Занятия сегодня <span class="live-badge" id="parent-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
-          <div class="sch-list" id="parent-today-list"></div>
+        <!-- TODAY'S CLASSES + CALENDAR for parents -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px">
+          <div class="card">
+            <div class="card-title">📅 <span id="mini-cal-title-parent">Календарь</span></div>
+            <div class="cal-grid" id="mini-cal-parent"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">🗓️ <span id="parent-today-label">Занятия сегодня</span> <span class="live-badge" id="parent-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+            <div class="sch-list" id="parent-today-list"></div>
+          </div>
         </div>
 
         <!-- NEWS + SCHEDULE grid -->
@@ -1436,10 +1442,16 @@ body.is-admin .ann-input-area{display:block}
           <div class="stat-card peach"><span class="stat-icon">🎨</span><div class="stat-value">5</div><div class="stat-label">Направлений</div></div>
         </div>
 
-        <!-- TODAY'S CLASSES for guests -->
-        <div class="card" style="margin-bottom:22px">
-          <div class="card-title">🗓️ Занятия сегодня <span class="live-badge" id="guest-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
-          <div class="sch-list" id="guest-today-list"></div>
+        <!-- TODAY'S CLASSES + CALENDAR for guests -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px">
+          <div class="card">
+            <div class="card-title">📅 <span id="mini-cal-title-guest">Календарь</span></div>
+            <div class="cal-grid" id="mini-cal-guest"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">🗓️ <span id="guest-today-label">Занятия сегодня</span> <span class="live-badge" id="guest-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+            <div class="sch-list" id="guest-today-list"></div>
+          </div>
         </div>
 
         <!-- ENROLLMENT CTA -->
@@ -3722,7 +3734,9 @@ function renderDashboard(){
     const activeGroups=schedule.filter(s=>s.status==='Активна').length;
     const gEl=document.getElementById('guest-stat-groups'); if(gEl)gEl.textContent=activeGroups||'—';
     const tEl=document.getElementById('guest-stat-teachers'); if(tEl)tEl.textContent=teachers.length||'—';
-    renderTodayList('guest-today-list','guest-live-badge');
+    renderMiniCal();
+    updateTodayLabel('guest-today-label', _calSelectedDate);
+    renderTodayList('guest-today-list','guest-live-badge', _calSelectedDate);
   }
 
   if(currentRole==='parent'){
@@ -3735,7 +3749,9 @@ function renderDashboard(){
       badge.className='badge '+(s.pay==='paid'?'green':s.pay==='debt'?'red':'yellow');
     }
     renderParentUpcoming();
-    renderTodayList('parent-today-list','parent-live-badge');
+    renderMiniCal();
+    updateTodayLabel('parent-today-label', _calSelectedDate);
+    renderTodayList('parent-today-list','parent-live-badge', _calSelectedDate);
   }
 }
 
@@ -3809,17 +3825,7 @@ function renderTodayList(elId, liveElId, dateKey){
 }
 
 function renderTodaySchedule(){
-  const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  const todayKey=fmtDate(new Date());
-  const labelEl=document.getElementById('dash-today-label');
-  if(labelEl){
-    if(_calSelectedDate===todayKey){
-      labelEl.textContent='Занятия сегодня';
-    } else {
-      const d=new Date(_calSelectedDate+'T12:00:00');
-      labelEl.textContent=`Занятия ${d.getDate()} ${RU_MON[d.getMonth()]}`;
-    }
-  }
+  updateTodayLabel('dash-today-label', _calSelectedDate);
   renderTodayList('dash-today-list','dash-live-badge',_calSelectedDate);
 }
 
@@ -3858,14 +3864,27 @@ function renderParentUpcoming(){
 
 let _calSelectedDate = fmtDate(new Date());
 
+function updateTodayLabel(labelId, dateKey){
+  const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const el=document.getElementById(labelId); if(!el)return;
+  if(dateKey===fmtDate(new Date())){ el.textContent='Занятия сегодня'; }
+  else { const d=new Date(dateKey+'T12:00:00'); el.textContent=`Занятия ${d.getDate()} ${RU_MON[d.getMonth()]}`; }
+}
+
 function calSelectDate(dateKey){
   _calSelectedDate = dateKey;
   renderMiniCal();
-  renderTodaySchedule();
+  if(currentRole==='admin') renderTodaySchedule();
+  else if(currentRole==='parent'){
+    updateTodayLabel('parent-today-label', dateKey);
+    renderTodayList('parent-today-list','parent-live-badge', dateKey);
+  } else {
+    updateTodayLabel('guest-today-label', dateKey);
+    renderTodayList('guest-today-list','guest-live-badge', dateKey);
+  }
 }
 
 function renderMiniCal(){
-  const el=document.getElementById('mini-cal'); if(!el)return;
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
   const activeDows=new Set();
   schedule.forEach(sc=>{
@@ -3884,8 +3903,10 @@ function renderMiniCal(){
   const RU_DN=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   const RU_MON=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-  const titleEl=document.getElementById('mini-cal-title');
-  if(titleEl)titleEl.textContent=RU_MON[month]+' '+year;
+  const monthTitle=RU_MON[month]+' '+year;
+  ['mini-cal-title','mini-cal-title-guest','mini-cal-title-parent'].forEach(id=>{
+    const t=document.getElementById(id); if(t) t.textContent=monthTitle;
+  });
 
   let html=RU_DN.map(d=>`<div class="cal-dn">${d}</div>`).join('');
   for(let i=offset-1;i>=0;i--) html+=`<div class="cal-d om">${daysInPrevMonth-i}</div>`;
@@ -3900,7 +3921,10 @@ function renderMiniCal(){
   const total=offset+daysInMonth;
   const remaining=(7-total%7)%7;
   for(let i=1;i<=remaining;i++) html+=`<div class="cal-d om">${i}</div>`;
-  el.innerHTML=html;
+
+  ['mini-cal','mini-cal-guest','mini-cal-parent'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=html;
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -6068,8 +6092,8 @@ function startClock(){
   // Refresh today's schedule every 60 seconds so "Идёт/Было/Скоро" stays accurate
   _clockInterval=setInterval(()=>{
     if(currentRole==='admin') renderTodaySchedule();
-    else if(currentRole==='parent') renderTodayList('parent-today-list','parent-live-badge');
-    else if(currentRole==='guest') renderTodayList('guest-today-list','guest-live-badge');
+    else if(currentRole==='parent'){ updateTodayLabel('parent-today-label',_calSelectedDate); renderTodayList('parent-today-list','parent-live-badge',_calSelectedDate); }
+    else if(currentRole==='guest'){ updateTodayLabel('guest-today-label',_calSelectedDate); renderTodayList('guest-today-list','guest-live-badge',_calSelectedDate); }
   }, 60000);
 }
 
