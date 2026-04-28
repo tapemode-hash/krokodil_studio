@@ -5047,7 +5047,11 @@ function renderAttendance(){
     };
 
     let html='';
-    for(const {sc, students:gs} of groupMap.values()){
+    const sortedGroups = [...groupMap.values()].sort((a,b)=>{
+      const t = sc => (sc.time||'').replace(/[–-].*/,'').trim();
+      return t(a.sc).localeCompare(t(b.sc));
+    });
+    for(const {sc, students:gs} of sortedGroups){
       html+=`<div class="att-group-hdr">${sc.name}<span>${[sc.time,sc.teacher].filter(Boolean).join(' · ')}</span></div>`;
       html+=gs.map(studentRow).join('');
     }
