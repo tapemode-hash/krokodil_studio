@@ -3749,7 +3749,7 @@ function renderDashboard(){
       badge.textContent=s.pay==='paid'?'✓ Оплачено':s.pay==='debt'?'✗ Долг':'~ Частично';
       badge.className='badge '+(s.pay==='paid'?'green':s.pay==='debt'?'red':'yellow');
     }
-    renderParentUpcoming();
+    try{ renderParentUpcoming(); }catch(e){ console.error('renderParentUpcoming:', e); }
     renderMiniCal();
     updateTodayLabel('parent-today-label', _calSelectedDate);
     renderTodayList('parent-today-list','parent-live-badge', _calSelectedDate);
@@ -3840,7 +3840,7 @@ function renderParentUpcoming(){
   for(let d=0;d<14;d++){
     const dt=new Date(today); dt.setDate(today.getDate()+d);
     schedule.forEach(sc=>{
-      if(sc.status!=='Активна')return;
+      if(sc.status!=='Активна'||!sc.days)return;
       sc.days.split(',').forEach(day=>{
         if(DAY_MAP[day.trim()]===dt.getDay()) upcoming.push({sc,dt:new Date(dt)});
       });
