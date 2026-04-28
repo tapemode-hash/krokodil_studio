@@ -1351,16 +1351,16 @@ body.is-admin .ann-input-area{display:block}
           <button class="btn" style="background:white;color:var(--lav-d);font-weight:700;white-space:nowrap" onclick="openRequestForm()">Подать заявку</button>
         </div>
 
-        <!-- TODAY'S CLASSES + CALENDAR for parents -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px">
-          <div class="card">
-            <div class="card-title">📅 <span id="mini-cal-title-parent">Календарь</span></div>
-            <div class="cal-grid" id="mini-cal-parent"></div>
-          </div>
-          <div class="card">
-            <div class="card-title">🗓️ <span id="parent-today-label">Занятия сегодня</span> <span class="live-badge" id="parent-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
-            <div class="sch-list" id="parent-today-list"></div>
-          </div>
+        <!-- TODAY'S CLASSES for parents -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-title">🗓️ <span id="parent-today-label">Занятия сегодня</span> <span class="live-badge" id="parent-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+          <div class="sch-list" id="parent-today-list"></div>
+        </div>
+
+        <!-- CALENDAR for parents -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-title">📅 <span id="mini-cal-title-parent">Календарь</span></div>
+          <div class="cal-grid" id="mini-cal-parent"></div>
         </div>
 
         <!-- NEWS + SCHEDULE grid -->
@@ -1442,15 +1442,21 @@ body.is-admin .ann-input-area{display:block}
           <div class="stat-card peach"><span class="stat-icon">🎨</span><div class="stat-value">5</div><div class="stat-label">Направлений</div></div>
         </div>
 
-        <!-- TODAY'S CLASSES + CALENDAR for guests -->
+        <!-- TODAY'S CLASSES for guests -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-title">🗓️ <span id="guest-today-label">Занятия сегодня</span> <span class="live-badge" id="guest-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
+          <div class="sch-list" id="guest-today-list"></div>
+        </div>
+
+        <!-- CALENDAR + ACHIEVEMENTS for guests -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px">
           <div class="card">
             <div class="card-title">📅 <span id="mini-cal-title-guest">Календарь</span></div>
             <div class="cal-grid" id="mini-cal-guest"></div>
           </div>
           <div class="card">
-            <div class="card-title">🗓️ <span id="guest-today-label">Занятия сегодня</span> <span class="live-badge" id="guest-live-badge" style="display:none"><span class="live-dot"></span>Идёт</span></div>
-            <div class="sch-list" id="guest-today-list"></div>
+            <div class="card-title">🏆 Достижения</div>
+            <div class="ach-list" id="ach-list-public"></div>
           </div>
         </div>
 
@@ -1469,11 +1475,6 @@ body.is-admin .ann-input-area{display:block}
           <div class="card-title">👩‍🏫 Наши педагоги <span style="font-size:13px;font-weight:400;color:var(--ink-l)">— нажмите чтобы оценить</span></div>
           <div class="teachers-grid" id="teachers-grid-public" style="grid-template-columns:repeat(3,1fr)"></div>
         </div>
-        <div class="card">
-          <div class="card-title">🏆 Достижения</div>
-          <div class="ach-list" id="ach-list-public"></div>
-        </div>
-
         <!-- ── CONTACTS FOOTER ── -->
         <div class="studio-contacts-footer">
           <div class="contacts-footer-title">📬 Контакты студии</div>
