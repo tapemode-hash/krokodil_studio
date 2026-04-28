@@ -709,6 +709,8 @@ body.is-admin .ann-input-area{display:block}
 .ph-preview-img{width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-top:8px}
 .ph-upload-zone{border:2px dashed var(--peach);border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:var(--ink-l);font-size:13px;transition:background .15s}
 .ph-upload-zone:hover{background:var(--cream)}
+.call-time-btn{padding:5px 12px;border-radius:20px;border:2px solid var(--peach);background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--ink-l);transition:all .15s}
+.call-time-btn.active{background:var(--lav);border-color:var(--lav-d);color:var(--lav-d)}
 </style>
 </head>
 <body>
@@ -991,6 +993,15 @@ body.is-admin .ann-input-area{display:block}
         <select class="form-select" id="req-direction">
           <option value="">— не выбрано —</option>
         </select>
+      </div>
+      <div class="form-group"><label class="form-label">Удобное время для звонка</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          <button type="button" class="call-time-btn" onclick="toggleCallTime(this,'Утром (9–12)')">Утром (9–12)</button>
+          <button type="button" class="call-time-btn" onclick="toggleCallTime(this,'Днём (12–17)')">Днём (12–17)</button>
+          <button type="button" class="call-time-btn" onclick="toggleCallTime(this,'Вечером (17–20)')">Вечером (17–20)</button>
+          <button type="button" class="call-time-btn" onclick="toggleCallTime(this,'В выходные')">В выходные</button>
+        </div>
+        <input class="form-input" id="req-calltime" placeholder="или укажите своё время..." style="font-size:13px">
       </div>
       <div class="form-group"><label class="form-label">Комментарий</label><textarea class="form-input" id="req-comment" rows="2" placeholder="Дополнительная информация..." style="resize:vertical"></textarea></div>
       <div class="modal-actions">
@@ -3940,6 +3951,15 @@ function dateCalNext(){
 //  ANNOUNCEMENTS
 // ══════════════════════════════════════════════════════════════
 // ── REQUESTS ──────────────────────────────────────────────────
+function toggleCallTime(btn, label){
+  const inp = document.getElementById('req-calltime');
+  const active = btn.classList.toggle('active');
+  const parts = inp.value ? inp.value.split(', ').filter(v=>v&&!['Утром (9–12)','Днём (12–17)','Вечером (17–20)','В выходные'].includes(v)) : [];
+  document.querySelectorAll('.call-time-btn').forEach(b=>{ if(b!==btn) b.classList.remove('active'); });
+  if(active){ btn.classList.add('active'); inp.value = label; }
+  else { inp.value = ''; }
+}
+
 function openRequestForm(){
   document.getElementById('m-request-form').style.display = '';
   document.getElementById('m-request-success').style.display = 'none';
@@ -3948,7 +3968,9 @@ function openRequestForm(){
   document.getElementById('req-age').value = '';
   document.getElementById('req-parent-name').value = '';
   document.getElementById('req-phone').value = '';
+  document.getElementById('req-calltime').value = '';
   document.getElementById('req-comment').value = '';
+  document.querySelectorAll('.call-time-btn').forEach(b=>b.classList.remove('active'));
   // populate directions from schedule
   const sel = document.getElementById('req-direction');
   sel.innerHTML = '<option value="">— не выбрано —</option>' +
@@ -3979,6 +4001,7 @@ function submitRequest(){
     parentName,
     phone,
     direction: document.getElementById('req-direction').value,
+    callTime:  document.getElementById('req-calltime').value.trim(),
     comment:   document.getElementById('req-comment').value.trim(),
     createdAt: new Date().toISOString(),
   };
@@ -4009,6 +4032,7 @@ function renderRequests(){
             👨‍👩‍👧 ${r.parentName} · 📞 <a href="tel:${r.phone}" style="color:var(--lav-d)">${r.phone}</a>
           </div>
           ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${r.direction}</div>`:''}
+          ${r.callTime?`<div style="font-size:12px;color:var(--lav-d);margin-top:2px;font-weight:700">🕐 Перезвонить: ${r.callTime}</div>`:''}
           ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${r.comment}</div>`:''}
           <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Поступила: ${dateStr}</div>
         </div>
