@@ -3634,7 +3634,7 @@ function renderWorkingHours(){
     if(sc.status==='Завершена') return;
     const [startStr,endStr]=(sc.time||'').split('–');
     const start=timeToMin(startStr), end=timeToMin(endStr||startStr);
-    if(isNaN(start)) return;
+    if(isNaN(start)||!sc.days) return;
     sc.days.split(',').forEach(d=>{
       const day=d.trim();
       if(!dayTimes[day]) dayTimes[day]={start:999,end:0};
@@ -3665,7 +3665,7 @@ function renderAll(){
   renderAnnouncements();
   renderAchievements();
   renderRequests();
-  renderWorkingHours();
+  try{ renderWorkingHours(); }catch(e){ console.error('renderWorkingHours:', e); }
   renderDashboard();
   if(currentPage==='students')  renderStudents();
   else if(currentPage==='schedule')  renderSchedule();
@@ -3760,7 +3760,7 @@ function renderTodayList(elId, liveElId, dateKey){
 
   const todayItems=[];
   schedule.forEach(sc=>{
-    if(sc.status==='Завершена')return;
+    if(sc.status==='Завершена'||!sc.days)return;
     sc.days.split(',').forEach(d=>{
       if(DAY_MAP[d.trim()]===targetDow) todayItems.push(sc);
     });
@@ -3869,7 +3869,7 @@ function renderMiniCal(){
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
   const activeDows=new Set();
   schedule.forEach(sc=>{
-    if(sc.status==='Активна'||sc.status==='Набор'){
+    if((sc.status==='Активна'||sc.status==='Набор')&&sc.days){
       sc.days.split(',').forEach(d=>{ const v=DAY_MAP[d.trim()]; if(v!==undefined)activeDows.add(v); });
     }
   });
