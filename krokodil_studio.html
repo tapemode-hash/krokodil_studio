@@ -3727,15 +3727,12 @@ function renderDashboard(){
         <div><div class="stu-name">${s.name}</div><div class="stu-age">${s.age} лет${s.dir?' · '+s.dir:''}</div></div>
         <span class="badge ${payCls(s.pay)}">${s.pay==='paid'?'✓':s.pay==='debt'?'✗':'~'}</span>
       </div>`).join('');
-
-    renderMiniCal();
   }
 
   if(currentRole==='guest'){
     const activeGroups=schedule.filter(s=>s.status==='Активна').length;
     const gEl=document.getElementById('guest-stat-groups'); if(gEl)gEl.textContent=activeGroups||'—';
     const tEl=document.getElementById('guest-stat-teachers'); if(tEl)tEl.textContent=teachers.length||'—';
-    renderMiniCal();
     updateTodayLabel('guest-today-label', _calSelectedDate);
     renderTodayList('guest-today-list','guest-live-badge', _calSelectedDate);
   }
@@ -3750,10 +3747,12 @@ function renderDashboard(){
       badge.className='badge '+(s.pay==='paid'?'green':s.pay==='debt'?'red':'yellow');
     }
     try{ renderParentUpcoming(); }catch(e){ console.error('renderParentUpcoming:', e); }
-    renderMiniCal();
     updateTodayLabel('parent-today-label', _calSelectedDate);
     renderTodayList('parent-today-list','parent-live-badge', _calSelectedDate);
   }
+
+  // Always render the calendar — called once here for all roles
+  renderMiniCal();
 }
 
 // Parse "HH:MM" → minutes since midnight
