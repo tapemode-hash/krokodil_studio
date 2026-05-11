@@ -1419,6 +1419,12 @@ body.is-admin .ann-input-area{display:block}
           </div>
         </div>
 
+        <!-- Subscriptions block for parents -->
+        <div class="card" style="margin-bottom:18px" id="parent-subs-card">
+          <div class="card-title">🎫 Абонементы</div>
+          <div id="parent-subs-list"></div>
+        </div>
+
         <!-- Teachers block for parents -->
         <div class="card" style="margin-top:22px;margin-bottom:22px">
           <div class="card-title">👩‍🏫 Наши педагоги <span style="font-size:13px;font-weight:400;color:var(--ink-l)">— нажмите чтобы оценить</span></div>
@@ -3774,6 +3780,7 @@ function renderDashboard(){
       badge.className='badge '+(allPaid?'green':anyDebt?'red':'yellow');
     }
     try{ renderParentUpcoming(parentScIds); }catch(e){ console.error('renderParentUpcoming:', e); }
+    try{ renderParentSubs(); }catch(e){ console.error('renderParentSubs:', e); }
     updateTodayLabel('parent-today-label', _calSelectedDate);
     renderTodayList('parent-today-list','parent-live-badge', _calSelectedDate, parentScIds);
   }
@@ -3889,6 +3896,60 @@ function renderParentUpcoming(filterScIds=null){
       </div>
     </div>`;
   }).join('')||`<div style="color:var(--ink-l);font-size:13px;padding:10px">Нет занятий в ближайшие 2 недели</div>`;
+}
+
+function renderParentSubs(){
+  const el=document.getElementById('parent-subs-list'); if(!el)return;
+  const card=document.getElementById('parent-subs-card');
+  const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+
+  const rows=[];
+  _parentStudentIds.forEach(sid=>{
+    const stu=students.find(s=>s.id===sid); if(!stu)return;
+    (subscriptions[sid]||[]).forEach(sb=>{
+      const remaining=sb.total-sb.used;
+      let dateStr='—';
+      if(sb.createdAt){
+        let d;
+        if(/^\d{4}-\d{2}-\d{2}/.test(sb.createdAt)){
+          d=new Date(sb.createdAt);
+        } else {
+          const p=sb.createdAt.split('.');
+          if(p.length===3) d=new Date(+p[2],+p[1]-1,+p[0]);
+        }
+        if(d&&!isNaN(d)) dateStr=`${d.getDate()} ${RU_MON[d.getMonth()]} ${d.getFullYear()}`;
+      }
+      rows.push({stu,sb,remaining,dateStr});
+    });
+  });
+
+  if(!rows.length){ if(card)card.style.display='none'; return; }
+  if(card)card.style.display='';
+
+  el.innerHTML=rows.map(({stu,sb,remaining,dateStr})=>{
+    const pct=sb.total>0?Math.round(remaining/sb.total*100):0;
+    const barColor=pct>50?'var(--mint-d)':pct>20?'var(--yel-d)':'var(--coral)';
+    const multiStudent=_parentStudentIds.length>1;
+    return `<div style="padding:14px;border-radius:14px;border:2px solid var(--lav);background:white;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <div>
+          ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${stu.name}</div>`:''}
+          <div style="font-weight:700;font-size:14px">${sb.groupName||'Абонемент'}</div>
+          <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Куплен: ${dateStr}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700;color:var(--lav-d)">${sb.price?sb.price.toLocaleString('ru')+' ₽':'—'}</div>
+          <div style="font-size:11px;color:var(--ink-l);margin-top:1px">${sb.total} зан. в абон.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:8px;background:var(--cream);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:${barColor};white-space:nowrap">${remaining} из ${sb.total} ост.</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 let _calSelectedDate = fmtDate(new Date());
