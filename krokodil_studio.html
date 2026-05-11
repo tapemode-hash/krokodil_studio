@@ -1560,10 +1560,17 @@ body.is-admin .ann-input-area{display:block}
           <button class="btn btn-ghost" onclick="setAttDate(1)">Вперёд →</button>
         </div>
       </div>
-      <!-- Sub-tabs -->
-      <div style="display:flex;gap:6px;margin-bottom:20px">
+      <!-- Sub-tabs (admin only) -->
+      <div style="display:flex;gap:6px;margin-bottom:20px" id="att-tabs-row">
         <button class="btn btn-primary" id="atab-mark" onclick="attTab('mark')">✅ Отметить явку</button>
         <button class="btn btn-ghost" id="atab-hist" onclick="attTab('hist')">📋 История занятий</button>
+      </div>
+      <!-- Parent view -->
+      <div id="parent-att-panel" style="display:none">
+        <div class="card">
+          <div class="card-title">📋 Посещения вашего ребёнка</div>
+          <div id="parent-att-list"></div>
+        </div>
       </div>
       <!-- Mark attendance -->
       <div id="atab-mark-body">
@@ -3613,7 +3620,10 @@ function nav(page, btn){
   if(btn)btn.classList.add('active');
   document.querySelector('.main').scrollTop=0;
   if(page==='reports'){ initChart(); renderReportTable(); }
-  if(page==='attendance'){ attTab(_attTab||'mark'); renderAttendance(); }
+  if(page==='attendance'){
+    if(currentRole==='parent'){ showParentAttPanel(); renderParentAttendance(); }
+    else { showAdminAttPanel(); attTab(_attTab||'mark'); renderAttendance(); }
+  }
   if(page==='payments') renderPayments();
   if(page==='students') renderStudents();
   if(page==='schedule') renderSchedule();
@@ -4986,6 +4996,120 @@ function deleteTeacher(){
 
 // ── Attendance tabs ──
 let _attTab = 'mark';
+function showParentAttPanel(){
+  document.getElementById('parent-att-panel').style.display='';
+  document.getElementById('att-tabs-row').style.display='none';
+  document.getElementById('atab-mark-body').style.display='none';
+  document.getElementById('atab-hist-body').style.display='none';
+  document.getElementById('att-topbar-actions').style.display='none';
+}
+function showAdminAttPanel(){
+  document.getElementById('parent-att-panel').style.display='none';
+  document.getElementById('att-tabs-row').style.display='flex';
+}
+
+function renderParentAttendance(){
+  const el=document.getElementById('parent-att-list'); if(!el)return;
+  const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
+  const RU_SHORT=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const today=fmtDate(new Date());
+
+  // Collect all relevant dates
+  const dateSet=new Set();
+  _parentStudentIds.forEach(sid=>{
+    Object.keys(attendance).forEach(d=>{
+      const dayAtt=attendance[d]||{};
+      if(Object.entries(dayAtt).some(([k])=>!String(k).includes('_')&&sidFromAttKey(k)===sid))
+        dateSet.add(d);
+    });
+    (dateEnrollments[sid]||[]).forEach(d=>dateSet.add(d));
+    // upcoming 14 days from schedule
+    const myScIds=enrollments[sid]||[];
+    for(let i=0;i<=14;i++){
+      const dt=new Date(); dt.setDate(dt.getDate()+i);
+      const d=fmtDate(dt);
+      if(schedule.some(sc=>myScIds.includes(sc.id)&&sc.status==='Активна'&&sc.days&&
+          sc.days.split(',').some(day=>DAY_MAP[day.trim()]===dt.getDay())))
+        dateSet.add(d);
+    }
+  });
+
+  const sortedDates=[...dateSet].sort().reverse();
+  if(!sortedDates.length){
+    el.innerHTML='<div style="color:var(--ink-l);font-size:13px;padding:16px;text-align:center">Нет данных о занятиях</div>';
+    return;
+  }
+
+  const multiStudent=_parentStudentIds.length>1;
+  let html='';
+
+  sortedDates.forEach(dateKey=>{
+    const dayAtt=attendance[dateKey]||{};
+    const d=new Date(dateKey+'T12:00:00');
+    const isFuture=dateKey>today;
+    const dayLabel=`${RU_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MON[d.getMonth()]} ${d.getFullYear()}`;
+    const rows=[];
+
+    _parentStudentIds.forEach(sid=>{
+      const stu=students.find(s=>s.id===sid); if(!stu)return;
+      // attended entries
+      const myKeys=Object.entries(dayAtt)
+        .filter(([k])=>!String(k).includes('_')&&sidFromAttKey(k)===sid);
+      if(myKeys.length){
+        myKeys.forEach(([attKey,status])=>{
+          let scName='';
+          if(String(attKey).includes(':')){
+            const sc=schedule.find(sc=>sc.id===+String(attKey).split(':')[1]);
+            scName=sc?sc.name:'';
+          } else {
+            const myScIds=enrollments[sid]||[];
+            const sc=schedule.find(sc=>myScIds.includes(sc.id)&&sc.days&&
+              sc.days.split(',').some(day=>DAY_MAP[day.trim()]===d.getDay()));
+            scName=sc?sc.name:'';
+          }
+          rows.push({stu,scName,status});
+        });
+      } else if((dateEnrollments[sid]||[]).includes(dateKey)){
+        rows.push({stu,scName:'',status:isFuture?'upcoming':'absent'});
+      } else if(isFuture){
+        const myScIds=enrollments[sid]||[];
+        const sc=schedule.find(sc=>myScIds.includes(sc.id)&&sc.status==='Активна'&&sc.days&&
+          sc.days.split(',').some(day=>DAY_MAP[day.trim()]===d.getDay()));
+        if(sc) rows.push({stu,scName:sc.name,status:'upcoming'});
+      }
+    });
+
+    if(!rows.length)return;
+
+    html+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:.5px;padding:5px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px">
+        ${isFuture?'📅 ':''}${dayLabel}
+      </div>`;
+    html+=rows.map(r=>{
+      const isPresent=r.status==='p';
+      const isUpcoming=r.status==='upcoming';
+      const isAbsent=!isPresent&&!isUpcoming;
+      const badge=isPresent?'✓ Присутствовал':isUpcoming?'📅 Запись':'✗ Не пришёл';
+      const badgeStyle=isPresent?'background:var(--mint);color:var(--mint-d)':
+        isUpcoming?'background:var(--sky);color:var(--sky-d)':
+        'background:#FFE0DC;color:var(--coral)';
+      const rowBorder=isPresent?'var(--mint)':isUpcoming?'var(--sky)':'#FFD0C8';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:white;border:2px solid ${rowBorder};margin-bottom:5px">
+        ${multiStudent?`<div style="background:${r.stu.color};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${r.stu.emoji}</div>`:''}
+        <div style="flex:1;min-width:0">
+          ${multiStudent?`<div style="font-size:11px;color:var(--ink-l);font-weight:700">${r.stu.name}</div>`:''}
+          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.scName||'—'}</div>
+        </div>
+        <span style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;flex-shrink:0;${badgeStyle}">${badge}</span>
+      </div>`;
+    }).join('');
+    html+='</div>';
+  });
+
+  el.innerHTML=html||'<div style="color:var(--ink-l);font-size:13px;padding:16px">Нет данных</div>';
+}
+
 function attTab(tab){
   _attTab = tab;
   document.getElementById('atab-mark-body').style.display = tab==='mark'?'block':'none';
