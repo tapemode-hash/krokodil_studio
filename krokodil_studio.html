@@ -3910,8 +3910,14 @@ function renderParentSubs(){
       const remaining=sb.total-sb.used;
       let dateStr='—';
       if(sb.createdAt){
-        const d=new Date(sb.createdAt);
-        dateStr=`${d.getDate()} ${RU_MON[d.getMonth()]} ${d.getFullYear()}`;
+        let d;
+        if(/^\d{4}-\d{2}-\d{2}/.test(sb.createdAt)){
+          d=new Date(sb.createdAt);
+        } else {
+          const p=sb.createdAt.split('.');
+          if(p.length===3) d=new Date(+p[2],+p[1]-1,+p[0]);
+        }
+        if(d&&!isNaN(d)) dateStr=`${d.getDate()} ${RU_MON[d.getMonth()]} ${d.getFullYear()}`;
       }
       rows.push({stu,sb,remaining,dateStr});
     });
