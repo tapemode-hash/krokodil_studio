@@ -785,6 +785,40 @@ body.is-admin .ann-input-area{display:block}
 
 <!-- ══ MODALS ══════════════════════════════════════════════ -->
 
+<!-- Churn Log Modal -->
+<div class="modal-overlay" id="m-churn">
+  <div class="modal" style="width:500px">
+    <button class="modal-close" onclick="closeM('m-churn')">✕</button>
+    <div class="modal-title">📋 Запись об уходе ученика</div>
+    <div class="form-group">
+      <label class="form-label">Ученик</label>
+      <select class="form-select" id="churn-sid"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Дата ухода</label><input type="date" class="form-input" id="churn-date"></div>
+      <div class="form-group"><label class="form-label">Срок обучения (мес)</label><input type="number" class="form-input" id="churn-months" min="0" placeholder="0"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Причина ухода</label>
+      <select class="form-select" id="churn-reason">
+        <option value="">— выберите —</option>
+        <option value="цена">💸 Цена</option>
+        <option value="переезд">🏠 Переезд / смена района</option>
+        <option value="расписание">📅 Расписание не подходит</option>
+        <option value="не хочет">😔 Ребёнок не хочет</option>
+        <option value="другой кружок">🏃 Нашли другой кружок</option>
+        <option value="нет прогресса">📉 Нет видимого прогресса</option>
+        <option value="другое">🔹 Другое</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Примечание</label><input class="form-input" id="churn-note" placeholder="Необязательно"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeM('m-churn')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveChurn()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- New / Edit Student -->
 <div class="modal-overlay" id="m-student">
   <div class="modal" style="width:540px">
@@ -6112,20 +6146,477 @@ function renderPayments(){
   }
 }
 
+//  REPORTS (analytics page)
 // ══════════════════════════════════════════════════════════════
-//  REPORT TABLE (for reports page)
-// ══════════════════════════════════════════════════════════════
-function renderReportTable(){
-  const el=document.getElementById('report-tbody'); if(!el)return;
-  const rEl=document.getElementById('r-students'); if(rEl)rEl.textContent=students.length;
-  el.innerHTML=students.map(s=>`
-    <tr>
-      <td>${s.name}</td>
-      <td><span class="badge blue">${getAttPct(s.id)}</span></td>
-      <td><span class="badge ${payCls(s.pay)}">${payLabel(s.pay)}</span></td>
-    </tr>`).join('');
+const MAX_CAPACITY = 12;
+
+function renderReportTable(){ renderReports(); }
+
+function onRpPeriod(){
+  const v=document.getElementById('rp-period').value;
+  const cw=document.getElementById('rp-custom');
+  if(cw){ cw.style.display=v==='custom'?'flex':'none'; }
 }
 
+function getRpDates(){
+  const v=(document.getElementById('rp-period')||{}).value||'month';
+  const now=new Date();
+  let from,to;
+  if(v==='month'){
+    from=new Date(now.getFullYear(),now.getMonth(),1);
+    to=new Date(now.getFullYear(),now.getMonth()+1,0);
+  } else if(v==='prev'){
+    from=new Date(now.getFullYear(),now.getMonth()-1,1);
+    to=new Date(now.getFullYear(),now.getMonth(),0);
+  } else if(v==='quarter'){
+    const q=Math.floor(now.getMonth()/3);
+    from=new Date(now.getFullYear(),q*3,1);
+    to=new Date(now.getFullYear(),q*3+3,0);
+  } else if(v==='year'){
+    from=new Date(now.getFullYear(),0,1);
+    to=new Date(now.getFullYear(),11,31);
+  } else {
+    from=new Date(document.getElementById('rp-from').value||now);
+    to=new Date(document.getElementById('rp-to').value||now);
+  }
+  return {from,to};
+}
+
+function fmtRpDate(d){ return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'}); }
+
+function inPeriod(dateStr,from,to){
+  const d=new Date(dateStr);
+  return d>=from && d<=to;
+}
+
+function getRevenueInPeriod(from,to){
+  let total=0,subRev=0,trialRev=0,lessonCount=0;
+  Object.entries(lessonCosts).forEach(([date,costs])=>{
+    if(!inPeriod(date,from,to))return;
+    const att=attendance[date]||{};
+    Object.entries(att).forEach(([key,status])=>{
+      if(status!=='p'&&status!=='trial')return;
+      const cost=costs[key];
+      if(cost==null)return;
+      total+=cost;
+      lessonCount++;
+      if(costs[key+'_via_sub'])subRev+=cost;
+      if(costs[key+'_isTrial'])trialRev+=cost;
+    });
+  });
+  return {total,subRev,trialRev,lessonCount};
+}
+
+function getTrialsInPeriod(from,to){
+  let count=0;
+  const studentSet=new Set();
+  Object.entries(attendance).forEach(([date,dayAtt])=>{
+    if(!inPeriod(date,from,to))return;
+    Object.entries(dayAtt).forEach(([key,status])=>{
+      if(status==='trial'){
+        count++;
+        const sid=key.split(':')[0];
+        studentSet.add(sid);
+      }
+    });
+  });
+  return {count,students:studentSet.size};
+}
+
+function getActiveStudentsInPeriod(from,to){
+  const set=new Set();
+  Object.entries(attendance).forEach(([date,dayAtt])=>{
+    if(!inPeriod(date,from,to))return;
+    Object.entries(dayAtt).forEach(([key,status])=>{
+      if(status==='p'||status==='trial'){
+        set.add(key.split(':')[0]);
+      }
+    });
+  });
+  return set;
+}
+
+function getSessionDaysInPeriod(from,to){
+  const days=new Set();
+  Object.keys(attendance).forEach(date=>{
+    if(!inPeriod(date,from,to))return;
+    const dayAtt=attendance[date];
+    const hasPresent=Object.values(dayAtt).some(s=>s==='p'||s==='trial');
+    if(hasPresent)days.add(date);
+  });
+  return days.size;
+}
+
+function getStudentFirstActivity(sid){
+  const sidStr=String(sid);
+  let first=null;
+  Object.entries(attendance).forEach(([date,dayAtt])=>{
+    const hasActivity=Object.entries(dayAtt).some(([key,status])=>
+      key.split(':')[0]===sidStr&&(status==='p'||status==='trial'));
+    if(hasActivity){
+      const d=new Date(date);
+      if(!first||d<first)first=d;
+    }
+  });
+  return first;
+}
+
+function getStudentLastActivity(sid){
+  const sidStr=String(sid);
+  let last=null;
+  Object.entries(attendance).forEach(([date,dayAtt])=>{
+    const hasActivity=Object.entries(dayAtt).some(([key,status])=>
+      key.split(':')[0]===sidStr&&(status==='p'||status==='trial'));
+    if(hasActivity){
+      const d=new Date(date);
+      if(!last||d>last)last=d;
+    }
+  });
+  return last;
+}
+
+function metricRow(label,value,target,good,note){
+  const ok=good!=null?(good?'var(--grn)':value==='—'?'var(--ink-l)':'var(--coral)'):null;
+  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cream)">
+    <div>
+      <div style="font-size:13px;font-weight:600">${label}</div>
+      ${note?`<div style="font-size:11px;color:var(--ink-l)">${note}</div>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      ${target?`<div style="font-size:11px;color:var(--ink-l)">цель: ${target}</div>`:''}
+      <div style="font-size:16px;font-weight:700;color:${ok||'var(--ink)'}; min-width:60px;text-align:right">${value}</div>
+    </div>
+  </div>`;
+}
+
+function renderReports(){
+  const {from,to}=getRpDates();
+  // Label
+  const lbl=document.getElementById('rp-label');
+  if(lbl)lbl.textContent=fmtRpDate(from)+' — '+fmtRpDate(to);
+  const wlbl=document.getElementById('rp-week-label');
+  if(wlbl)wlbl.textContent=fmtRpDate(from)+' — '+fmtRpDate(to);
+
+  // ── Период "до" для сравнения
+  const periodLen=to-from;
+  const prevFrom=new Date(from.getTime()-periodLen-86400000);
+  const prevTo=new Date(from.getTime()-86400000);
+
+  // ── Активные ученики
+  const activeNow=getActiveStudentsInPeriod(from,to);
+  const activePrev=getActiveStudentsInPeriod(prevFrom,prevTo);
+
+  // ── Выручка
+  const rev=getRevenueInPeriod(from,to);
+  const revPrev=getRevenueInPeriod(prevFrom,prevTo);
+
+  // ── Пробные
+  const trials=getTrialsInPeriod(from,to);
+
+  // ── Загрузка студии
+  const sessionDays=getSessionDaysInPeriod(from,to);
+  const maxSlots=MAX_CAPACITY*Math.max(sessionDays,1);
+  const loadPct=activeNow.size>0?Math.round(activeNow.size/maxSlots*100):0;
+  const loadGood=loadPct>=70;
+
+  // ── Churn rate: учеников активных в prev, неактивных в now
+  const churned=[...activePrev].filter(s=>!activeNow.has(s)).length;
+  const totalStudents=Math.max(students.length,1);
+  const churnPct=activePrev.size>0?Math.round(churned/activePrev.size*100):0;
+  const churnGood=churnPct<10;
+
+  // ── Новые ученики в периоде (первое занятие в периоде)
+  const newStudents=[...activeNow].filter(sid=>{
+    const first=getStudentFirstActivity(sid);
+    return first&&first>=from&&first<=to;
+  });
+
+  // ── Retention: ученики с 2+ абонементами
+  const withSubs=students.filter(s=>(subscriptions[s.id]||[]).length>0);
+  const retained=students.filter(s=>(subscriptions[s.id]||[]).length>=2);
+  const retentionPct=withSubs.length>0?Math.round(retained.length/withSubs.length*100):0;
+  const retGood=retentionPct>=75;
+
+  // ── Конверсия пробного → абонемент
+  const trialStudentIds=new Set();
+  Object.entries(attendance).forEach(([date,dayAtt])=>{
+    Object.entries(dayAtt).forEach(([key,status])=>{
+      if(status==='trial')trialStudentIds.add(key.split(':')[0]);
+    });
+  });
+  const trialConverted=students.filter(s=>
+    trialStudentIds.has(String(s.id))&&(subscriptions[s.id]||[]).length>0
+  ).length;
+  const trialConvPct=trialStudentIds.size>0?Math.round(trialConverted/trialStudentIds.size*100):0;
+  const trialConvGood=trialConvPct>=40;
+
+  // ── Конверсия разовых → абонемент
+  // Разовые = нет абонемента, но есть посещения
+  const singleVisitors=students.filter(s=>{
+    const hasPres=Object.values(attendance).some(dayAtt=>
+      Object.entries(dayAtt).some(([key,status])=>key.split(':')[0]===String(s.id)&&status==='p'));
+    const hasSub=(subscriptions[s.id]||[]).length>0;
+    return hasPres&&!hasSub&&!trialStudentIds.has(String(s.id));
+  });
+  const singleConverted=students.filter(s=>{
+    const wasSingle=singleVisitors.some(sv=>sv.id===s.id);
+    return wasSingle&&(subscriptions[s.id]||[]).length>0;
+  }).length;
+  const singleConvPct=singleVisitors.length>0?Math.round(singleConverted/Math.max(singleVisitors.length,1)*100):0;
+
+  // ── Финансовые метрики
+  const revenuePerSlot=rev.lessonCount>0?Math.round(rev.total/rev.lessonCount):0;
+  const subSharePct=rev.total>0?Math.round(rev.subRev/rev.total*100):0;
+  const subShareGood=subSharePct>=70;
+  const revenuePerTeacher=teachers.length>0?Math.round(rev.total/teachers.length):0;
+
+  // LTV
+  const durations=students.map(s=>{
+    const first=getStudentFirstActivity(s.id);
+    const last=getStudentLastActivity(s.id);
+    if(!first||!last)return null;
+    return (last-first)/(1000*60*60*24*30);
+  }).filter(d=>d!==null&&d>0);
+  const avgDuration=durations.length>0?durations.reduce((a,b)=>a+b,0)/durations.length:0;
+  const allSubs=Object.values(subscriptions).flat();
+  const avgSubPrice=allSubs.length>0?allSubs.reduce((a,b)=>a+(b.price||0),0)/allSubs.length:0;
+  const ltv=Math.round(avgSubPrice*avgDuration);
+
+  // CAC
+  const periodKey=from.toISOString().slice(0,7);
+  const mktEntry=marketingCosts.find(m=>m.month===periodKey)||{amount:0};
+  const mktAmount=mktEntry.amount||0;
+  const cac=newStudents.length>0&&mktAmount>0?Math.round(mktAmount/newStudents.length):null;
+
+  // ── Маркетинг: источники
+  const sourceMap={};
+  students.forEach(s=>{
+    const src=s.source||'не указан';
+    sourceMap[src]=(sourceMap[src]||0)+1;
+  });
+  const referralCount=sourceMap['сарафан']||0;
+  const referralPct=students.length>0?Math.round(referralCount/students.length*100):0;
+
+  // ── Качество: средняя посещаемость
+  let totalAttPct=0,attCount=0;
+  students.forEach(s=>{
+    const pct=parseFloat(getAttPct(s.id));
+    if(!isNaN(pct)){totalAttPct+=pct;attCount++;}
+  });
+  const avgAtt=attCount>0?Math.round(totalAttPct/attCount):0;
+
+  // ── Рендерим блоки
+
+  // KEY METRICS
+  document.getElementById('km-students').textContent=students.length;
+  const studDelta=activeNow.size-activePrev.size;
+  document.getElementById('km-students-d').textContent=(studDelta>=0?'↑ +':'↓ ')+Math.abs(studDelta)+' vs прошлый период';
+  document.getElementById('km-students-d').className='stat-change '+(studDelta>=0?'up':'down');
+
+  document.getElementById('km-load').textContent=loadPct+'%';
+  document.getElementById('km-load-d').textContent=loadGood?'✓ Выше 70%':'↓ Ниже ориентира';
+  document.getElementById('km-load-d').className='stat-change '+(loadGood?'up':'down');
+
+  document.getElementById('km-trials').textContent=trials.count;
+  document.getElementById('km-trials-d').textContent='уникальных: '+trials.students;
+  document.getElementById('km-trials-d').className='stat-change neutral';
+
+  document.getElementById('km-revenue').textContent=rev.total>=1000?Math.round(rev.total/1000)+'К':''+Math.round(rev.total)+'₽';
+  const revDelta=revPrev.total>0?Math.round((rev.total-revPrev.total)/revPrev.total*100):0;
+  document.getElementById('km-revenue-d').textContent=(revDelta>=0?'↑ +':'↓ ')+Math.abs(revDelta)+'% vs прошлый';
+  document.getElementById('km-revenue-d').className='stat-change '+(revDelta>=0?'up':'down');
+
+  document.getElementById('km-new').textContent='+'+newStudents.length+' / -'+churned;
+  document.getElementById('km-new-d').className='stat-change '+(newStudents.length>=churned?'up':'down');
+  document.getElementById('km-new-d').textContent=newStudents.length>=churned?'↑ Рост':'↓ Убыль';
+
+  // OPERATIONS
+  document.getElementById('rp-ops').innerHTML=[
+    metricRow('Загрузка студии',loadPct+'%','>70%',loadGood,
+      activeNow.size+' уч. / '+maxSlots+' слотов ('+sessionDays+' дней занятий)'),
+    metricRow('Retention rate',retentionPct+'%','>75%',retGood,
+      retained.length+' продлили из '+withSubs.length+' с абонементом'),
+    metricRow('Churn rate',churnPct+'%','<10%',churnGood,
+      churned+' ушли из '+activePrev.size+' активных'),
+    metricRow('Конверсия пробный → аб.',trialConvPct+'%','>40%',trialConvGood,
+      trialConverted+' купили из '+trialStudentIds.size+' пробных'),
+    metricRow('Конверсия разовый → аб.',singleConvPct>0?singleConvPct+'%':'—','>40%',null,
+      'на основе истории посещений'),
+  ].join('');
+
+  // FINANCE
+  const mktSaved=document.getElementById('rp-mkt-saved');
+  if(mktSaved)mktSaved.textContent=mktAmount>0?'Сохранено: '+mktAmount.toLocaleString('ru')+'₽':'';
+  const mktInput=document.getElementById('rp-mkt-cost');
+  if(mktInput&&mktAmount>0)mktInput.value=mktAmount;
+
+  document.getElementById('rp-fin').innerHTML=[
+    metricRow('Выручка за период',(rev.total>=1000?Math.round(rev.total/1000)+'К ₽':Math.round(rev.total)+' ₽'),null,null,
+      rev.lessonCount+' оплаченных занятий'),
+    metricRow('Revenue per slot',revenuePerSlot>0?revenuePerSlot+' ₽':'—',null,null,'выручка / занятий'),
+    metricRow('Доля абонементов',subSharePct+'%','>70%',subShareGood,
+      Math.round(rev.subRev).toLocaleString('ru')+'₽ из '+Math.round(rev.total).toLocaleString('ru')+'₽'),
+    metricRow('Выручка на педагога',revenuePerTeacher>0?revenuePerTeacher.toLocaleString('ru')+' ₽':'—',null,null,
+      teachers.length+' педагогов'),
+    metricRow('LTV клиента',ltv>0?ltv.toLocaleString('ru')+' ₽':'—',null,null,
+      'ср. чек '+Math.round(avgSubPrice)+' × '+avgDuration.toFixed(1)+' мес.'),
+    metricRow('CAC (стоимость привлечения)',cac!=null?cac.toLocaleString('ru')+' ₽':'введите затраты↓',null,null,
+      newStudents.length+' новых клиентов за период'),
+  ].join('');
+
+  // LTV CALCULATOR
+  const ltvCalcEl=document.getElementById('rp-ltv-calc');
+  if(ltvCalcEl){
+    const fixedCosts=0;
+    ltvCalcEl.innerHTML=`
+      <b>LTV</b> = ${Math.round(avgSubPrice).toLocaleString('ru')} ₽ × ${avgDuration.toFixed(1)} мес = <b>${ltv.toLocaleString('ru')} ₽</b><br>
+      <span style="color:var(--ink-l);font-size:11px">Средний чек абонемента × среднее удержание</span><br><br>
+      <b>Точка безубыточности</b><br>
+      <span style="color:var(--ink-l);font-size:11px">Введите постоянные расходы:</span><br>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <input type="number" id="rp-fixed-costs" class="form-input" placeholder="₽ в месяц" style="font-size:12px;padding:6px" oninput="calcBreakeven()">
+        <span style="align-self:center;font-size:12px" id="rp-breakeven">—</span>
+      </div>`;
+  }
+
+  // MARKETING
+  const sourcesHtml=Object.entries(sourceMap)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([src,cnt])=>{
+      const pct=Math.round(cnt/students.length*100);
+      const icons={'сарафан':'👥','соцсети':'📱','флаер':'📄','поиск':'🔍','не указан':'❓','другое':'🔹'};
+      return `<div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+          <span>${icons[src]||'•'} ${src}</span><span>${cnt} (${pct}%)</span>
+        </div>
+        <div style="height:8px;background:var(--cream);border-radius:4px">
+          <div style="height:8px;background:var(--mint-d);border-radius:4px;width:${pct}%"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+  document.getElementById('rp-mkt').innerHTML=[
+    metricRow('Реферальный коэффициент',referralPct+'%',null,null,
+      referralCount+' из '+students.length+' по рекомендации'),
+    metricRow('Пробных занятий',trials.count.toString(),null,null,
+      trials.students+' уникальных учеников'),
+  ].join('');
+
+  const srcChart=document.getElementById('rp-sources-chart');
+  if(srcChart){
+    srcChart.innerHTML='<div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--ink-l)">Источники клиентов</div>'+
+      (students.length>0?sourcesHtml:'<div style="font-size:12px;color:var(--ink-l)">Нет данных — добавьте источник в карточку ученика</div>');
+  }
+
+  // QUALITY
+  document.getElementById('rp-qual').innerHTML=[
+    metricRow('Средняя посещаемость',avgAtt+'%','>80%',avgAtt>=80,
+      'по всем ученикам за весь период'),
+    metricRow('Всего учеников',students.length.toString(),null,null,'в базе системы'),
+    metricRow('Средний срок обучения',avgDuration>0?avgDuration.toFixed(1)+' мес':'—',null,null,
+      'от первого до последнего посещения'),
+    metricRow('Записей об уходе',churnLog.length.toString(),null,null,'в журнале оттока'),
+  ].join('');
+
+  // CHURN LOG
+  renderChurnLog();
+}
+
+function calcBreakeven(){
+  const costs=parseFloat(document.getElementById('rp-fixed-costs').value)||0;
+  const {from,to}=getRpDates();
+  const rev=getRevenueInPeriod(from,to);
+  const avgSubPrice=rev.lessonCount>0?rev.total/rev.lessonCount:0;
+  const el=document.getElementById('rp-breakeven');
+  if(!el)return;
+  if(!costs||!avgSubPrice){el.textContent='—';return;}
+  const min=Math.ceil(costs/avgSubPrice);
+  el.textContent=`минимум ${min} учеников`;
+}
+
+function saveMarketingCost(){
+  const amount=parseFloat(document.getElementById('rp-mkt-cost').value)||0;
+  const {from}=getRpDates();
+  const month=from.toISOString().slice(0,7);
+  const idx=marketingCosts.findIndex(m=>m.month===month);
+  if(idx>=0)marketingCosts[idx].amount=amount;
+  else marketingCosts.push({month,amount});
+  persist();
+  toast('💾 Затраты сохранены');
+  renderReports();
+}
+
+function openAddChurn(){
+  const sel=document.getElementById('churn-sid');
+  if(sel){
+    sel.innerHTML=students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  }
+  const dateEl=document.getElementById('churn-date');
+  if(dateEl)dateEl.value=fmtDate(new Date());
+  openM('m-churn');
+}
+
+function saveChurn(){
+  const sid=+document.getElementById('churn-sid').value;
+  const s=students.find(x=>x.id===sid);
+  const date=document.getElementById('churn-date').value;
+  const months=parseFloat(document.getElementById('churn-months').value)||0;
+  const reason=document.getElementById('churn-reason').value;
+  const note=document.getElementById('churn-note').value.trim();
+  if(!reason){toast('⚠️ Укажите причину ухода');return;}
+  churnLog.push({
+    id:nextChurnId++,
+    date,
+    studentId:sid,
+    studentName:s?s.name:'Неизвестно',
+    source:s?s.source||'':'' ,
+    months,
+    reason,
+    note
+  });
+  persist();
+  closeM('m-churn');
+  toast('✅ Запись добавлена');
+  renderChurnLog();
+}
+
+function renderChurnLog(){
+  const el=document.getElementById('rp-churn-list');
+  if(!el)return;
+  if(!churnLog.length){
+    el.innerHTML='<div style="color:var(--ink-l);font-size:13px;text-align:center;padding:20px">Записей об уходе нет</div>';
+    return;
+  }
+  const reasons={'цена':'💸','переезд':'🏠','расписание':'📅','не хочет':'😔','другой кружок':'🏃','нет прогресса':'📉','другое':'🔹'};
+  el.innerHTML=`<table style="width:100%;font-size:13px;border-collapse:collapse">
+    <thead><tr style="color:var(--ink-l);font-size:11px;font-weight:700">
+      <th style="text-align:left;padding:6px 8px">Дата</th>
+      <th style="text-align:left;padding:6px 8px">Ученик</th>
+      <th style="text-align:left;padding:6px 8px">Срок (мес)</th>
+      <th style="text-align:left;padding:6px 8px">Причина</th>
+      <th style="text-align:left;padding:6px 8px">Источник</th>
+      <th style="text-align:left;padding:6px 8px">Примечание</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${churnLog.slice().reverse().map(c=>`
+      <tr style="border-top:1px solid var(--cream)">
+        <td style="padding:8px">${new Date(c.date).toLocaleDateString('ru-RU')}</td>
+        <td style="padding:8px;font-weight:600">${c.studentName}</td>
+        <td style="padding:8px">${c.months||'—'}</td>
+        <td style="padding:8px">${reasons[c.reason]||'•'} ${c.reason}</td>
+        <td style="padding:8px">${c.source||'—'}</td>
+        <td style="padding:8px;color:var(--ink-l)">${c.note||'—'}</td>
+        <td style="padding:8px"><button class="btn btn-ghost btn-sm" onclick="deleteChurn(${c.id})">✕</button></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function deleteChurn(id){
+  churnLog=churnLog.filter(c=>c.id!==id);
+  persist();
+  renderChurnLog();
+}
 
 function exportExcel(){
   // Load SheetJS on demand
@@ -6272,26 +6763,7 @@ function _doExport(){
 
 function printReport(){ exportExcel(); } // alias for old calls
 
-// ══════════════════════════════════════════════════════════════
-//  CHART
-// ══════════════════════════════════════════════════════════════
-function initChart(){
-  const bEl=document.getElementById('chart-bars');
-  const lEl=document.getElementById('chart-labels');
-  if(!bEl||bEl.children.length>0)return;
-  const months=['Сен','Окт','Ноя','Дек','Янв','Фев','Мар','Апр'];
-  const vals=[68,72,75,71,76,79,82,87];
-  const cols=['#FFD4B8','#B8F0D4','#D4C4F0','#C4E4F8','#FFD4B8','#B8F0D4','#FFE97A','#5ECFA0'];
-  const mx=Math.max(...vals);
-  months.forEach((m,i)=>{
-    const h=Math.round(vals[i]/mx*100);
-    const w=document.createElement('div'); w.className='bar-wrap';
-    w.innerHTML=`<div class="bar-val">${vals[i]}%</div><div class="bar" style="height:${h}px;background:${cols[i]}"></div>`;
-    bEl.appendChild(w);
-    const l=document.createElement('div'); l.className='bar-label'; l.textContent=m;
-    lEl.appendChild(l);
-  });
-}
+function initChart(){ renderReports(); }
 
 // ══════════════════════════════════════════════════════════════
 //  GALLERY
