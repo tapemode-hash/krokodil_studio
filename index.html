@@ -2004,20 +2004,20 @@ function lsLoad(k,fb){ try{ const v=localStorage.getItem(LS+k); return v!==null?
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 // ── Суффиксы мета-ключей стоимости занятий ──
-const K_VIA_SUB    = K_VIA_SUB;
-const K_SUB_IDX    = K_SUB_IDX;
-const K_SUB_PRICE  = K_SUB_PRICE;
-const K_SUB_TOTAL  = K_SUB_TOTAL;
-const K_AUTO       = K_AUTO;
-const K_PROMO      = K_PROMO;
-const K_BASE_PRICE = K_BASE_PRICE;
-const K_TRIAL      = K_TRIAL;
+const K_VIA_SUB    = '_via_sub';
+const K_SUB_IDX    = '_subIdx';
+const K_SUB_PRICE  = '_sub_price';
+const K_SUB_TOTAL  = '_sub_total';
+const K_AUTO       = '_auto';
+const K_PROMO      = '_promo';
+const K_BASE_PRICE = '_base_price';
+const K_TRIAL      = '_trial';
 
 // ── Хелперы доступа к данным (читают; запись — напрямую) ──
-function getSubs(sid){ return getSubs(sid); }
-function getEnrolls(sid){ return getEnrolls(sid); }
-function getDateEnrolls(sid){ return getDateEnrolls(sid); }
-function activeStudents(){ return activeStudents(); }
+function getSubs(sid){ return subscriptions[sid]||[]; }
+function getEnrolls(sid){ return enrollments[sid]||[]; }
+function getDateEnrolls(sid){ return dateEnrollments[sid]||[]; }
+function activeStudents(){ return students.filter(s=>isStudentActive(s.id)); }
 
 function persist(){
   lsSave('teachers',teachers); lsSave('students',students);
