@@ -6380,6 +6380,7 @@ function getRevenuePerTeacher(from,to){
   });
 
   console.log('getRevenuePerTeacher: processed', processedDates, 'dates in period');
+  console.log('Teacher 0 lessons:', result[0]?.lessons, 'revenue:', result[0]?.revenue);
   console.log('getRevenuePerTeacher result:', result, 'from:', from, 'to:', to);
   return result;
 }
