@@ -1981,6 +1981,7 @@ function persist(){
   lsSave('attendance',attendance);
   lsSave('enrollments',enrollments);
   lsSave('dateEnrollments',dateEnrollments);
+  lsSave('dayAssignments',dayAssignments);
   lsSave('announcements',announcements);
   lsSave('nextAnnId',nextAnnId);
   lsSave('subscriptions',subscriptions);
@@ -3541,6 +3542,8 @@ let nextChurnId = lsLoad('nextChurnId', 1);
 let enrollments   = lsLoad('enrollments', DEFAULT_ENROLLMENTS);
 // dateEnrollments: { studentId: ['YYYY-MM-DD', ...] }
 let dateEnrollments = lsLoad('dateEnrollments', {});
+// dayAssignments: { 'YYYY-MM-DD': { studentId: scheduleId } } — временное назначение в группу на день
+let dayAssignments  = lsLoad('dayAssignments',  {});
 // announcements: [{id, type, title, body, date, createdAt}]
 let announcements = lsLoad('announcements', [
   {id:1, type:'event', title:'Выставка «Весна в Крокодиле»', body:'Приглашаем всех на открытие выставки 1 мая в Городском культурном центре.', date:'1 мая', createdAt:'2025-04-20'},
@@ -5488,6 +5491,11 @@ function renderAttendance(){
   const markedSids=new Set(Object.keys(dayAtt).filter(k=>!String(k).includes('_')).map(sidFromAttKey));
   const alreadyMarked=students.filter(s=>markedSids.has(s.id)&&!dateEnrolledStudents.find(x=>x.id===s.id));
 
+  // Schedules running on this day of week (for group-assignment selector)
+  const dayActiveScheds=schedule.filter(sc=>
+    sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===todayDow)
+  );
+
   // Build (student, schedule, attKey) pairs — one row per class the student attends today
   const pairs=[];
   const addPairs=(s,isExtra)=>{
@@ -5498,12 +5506,15 @@ function renderAttendance(){
     );
     if(todayScheds.length>=2){
       // Multiple classes today → composite key per class
-      todayScheds.forEach(sc=>pairs.push({s,sc,attKey:s.id+':'+sc.id,isExtra}));
+      todayScheds.forEach(sc=>pairs.push({s,sc,attKey:s.id+':'+sc.id,isExtra,dayAssigned:false}));
     } else if(todayScheds.length===1){
       // Single class → plain sid key (backward compat with existing data)
-      pairs.push({s,sc:todayScheds[0],attKey:String(s.id),isExtra});
+      pairs.push({s,sc:todayScheds[0],attKey:String(s.id),isExtra,dayAssigned:false});
     } else {
-      pairs.push({s,sc:null,attKey:String(s.id),isExtra});
+      // Check for a day-specific manual assignment
+      const assignedScId=(dayAssignments[key]||{})[String(s.id)];
+      const assignedSc=assignedScId!=null?schedule.find(sc=>sc.id===assignedScId):null;
+      pairs.push({s,sc:assignedSc||null,attKey:String(s.id),isExtra,dayAssigned:!!assignedSc});
     }
   };
   dateEnrolledStudents.forEach(s=>addPairs(s,false));
@@ -5518,13 +5529,13 @@ function renderAttendance(){
       </div>`;
   } else {
     const groupMap=new Map();
-    pairs.forEach(({s,sc,attKey,isExtra})=>{
+    pairs.forEach(({s,sc,attKey,isExtra,dayAssigned})=>{
       const gKey=sc?sc.id:0;
       if(!groupMap.has(gKey))groupMap.set(gKey,{sc:sc||{name:'Без группы',time:'',teacher:''},rows:[]});
-      groupMap.get(gKey).rows.push({s,attKey,isExtra});
+      groupMap.get(gKey).rows.push({s,attKey,isExtra,sc:sc||null,dayAssigned});
     });
 
-    const studentRow=({s,attKey,isExtra})=>{
+    const studentRow=({s,attKey,isExtra,sc,dayAssigned})=>{
       const sid=s.id;
       const cur=dayAtt[attKey]||'';
       const sub=getActiveSub(sid);
@@ -5543,10 +5554,24 @@ function renderAttendance(){
         ?`<span style="font-size:11px;color:var(--ink-l)"><s style="opacity:.5">${basePrice.toLocaleString('ru')}</s> <b style="color:#E07800">${promoPrice.toLocaleString('ru')} ₽</b> 🏷️</span>`
         :`<span style="font-size:11px;color:var(--ink-l)">${(sub?subPerLesson:basePrice).toLocaleString('ru')} ₽/зан.</span>`;
       const isViaSub=!!(lessonCosts[key]||{})[attKey+'_via_sub'];
+
+      // Group assignment control (admin only)
+      let groupCtrl='';
+      if(currentRole==='admin'){
+        if(!sc&&dayActiveScheds.length){
+          const opts=dayActiveScheds.map(tsc=>`<option value="${tsc.id}">${tsc.name}${tsc.time?' · '+tsc.time:''}</option>`).join('');
+          groupCtrl=`<select onchange="assignToGroup(${sid},this.value)" style="margin-top:4px;font-size:11px;padding:2px 6px;border:1px solid var(--cream-d);border-radius:6px;background:white;color:var(--ink);cursor:pointer;max-width:200px">
+            <option value="">→ Перенести в группу</option>${opts}</select>`;
+        } else if(dayAssigned){
+          groupCtrl=`<button onclick="removeGroupAssignment(${sid})" style="margin-top:4px;font-size:10px;padding:2px 8px;border:1px solid var(--yel-d);border-radius:6px;background:white;color:var(--yel-d);cursor:pointer">↩ Убрать из группы</button>`;
+        }
+      }
+
       return `<div class="att-student-row" style="border-left:3px solid ${isExtra?'var(--yel-d)':'var(--mint-d)'};padding-left:11px;background:linear-gradient(90deg,${isExtra?'#FFFDF0':'#F0FFF8'},var(--cream))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
         <div class="att-student-name" style="flex:1">
           <div style="display:flex;align-items:center;gap:7px">${s.name} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
+          ${groupCtrl?`<div>${groupCtrl}</div>`:''}
         </div>
         ${currentRole==='admin'?`<div style="margin-right:10px;text-align:right">${priceHint}</div>`:''}
         ${currentRole==='admin'?`<div class="att-controls">
@@ -5698,6 +5723,24 @@ function syncPromoUI(){
 }
 
 function lsSave_unused_remove(){}
+
+function assignToGroup(sid, scId){
+  if(!scId)return;
+  const key=fmtDate(attDate);
+  if(!dayAssignments[key])dayAssignments[key]={};
+  dayAssignments[key][String(sid)]=parseInt(scId);
+  persist();
+  renderAttendance();
+}
+
+function removeGroupAssignment(sid){
+  const key=fmtDate(attDate);
+  if(!dayAssignments[key])return;
+  delete dayAssignments[key][String(sid)];
+  if(!Object.keys(dayAssignments[key]).length)delete dayAssignments[key];
+  persist();
+  renderAttendance();
+}
 
 function markAtt(sid, mark, btn, attKey){
   attKey = (attKey!=null) ? String(attKey) : String(sid);
