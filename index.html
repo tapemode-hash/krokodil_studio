@@ -6349,13 +6349,17 @@ function getRevenuePerTeacher(from,to){
   const result={};
   teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0});
 
+  console.log('Schedule entries count:', schedule.length);
+  let processedDates=0;
   schedule.forEach(sc=>{
     const teacherId=sc.teacher_id||0;
     if(!result[teacherId])result[teacherId]={name:sc.teacher||'Без педагога',revenue:0,lessons:0,studentsTotal:0};
 
     const sc_dates=getScheduleDates(sc,365);
+    console.log(`Schedule ${sc.name} (teacher_id: ${teacherId}) has ${sc_dates.length} dates`);
     sc_dates.forEach(date=>{
       if(!inPeriod(date,from,to))return;
+      processedDates++;
       const att=attendance[fmtDate(new Date(date))]||{};
       const costs=lessonCosts[fmtDate(new Date(date))]||{};
 
@@ -6375,6 +6379,7 @@ function getRevenuePerTeacher(from,to){
     });
   });
 
+  console.log('getRevenuePerTeacher: processed', processedDates, 'dates in period');
   console.log('getRevenuePerTeacher result:', result, 'from:', from, 'to:', to);
   return result;
 }
@@ -6613,6 +6618,7 @@ function renderReports(){
     const revByTeacher=getRevenuePerTeacher(from,to);
     const rows=Object.values(revByTeacher).filter(t=>t.lessons>0);
     console.log('Teacher revenue data:', revByTeacher, 'Filtered rows:', rows);
+    console.log('Individual teacher lessons:', Object.values(revByTeacher).map(t=>({name:t.name,lessons:t.lessons,revenue:t.revenue,studentsTotal:t.studentsTotal})));
     if(!rows.length){
       teacherEl.innerHTML='<div style="font-size:13px;color:var(--ink-l)">Нет данных за период</div>';
     } else {
