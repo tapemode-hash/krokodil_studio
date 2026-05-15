@@ -2024,6 +2024,7 @@ function persist(){
   lsSave('nextReqId', nextReqId);
   lsSave('churnLog',churnLog);
   lsSave('marketingCosts',marketingCosts);
+  lsSave('fixedCostsData',fixedCostsData);
   lsSave('nextChurnId',nextChurnId);
   showSaved();
   syncToFirebase();
@@ -3566,6 +3567,7 @@ let attendance = lsLoad('attendance', {}); // { 'YYYY-MM-DD': {studentId: 'p'|'a
 let churnLog = lsLoad('churnLog', []);
 let marketingCosts = lsLoad('marketingCosts', []);
 let nextChurnId = lsLoad('nextChurnId', 1);
+let fixedCostsData = lsLoad('fixedCostsData', []); // [{month:'YYYY-MM',rent:0,utilities:0,other:0}]
 // enrollments: { studentId: [scheduleId, ...] }
 let enrollments   = lsLoad('enrollments', DEFAULT_ENROLLMENTS);
 // dateEnrollments: { studentId: ['YYYY-MM-DD', ...] }
@@ -6475,7 +6477,7 @@ function getStudioLoad(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
       const entry=perSchedule.get(scId)||{present:0};
       if(status==='p')entry.present++;
@@ -6608,7 +6610,7 @@ function getRevenuePerTeacher(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
 
       const entry=perSchedule.get(scId)||{revenue:0,count:0};
@@ -6666,7 +6668,7 @@ function openTeacherSalaryDetail(tid){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
@@ -6823,17 +6825,26 @@ function renderReports(){
   const subShareGood=subSharePct>=70;
   const revenuePerTeacher=teachers.length>0?Math.round(rev.total/teachers.length):0;
 
-  // LTV
-  const durations=students.map(s=>{
-    const first=getStudentFirstActivity(s.id);
-    const last=getStudentLastActivity(s.id);
-    if(!first||!last)return null;
-    return (last-first)/(1000*60*60*24*30);
-  }).filter(d=>d!==null&&d>0);
-  const avgDuration=durations.length>0?durations.reduce((a,b)=>a+b,0)/durations.length:0;
+  // LTV — на реальных данных
+  const periodMonths=Math.max((to-from)/(1000*60*60*24*30),0.5);
+  // ARPU: реальная выручка / активных учеников / месяцев периода
+  const arpu=activeNow.size>0?rev.total/activeNow.size/periodMonths:0;
+  // Lifetime через churn rate; fallback — фактический span удержания
+  const churnRate=activePrev.size>0?churned/activePrev.size:0;
+  const avgLifetime=churnRate>0?1/churnRate:(()=>{
+    const spans=students.map(s=>{
+      const first=getStudentFirstActivity(s.id);
+      const last=isStudentActive(s.id)?new Date():getStudentLastActivity(s.id);
+      if(!first||!last)return null;
+      return (last-first)/(1000*60*60*24*30);
+    }).filter(d=>d!==null&&d>0);
+    return spans.length>0?spans.reduce((a,b)=>a+b,0)/spans.length:12;
+  })();
+  const ltv=Math.round(arpu*avgLifetime);
+  // Для отображения в метрике (обратная совместимость)
   const allSubs=Object.values(subscriptions).flat();
   const avgSubPrice=allSubs.length>0?allSubs.reduce((a,b)=>a+(b.price||0),0)/allSubs.length:0;
-  const ltv=Math.round(avgSubPrice*avgDuration);
+  const avgDuration=avgLifetime;
 
   // CAC
   const periodKey=from.toISOString().slice(0,7);
@@ -6952,7 +6963,7 @@ function renderReports(){
     metricRow('Выручка на педагога',revenuePerTeacher>0?revenuePerTeacher.toLocaleString('ru')+' ₽':'—',null,null,
       teachers.length+' педагогов'),
     metricRow('LTV клиента',ltv>0?ltv.toLocaleString('ru')+' ₽':'—',null,null,
-      'ср. чек '+Math.round(avgSubPrice)+' × '+avgDuration.toFixed(1)+' мес.'),
+      Math.round(arpu)+' ₽/мес × '+avgLifetime.toFixed(1)+' мес. удержания'),
     metricRow('CAC (стоимость привлечения)',cac!=null?cac.toLocaleString('ru')+' ₽':'введите затраты↓',null,null,
       newStudents.length+' новых клиентов за период'),
   ].join('');
@@ -6960,15 +6971,41 @@ function renderReports(){
   // LTV CALCULATOR
   const ltvCalcEl=document.getElementById('rp-ltv-calc');
   if(ltvCalcEl){
-    const fixedCosts=0;
+    const fcEntry=fixedCostsData.find(x=>x.month===periodKey)||{rent:0,utilities:0,other:0};
+    const totalFixed=(fcEntry.rent||0)+(fcEntry.utilities||0)+(fcEntry.other||0);
+    const teacherData=getRevenuePerTeacher(from,to);
+    const totalSalary=Object.values(teacherData).reduce((s,t)=>s+t.salary,0);
+    const varPerStu=activeNow.size>0&&periodMonths>0?totalSalary/activeNow.size/periodMonths:0;
+    const margin=arpu-varPerStu;
+    const beStudents=totalFixed>0&&margin>0?Math.ceil(totalFixed/margin):null;
+    const beRevenue=totalFixed>0&&arpu>0&&varPerStu<arpu?Math.ceil(totalFixed/(1-varPerStu/arpu)):null;
+    const ltvSource=churnRate>0?`churn ${Math.round(churnRate*100)}% → ${avgLifetime.toFixed(1)} мес.`:`фактич. удержание ${avgLifetime.toFixed(1)} мес.`;
     ltvCalcEl.innerHTML=`
-      <b>LTV</b> = ${Math.round(avgSubPrice).toLocaleString('ru')} ₽ × ${avgDuration.toFixed(1)} мес = <b>${ltv.toLocaleString('ru')} ₽</b><br>
-      <span style="color:var(--ink-l);font-size:11px">Средний чек абонемента × среднее удержание</span><br><br>
-      <b>Точка безубыточности</b><br>
-      <span style="color:var(--ink-l);font-size:11px">Введите постоянные расходы:</span><br>
-      <div style="display:flex;gap:6px;margin-top:4px">
-        <input type="number" id="rp-fixed-costs" class="form-input" placeholder="₽ в месяц" style="font-size:12px;padding:6px" oninput="calcBreakeven()">
-        <span style="align-self:center;font-size:12px" id="rp-breakeven">—</span>
+      <div style="margin-bottom:10px">
+        <b>LTV</b> = ${Math.round(arpu).toLocaleString('ru')} ₽/мес × ${avgLifetime.toFixed(1)} мес = <b>${ltv>0?ltv.toLocaleString('ru')+' ₽':'нет данных'}</b><br>
+        <span style="color:var(--ink-l);font-size:11px">ARPU ${Math.round(arpu).toLocaleString('ru')} ₽ · ${ltvSource}</span>
+      </div>
+      <div style="border-top:1px dashed var(--peach);padding-top:10px;margin-bottom:8px">
+        <b>Постоянные расходы</b> <span style="color:var(--ink-l);font-size:11px">(сохраняются)</span><br>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
+          <div><div style="font-size:11px;color:var(--ink-l);margin-bottom:2px">Аренда ₽/мес</div>
+            <input type="number" id="rp-fc-rent" class="form-input" value="${fcEntry.rent||''}" placeholder="0" style="font-size:12px;padding:5px" oninput="saveFixedCosts()"></div>
+          <div><div style="font-size:11px;color:var(--ink-l);margin-bottom:2px">Коммуналка ₽/мес</div>
+            <input type="number" id="rp-fc-util" class="form-input" value="${fcEntry.utilities||''}" placeholder="0" style="font-size:12px;padding:5px" oninput="saveFixedCosts()"></div>
+          <div><div style="font-size:11px;color:var(--ink-l);margin-bottom:2px">Прочее ₽/мес</div>
+            <input type="number" id="rp-fc-other" class="form-input" value="${fcEntry.other||''}" placeholder="0" style="font-size:12px;padding:5px" oninput="saveFixedCosts()"></div>
+        </div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Итого постоянные: <b>${totalFixed.toLocaleString('ru')} ₽</b></div>
+      </div>
+      <div style="border-top:1px dashed var(--peach);padding-top:10px">
+        <b>Точка безубыточности</b><br>
+        <div style="font-size:11px;color:var(--ink-l);margin:4px 0 6px">
+          Перем. расходы: ${Math.round(varPerStu).toLocaleString('ru')} ₽/уч./мес (зарплата педагогов) ·
+          Маржа: ${margin>0?Math.round(margin).toLocaleString('ru')+' ₽':'<span style="color:var(--coral)">отрицательная</span>'}
+        </div>
+        <div id="rp-breakeven" style="font-weight:700;font-size:13px">
+          ${beStudents!=null?`${beStudents} учеников / ${beRevenue?beRevenue.toLocaleString('ru')+' ₽ выручки':'—'}`:totalFixed===0?'введите расходы':'маржа ≤ 0'}
+        </div>
       </div>`;
   }
 
@@ -7079,16 +7116,18 @@ function toggleLoadDetail(){
   if(ch)ch.style.transform=open?'rotate(180deg)':'';
 }
 
-function calcBreakeven(){
-  const costs=parseFloat(document.getElementById('rp-fixed-costs').value)||0;
-  const {from,to}=getRpDates();
-  const rev=getRevenueInPeriod(from,to);
-  const avgSubPrice=rev.lessonCount>0?rev.total/rev.lessonCount:0;
-  const el=document.getElementById('rp-breakeven');
-  if(!el)return;
-  if(!costs||!avgSubPrice){el.textContent='—';return;}
-  const min=Math.ceil(costs/avgSubPrice);
-  el.textContent=`минимум ${min} учеников`;
+function calcBreakeven(){ renderReports(); }
+
+function saveFixedCosts(){
+  const {from}=getRpDates();
+  const month=from.toISOString().slice(0,7);
+  const rent=parseFloat(document.getElementById('rp-fc-rent')?.value)||0;
+  const utilities=parseFloat(document.getElementById('rp-fc-util')?.value)||0;
+  const other=parseFloat(document.getElementById('rp-fc-other')?.value)||0;
+  const idx=fixedCostsData.findIndex(x=>x.month===month);
+  if(idx>=0) fixedCostsData[idx]={month,rent,utilities,other};
+  else fixedCostsData.push({month,rent,utilities,other});
+  lsSave('fixedCostsData',fixedCostsData);
 }
 
 function saveMarketingCost(){
