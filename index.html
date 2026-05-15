@@ -6298,40 +6298,50 @@ function getSessionDaysInPeriod(from,to){
 
 function getStudioLoad(from,to){
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
-  let maxSlots=0,actualSlots=0,scheduledDays=0;
+  const scheduleMap={};
+  schedule.forEach(sc=>scheduleMap[sc.id]=sc);
 
-  const cur=new Date(from);
-  cur.setHours(12,0,0,0);
-  const end=new Date(to);
-  end.setHours(12,0,0,0);
+  let maxSlots=0,actualSlots=0;
+  const activeDays=new Set();
 
-  while(cur<=end){
-    const dow=cur.getDay();
-    const dateStr=fmtDate(cur);
+  // Iterate only dates where the journal was actually filled in
+  Object.entries(attendance).forEach(([dateStr,att])=>{
+    if(!inPeriod(dateStr,from,to))return;
+    const dow=new Date(dateStr+'T12:00:00').getDay();
 
-    // Schedules active on this day of week
-    const dayScheds=schedule.filter(sc=>
-      sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow)
-    );
+    // Group attendance entries by schedule (same logic as getRevenuePerTeacher)
+    const perSchedule=new Map();
+    Object.entries(att).forEach(([key,status])=>{
+      if(String(key).includes('_'))return;
+      if(status!=='p'&&status!=='a')return;
+      let scId=null;
+      if(String(key).includes(':')){
+        scId=parseInt(key.split(':')[1]);
+      } else {
+        const enrolled=enrollments[String(key)]||[];
+        const matched=enrolled.find(scid=>{
+          const sc=scheduleMap[scid];
+          return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
+        });
+        scId=matched??null;
+      }
+      const entry=perSchedule.get(scId)||{present:0};
+      if(status==='p')entry.present++;
+      perSchedule.set(scId,entry);
+    });
 
-    if(dayScheds.length>0){
-      scheduledDays++;
-      dayScheds.forEach(sc=>{
-        // Individual lessons hold 1 student, group lessons up to 12
-        maxSlots+=/индивидуальн/i.test(sc.name)?1:12;
-      });
+    if(perSchedule.size===0)return;
+    activeDays.add(dateStr);
 
-      // Count actual present students on this date
-      const att=attendance[dateStr]||{};
-      Object.entries(att).forEach(([key,status])=>{
-        if(status==='p'&&!String(key).includes('_'))actualSlots++;
-      });
-    }
+    // Each schedule group that ran = 1 lesson; add its capacity to denominator
+    perSchedule.forEach(({present},scId)=>{
+      const sc=scId!==null?scheduleMap[scId]:null;
+      maxSlots+=sc&&/индивидуальн/i.test(sc.name)?1:12;
+      actualSlots+=present;
+    });
+  });
 
-    cur.setDate(cur.getDate()+1);
-  }
-
-  return {maxSlots,actualSlots,scheduledDays};
+  return {maxSlots,actualSlots,scheduledDays:activeDays.size};
 }
 
 function getStudentFirstActivity(sid){
