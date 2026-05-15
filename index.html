@@ -1978,6 +1978,22 @@ body.is-admin .ann-input-area{display:block}
   </main>
 </div>
 
+<!-- ══ TEACHER SALARY DETAIL MODAL ══ -->
+<div class="modal-overlay" id="m-tsalary">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeM('m-tsalary')">✕</button>
+    <div class="modal-title" id="mts-title">💼 Детали зарплаты</div>
+    <div id="mts-header" style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:12px 14px;background:var(--cream);border-radius:12px"></div>
+    <div id="mts-groups" style="margin-bottom:14px"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">По датам</div>
+    <div id="mts-log" style="max-height:300px;overflow-y:auto;border:1px solid var(--peach);border-radius:10px"></div>
+    <div id="mts-total" style="margin-top:14px;padding:12px 16px;background:var(--mint);border-radius:12px;display:flex;align-items:center;justify-content:space-between"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeM('m-tsalary')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════════════════════
 //  STORAGE
@@ -6618,6 +6634,120 @@ function getRevenuePerTeacher(from,to){
   return result;
 }
 
+function openTeacherSalaryDetail(tid){
+  const t=teachers.find(x=>x.id===tid); if(!t)return;
+  const {from,to}=getRpDates();
+  const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
+  const RU_DAYS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const RU_MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+  const scheduleMap={};
+  schedule.forEach(sc=>scheduleMap[sc.id]=sc);
+  const teacherByName={};
+  teachers.forEach(x=>teacherByName[x.name]=x.id);
+
+  const dateBreakdown=[];
+  const groupStats={};
+  let totalRevenue=0, totalSalary=0, totalSessions=0;
+
+  Object.entries(attendance).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateStr,att])=>{
+    if(!inPeriod(dateStr,from,to))return;
+    const costs=lessonCosts[dateStr]||{};
+    const dow=new Date(dateStr+'T12:00:00').getDay();
+    const perSchedule=new Map();
+
+    Object.entries(att).forEach(([key,status])=>{
+      if(status!=='p'||String(key).includes('_'))return;
+      let scId=null;
+      if(String(key).includes(':')){ scId=parseInt(key.split(':')[1]); }
+      else {
+        const enrolled=enrollments[String(key)]||[];
+        const matched=enrolled.find(scid=>{
+          const sc=scheduleMap[scid];
+          return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
+        });
+        scId=matched??null;
+      }
+      const sc=scId!==null?scheduleMap[scId]:null;
+      const tName=sc?sc.teacher||'':'';
+      if((teacherByName[tName]??0)!==tid)return;
+      const entry=perSchedule.get(scId)||{revenue:0,count:0,students:[]};
+      const cost=costs[key]??effectivePrice(sidFromAttKey(key));
+      entry.revenue+=cost; entry.count++;
+      const stu=students.find(x=>x.id===sidFromAttKey(key));
+      if(stu)entry.students.push({name:stu.name,cost,viaSub:!!(costs[key+'_via_sub'])});
+      perSchedule.set(scId,entry);
+    });
+
+    if(perSchedule.size===0)return;
+    const d=new Date(dateStr);
+    const dateLabel=`${RU_DAYS[d.getDay()]}, ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
+    const dayGroups=[];
+    perSchedule.forEach(({revenue,count,students:stuList},scId)=>{
+      if(count===0)return;
+      const sc=scId!==null?scheduleMap[scId]:null;
+      const gName=sc?sc.name:'—';
+      const sal=calculateTeacherSalary(count,sc&&/индивидуальн/i.test(sc.name));
+      totalRevenue+=revenue; totalSalary+=sal; totalSessions++;
+      if(scId!==null){
+        if(!groupStats[scId])groupStats[scId]={name:gName,sessions:0,students:0,revenue:0,salary:0};
+        groupStats[scId].sessions++; groupStats[scId].students+=count;
+        groupStats[scId].revenue+=revenue; groupStats[scId].salary+=sal;
+      }
+      dayGroups.push({gName,count,revenue,sal,stuList});
+    });
+    if(dayGroups.length)dateBreakdown.push({dateLabel,dayGroups});
+  });
+
+  document.getElementById('mts-title').textContent=`💼 ${t.name}`;
+  document.getElementById('mts-header').innerHTML=`
+    <div style="background:${t.color};width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${t.avatar}</div>
+    <div>
+      <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">${t.name}</div>
+      <div style="font-size:12px;color:var(--ink-l)">${t.role}</div>
+      <div style="font-size:12px;color:var(--ink-l);margin-top:2px">Период: ${from.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} — ${to.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</div>
+    </div>`;
+
+  const groups=Object.values(groupStats);
+  document.getElementById('mts-groups').innerHTML=groups.length?`
+    <div style="font-size:12px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">По группам</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+    ${groups.map(g=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--cream);border-radius:9px;font-size:13px">
+        <div style="flex:1;font-weight:600">${g.name}</div>
+        <span class="badge blue">${g.sessions} зан.</span>
+        <span class="badge purple">${g.students} уч.</span>
+        <span style="color:var(--mint-d);font-weight:700;min-width:60px;text-align:right">${Math.round(g.revenue).toLocaleString('ru')} ₽</span>
+        <span style="color:var(--lav-d);font-weight:700;min-width:55px;text-align:right">${Math.round(g.salary).toLocaleString('ru')} ₽</span>
+      </div>`).join('')}
+    </div>`:'<div style="font-size:13px;color:var(--ink-l)">Нет данных за период</div>';
+
+  document.getElementById('mts-log').innerHTML=dateBreakdown.length?dateBreakdown.map(day=>`
+    <div style="padding:9px 14px;border-bottom:1px solid var(--peach)">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">${day.dateLabel}</div>
+      ${day.dayGroups.map(g=>`
+        <div style="margin-bottom:5px">
+          <div style="font-size:12px;color:var(--ink-l);margin-bottom:3px">${g.gName} · ${g.count} уч. · выручка <b style="color:var(--mint-d)">${Math.round(g.revenue).toLocaleString('ru')} ₽</b> · зарплата <b style="color:var(--lav-d)">${Math.round(g.sal).toLocaleString('ru')} ₽</b></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${g.stuList.map(s=>`<span style="background:var(--cream);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${s.name}${s.viaSub?' 🎫':''} · ${Math.round(s.cost).toLocaleString('ru')} ₽</span>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`).join('')
+    :'<div style="padding:16px;text-align:center;color:var(--ink-l);font-size:13px">Нет занятий за период</div>';
+
+  document.getElementById('mts-total').innerHTML=`
+    <div>
+      <div style="font-size:12px;font-weight:600">Итого за период</div>
+      <div style="font-size:12px;color:var(--ink-l)">${totalSessions} занятий · прибыль: <b style="color:${totalRevenue-totalSalary>=0?'#2a7a50':'var(--coral)'}">${Math.round(totalRevenue-totalSalary).toLocaleString('ru')} ₽</b></div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Caveat',cursive;font-size:22px;font-weight:700;color:#2a7a50">${Math.round(totalSalary).toLocaleString('ru')} ₽</div>
+      <div style="font-size:11px;color:var(--ink-l)">зарплата</div>
+    </div>`;
+
+  openM('m-tsalary');
+}
+
 function renderReports(){
   const {from,to}=getRpDates();
   // Label
@@ -6900,7 +7030,7 @@ function renderReports(){
             <div><div style="color:var(--ink-l)">Занятий</div><div style="font-weight:700">${t.lessons}</div></div>
             <div><div style="color:var(--ink-l)">Ср. учеников</div><div style="font-weight:700">${avgStudents.toFixed(1)}</div></div>
             <div><div style="color:var(--ink-l)">Выручка</div><div style="font-weight:700;color:var(--mint-d)">${Math.round(t.revenue).toLocaleString('ru')} ₽</div></div>
-            <div><div style="color:var(--ink-l)">Зарплата</div><div style="font-weight:700;color:var(--lav-d)">${Math.round(totalSalary).toLocaleString('ru')} ₽</div></div>
+            <div><div style="color:var(--ink-l)">Зарплата</div><div style="font-weight:700;color:var(--lav-d);cursor:pointer;border-bottom:2px dashed var(--lav-d);display:inline-block" onclick="openTeacherSalaryDetail(${t.id})">${Math.round(totalSalary).toLocaleString('ru')} ₽</div></div>
           </div>
           <div style="margin-top:8px;font-size:12px;color:var(--ink-l)">${salaryPerLesson} ₽/занятие · прибыль: <b style="color:${profit>=0?'var(--mint-d)':'var(--coral-d)'}">${Math.round(profit).toLocaleString('ru')} ₽</b></div>
         </div>`;
