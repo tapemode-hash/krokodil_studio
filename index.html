@@ -6346,48 +6346,64 @@ function calculateTeacherSalary(studentCount){
 }
 
 function getRevenuePerTeacher(from,to){
+  const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
+
+  // Build teacher lookup: name -> id
+  const teacherByName={};
+  teachers.forEach(t=>teacherByName[t.name]=t.id);
+
   const result={};
-  teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0});
-  if(!result[0])result[0]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0};
+  teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
+  if(!result[0])result[0]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
 
-  // Pre-build a map of schedule name -> teacherId for teacher assignment
-  const scTeachers={};
-  schedule.forEach(sc=>{
-    const tid=sc.teacher_id||0;
-    if(!result[tid])result[tid]={name:sc.teacher||'Без педагога',revenue:0,lessons:0,studentsTotal:0};
-    scTeachers[sc.id]=tid;
-  });
+  // Build schedule lookup by id
+  const scheduleMap={};
+  schedule.forEach(sc=>scheduleMap[sc.id]=sc);
 
-  // Iterate attendance dates directly (not schedule-generated dates)
-  // so past dates with real attendance data are included
   Object.entries(attendance).forEach(([dateStr,att])=>{
     if(!inPeriod(dateStr,from,to))return;
     const costs=lessonCosts[dateStr]||{};
+    const dow=new Date(dateStr+'T12:00:00').getDay();
 
-    let dayRevenue=0,dayCount=0;
+    // Group present students by the schedule they attended
+    const perSchedule=new Map(); // scId (or null) -> {revenue, count}
+
     Object.entries(att).forEach(([key,status])=>{
       if(status!=='p'||String(key).includes('_'))return;
-      dayCount++;
-      const cost=costs[key];
-      if(cost!=null)dayRevenue+=cost;
+      const cost=costs[key]??0;
+
+      let scId=null;
+      if(String(key).includes(':')){
+        // Composite key studentId:scheduleId — schedule is explicit
+        scId=parseInt(key.split(':')[1]);
+      } else {
+        // Plain student key: find their enrolled schedule active on this day
+        const enrolled=enrollments[String(key)]||[];
+        const matched=enrolled.find(scid=>{
+          const sc=scheduleMap[scid];
+          return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
+        });
+        scId=matched??null;
+      }
+
+      const entry=perSchedule.get(scId)||{revenue:0,count:0};
+      entry.revenue+=cost;
+      entry.count++;
+      perSchedule.set(scId,entry);
     });
 
-    if(dayCount>0){
-      // Find teacher by matching schedule to this date
-      const dateObj=new Date(dateStr+'T12:00:00');
-      const dow=dateObj.getDay();
-      let teacherId=0;
-      for(const sc of schedule){
-        if((sc.days||[]).includes(dow)){
-          teacherId=sc.teacher_id||0;
-          break;
-        }
-      }
-      if(!result[teacherId])result[teacherId]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0};
-      result[teacherId].revenue+=dayRevenue;
-      result[teacherId].lessons++;
-      result[teacherId].studentsTotal+=dayCount;
-    }
+    // Attribute each lesson group to the teacher of that schedule
+    perSchedule.forEach(({revenue,count},scId)=>{
+      if(count===0)return;
+      const sc=scId!==null?scheduleMap[scId]:null;
+      const tName=sc?sc.teacher||'':'';
+      const tid=teacherByName[tName]??0;
+      if(!result[tid])result[tid]={name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+      result[tid].revenue+=revenue;
+      result[tid].lessons++;
+      result[tid].studentsTotal+=count;
+      result[tid].salary+=calculateTeacherSalary(count);
+    });
   });
 
   return result;
@@ -6631,8 +6647,8 @@ function renderReports(){
     } else {
       teacherEl.innerHTML=rows.map(t=>{
         const avgStudents=t.lessons>0?t.studentsTotal/t.lessons:0;
-        const salaryPerLesson=calculateTeacherSalary(Math.round(avgStudents));
-        const totalSalary=salaryPerLesson*t.lessons;
+        const totalSalary=t.salary;
+        const salaryPerLesson=t.lessons>0?Math.round(t.salary/t.lessons):0;
         const profit=t.revenue-totalSalary;
         return `<div style="background:var(--cream);border-radius:10px;padding:12px">
           <div style="font-weight:700;font-size:14px;margin-bottom:8px">${t.name}</div>
