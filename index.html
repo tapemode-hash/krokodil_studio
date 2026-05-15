@@ -6375,6 +6375,7 @@ function getRevenuePerTeacher(from,to){
     });
   });
 
+  console.log('getRevenuePerTeacher result:', result, 'from:', from, 'to:', to);
   return result;
 }
 
@@ -6611,6 +6612,7 @@ function renderReports(){
   if(teacherEl){
     const revByTeacher=getRevenuePerTeacher(from,to);
     const rows=Object.values(revByTeacher).filter(t=>t.lessons>0);
+    console.log('Teacher revenue data:', revByTeacher, 'Filtered rows:', rows);
     if(!rows.length){
       teacherEl.innerHTML='<div style="font-size:13px;color:var(--ink-l)">Нет данных за период</div>';
     } else {
