@@ -6348,61 +6348,48 @@ function calculateTeacherSalary(studentCount){
 function getRevenuePerTeacher(from,to){
   const result={};
   teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0});
+  if(!result[0])result[0]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0};
 
-  console.log('Schedule entries count:', schedule.length);
-  const processedDatesList=[];
-  let processedDates=0;
+  // Pre-build a map of schedule name -> teacherId for teacher assignment
+  const scTeachers={};
   schedule.forEach(sc=>{
-    const teacherId=sc.teacher_id||0;
-    if(!result[teacherId])result[teacherId]={name:sc.teacher||'Без педагога',revenue:0,lessons:0,studentsTotal:0};
-
-    const sc_dates=getScheduleDates(sc,365);
-    console.log(`Schedule ${sc.name} (teacher_id: ${teacherId}) has ${sc_dates.length} dates`);
-    sc_dates.forEach(date=>{
-      if(!inPeriod(date,from,to))return;
-      const dateStr=fmtDate(new Date(date));
-      const hasAtt=attendance[dateStr];
-      if(hasAtt){
-        processedDates++;
-        processedDatesList.push(dateStr);
-      }
-      if(!hasAtt)return;
-      const att=attendance[dateStr]||{};
-      const costs=lessonCosts[dateStr]||{};
-
-      let dayRevenue=0,dayCount=0;
-      const attEntries=Object.entries(att);
-      if(dateStr==='2026-05-15'){
-        console.log('2026-05-15 attendance entries:', Object.entries(att));
-        Object.entries(att).forEach(([key,status])=>{
-          console.log('2026-05-15 entry - key:', key, 'status:', status, 'includes underscore:', String(key).includes('_'));
-        });
-      }
-      Object.entries(att).forEach(([key,status])=>{
-        if(status!=='p'||String(key).includes('_'))return;
-        dayCount++;
-        const cost=costs[key];
-        if(cost!=null)dayRevenue+=cost;
-      });
-
-      if(dateStr==='2026-05-02')console.log('2026-05-02: attEntries=',attEntries.length,'dayCount=',dayCount,'dayRevenue=',dayRevenue,'teacherId=',teacherId);
-      if(dateStr==='2026-05-15')console.log('2026-05-15: attEntries=',attEntries.length,'dayCount=',dayCount,'dayRevenue=',dayRevenue,'teacherId=',teacherId);
-      if(dayCount>0){
-        result[teacherId].revenue+=dayRevenue;
-        result[teacherId].lessons++;
-        result[teacherId].studentsTotal+=dayCount;
-      }
-    });
+    const tid=sc.teacher_id||0;
+    if(!result[tid])result[tid]={name:sc.teacher||'Без педагога',revenue:0,lessons:0,studentsTotal:0};
+    scTeachers[sc.id]=tid;
   });
 
-  console.log('getRevenuePerTeacher: processed', processedDates, 'dates in period:', processedDatesList);
-  console.log('Teacher 0 lessons:', result[0]?.lessons, 'revenue:', result[0]?.revenue);
-  const attDates = Object.keys(attendance).slice(0, 10);
-  console.log('Attendance dates available:', attDates);
-  console.log('Total attendance records:', Object.keys(attendance).length);
-  console.log('Sample attendance for 2026-05-02:', attendance['2026-05-02']);
-  console.log('Sample lesson costs for 2026-05-02:', lessonCosts['2026-05-02']);
-  console.log('getRevenuePerTeacher result:', result, 'from:', from, 'to:', to);
+  // Iterate attendance dates directly (not schedule-generated dates)
+  // so past dates with real attendance data are included
+  Object.entries(attendance).forEach(([dateStr,att])=>{
+    if(!inPeriod(dateStr,from,to))return;
+    const costs=lessonCosts[dateStr]||{};
+
+    let dayRevenue=0,dayCount=0;
+    Object.entries(att).forEach(([key,status])=>{
+      if(status!=='p'||String(key).includes('_'))return;
+      dayCount++;
+      const cost=costs[key];
+      if(cost!=null)dayRevenue+=cost;
+    });
+
+    if(dayCount>0){
+      // Find teacher by matching schedule to this date
+      const dateObj=new Date(dateStr+'T12:00:00');
+      const dow=dateObj.getDay();
+      let teacherId=0;
+      for(const sc of schedule){
+        if((sc.days||[]).includes(dow)){
+          teacherId=sc.teacher_id||0;
+          break;
+        }
+      }
+      if(!result[teacherId])result[teacherId]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0};
+      result[teacherId].revenue+=dayRevenue;
+      result[teacherId].lessons++;
+      result[teacherId].studentsTotal+=dayCount;
+    }
+  });
+
   return result;
 }
 
@@ -6639,8 +6626,6 @@ function renderReports(){
   if(teacherEl){
     const revByTeacher=getRevenuePerTeacher(from,to);
     const rows=Object.values(revByTeacher).filter(t=>t.lessons>0);
-    console.log('Teacher revenue data:', revByTeacher, 'Filtered rows:', rows);
-    console.log('Individual teacher lessons:', Object.values(revByTeacher).map(t=>({name:t.name,lessons:t.lessons,revenue:t.revenue,studentsTotal:t.studentsTotal})));
     if(!rows.length){
       teacherEl.innerHTML='<div style="font-size:13px;color:var(--ink-l)">Нет данных за период</div>';
     } else {
