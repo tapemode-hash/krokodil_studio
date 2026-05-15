@@ -750,6 +750,7 @@ body.is-admin .ann-input-area{display:block}
 .call-time-btn{padding:5px 12px;border-radius:20px;border:2px solid var(--peach);background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--ink-l);transition:all .15s}
 .call-time-btn.active{background:var(--lav);border-color:var(--lav-d);color:var(--lav-d)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.5.3/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -1301,6 +1302,13 @@ body.is-admin .ann-input-area{display:block}
             </div>
             <div class="ach-list" id="ach-list-admin"></div>
           </div>
+        </div>
+
+        <!-- ── QR CODE ── -->
+        <div class="card" style="text-align:center;margin-bottom:20px">
+          <div class="card-title">📱 Поделиться сайтом</div>
+          <div id="qr-code" style="display:flex;justify-content:center;padding:20px;background:white;border-radius:12px"></div>
+          <div style="font-size:12px;color:var(--ink-l);margin-top:10px">Отсканируйте для быстрого доступа</div>
         </div>
 
         <!-- ── CONTACTS FOOTER ── -->
@@ -3797,6 +3805,24 @@ function renderDashboard(){
 
   // Always render the calendar — called once here for all roles
   renderMiniCal();
+
+  // Generate QR code for website URL
+  generateQRCode('https://tapemode-hash.github.io/krokodil_studio/');
+}
+
+// Generate QR code
+function generateQRCode(url){
+  const qrContainer=document.getElementById('qr-code');
+  if(!qrContainer)return;
+  qrContainer.innerHTML='';
+  new QRCode(qrContainer, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#3A2E2E',
+    colorLight: '#FFFDF9',
+    correctLevel: QRCode.CorrectLevel.H
+  });
 }
 
 // Parse "HH:MM" → minutes since midnight
