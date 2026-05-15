@@ -750,7 +750,6 @@ body.is-admin .ann-input-area{display:block}
 .call-time-btn{padding:5px 12px;border-radius:20px;border:2px solid var(--peach);background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--ink-l);transition:all .15s}
 .call-time-btn.active{background:var(--lav);border-color:var(--lav-d);color:var(--lav-d)}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.5.3/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -3826,18 +3825,12 @@ function renderDashboard(){
 
 // Generate QR code
 function generateQRCode(url){
+  const encoded=encodeURIComponent(url);
+  const src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=3A2E2E&bgcolor=FFFDF9&data=${encoded}`;
   ['qr-code','qr-code-parent','qr-code-guest'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
-    el.innerHTML='';
-    new QRCode(el,{
-      text:url,
-      width:200,
-      height:200,
-      colorDark:'#3A2E2E',
-      colorLight:'#FFFDF9',
-      correctLevel:QRCode.CorrectLevel.H
-    });
+    el.innerHTML=`<img src="${src}" width="200" height="200" alt="QR код сайта" style="border-radius:8px" loading="lazy">`;
   });
 }
 
