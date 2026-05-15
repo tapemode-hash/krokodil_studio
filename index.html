@@ -5544,7 +5544,26 @@ function renderAttendance(){
       // Check for a day-specific manual assignment
       const assignedScId=(dayAssignments[key]||{})[String(s.id)];
       const assignedSc=assignedScId!=null?schedule.find(sc=>sc.id===assignedScId):null;
-      const attKey=assignedSc?`${s.id}:${assignedScId}`:String(s.id);
+      let attKey=String(s.id);
+      if(assignedSc){
+        const compositeKey=`${s.id}:${assignedScId}`;
+        // Migrate old plain-key mark → composite so metrics and display stay in sync
+        const dayAtt2=attendance[key]||(attendance[key]={});
+        if(dayAtt2[String(s.id)]!==undefined&&dayAtt2[compositeKey]===undefined){
+          dayAtt2[compositeKey]=dayAtt2[String(s.id)];
+          delete dayAtt2[String(s.id)];
+          if(lessonCosts[key]){
+            const p=String(s.id);
+            Object.keys(lessonCosts[key]).forEach(k=>{
+              if(k===p||k.startsWith(p+'_')){
+                lessonCosts[key][compositeKey+k.slice(p.length)]=lessonCosts[key][k];
+                delete lessonCosts[key][k];
+              }
+            });
+          }
+        }
+        attKey=compositeKey;
+      }
       pairs.push({s,sc:assignedSc||null,attKey,isExtra,dayAssigned:!!assignedSc});
     }
   };
@@ -6510,7 +6529,7 @@ function getStudioLoad(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??null;
+        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
       }
       const entry=perSchedule.get(scId)||{present:0};
       if(status==='p')entry.present++;
@@ -6643,7 +6662,7 @@ function getRevenuePerTeacher(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??null;
+        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
       }
 
       const entry=perSchedule.get(scId)||{revenue:0,count:0};
@@ -6701,7 +6720,7 @@ function openTeacherSalaryDetail(tid){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??null;
+        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
       }
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
