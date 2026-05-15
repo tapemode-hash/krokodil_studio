@@ -6359,9 +6359,12 @@ function getRevenuePerTeacher(from,to){
     console.log(`Schedule ${sc.name} (teacher_id: ${teacherId}) has ${sc_dates.length} dates`);
     sc_dates.forEach(date=>{
       if(!inPeriod(date,from,to))return;
-      processedDates++;
-      const att=attendance[fmtDate(new Date(date))]||{};
-      const costs=lessonCosts[fmtDate(new Date(date))]||{};
+      const dateStr=fmtDate(new Date(date));
+      const hasAtt=attendance[dateStr];
+      if(hasAtt)processedDates++;
+      if(!hasAtt)return;
+      const att=attendance[dateStr]||{};
+      const costs=lessonCosts[dateStr]||{};
 
       let dayRevenue=0,dayCount=0;
       Object.entries(att).forEach(([key,status])=>{
