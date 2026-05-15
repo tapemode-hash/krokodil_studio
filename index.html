@@ -6477,7 +6477,7 @@ function getStudioLoad(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
       const entry=perSchedule.get(scId)||{present:0};
       if(status==='p')entry.present++;
@@ -6610,7 +6610,7 @@ function getRevenuePerTeacher(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
 
       const entry=perSchedule.get(scId)||{revenue:0,count:0};
@@ -6668,7 +6668,7 @@ function openTeacherSalaryDetail(tid){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
