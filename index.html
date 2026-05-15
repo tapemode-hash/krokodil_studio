@@ -6352,13 +6352,12 @@ function getStudioLoad(from,to){
 
   let maxSlots=0,actualSlots=0;
   const activeDays=new Set();
+  const dayRows=[]; // per-day detail
 
-  // Iterate only dates where the journal was actually filled in
   Object.entries(attendance).forEach(([dateStr,att])=>{
     if(!inPeriod(dateStr,from,to))return;
     const dow=new Date(dateStr+'T12:00:00').getDay();
 
-    // Group attendance entries by schedule (same logic as getRevenuePerTeacher)
     const perSchedule=new Map();
     Object.entries(att).forEach(([key,status])=>{
       if(String(key).includes('_'))return;
@@ -6382,15 +6381,19 @@ function getStudioLoad(from,to){
     if(perSchedule.size===0)return;
     activeDays.add(dateStr);
 
-    // Each schedule group that ran = 1 lesson; add its capacity to denominator
+    const groups=[];
     perSchedule.forEach(({present},scId)=>{
       const sc=scId!==null?scheduleMap[scId]:null;
-      maxSlots+=sc&&/индивидуальн/i.test(sc.name)?1:12;
+      const capacity=sc&&/индивидуальн/i.test(sc.name)?1:12;
+      maxSlots+=capacity;
       actualSlots+=present;
+      groups.push({name:sc?sc.name:'Без группы',present,capacity});
     });
+    dayRows.push({dateStr,groups});
   });
 
-  return {maxSlots,actualSlots,scheduledDays:activeDays.size};
+  dayRows.sort((a,b)=>a.dateStr<b.dateStr?-1:1);
+  return {maxSlots,actualSlots,scheduledDays:activeDays.size,days:dayRows};
 }
 
 function getStudentFirstActivity(sid){
@@ -6551,7 +6554,7 @@ function renderReports(){
   const trials=getTrialsInPeriod(from,to);
 
   // ── Загрузка студии
-  const {maxSlots,actualSlots,scheduledDays}=getStudioLoad(from,to);
+  const {maxSlots,actualSlots,scheduledDays,days:loadDays}=getStudioLoad(from,to);
   const loadPct=maxSlots>0?Math.round(actualSlots/maxSlots*100):0;
   const loadGood=loadPct>=70;
 
@@ -6666,9 +6669,45 @@ function renderReports(){
   document.getElementById('km-new-d').textContent=newStudents.length>=churned?'↑ Рост':'↓ Убыль';
 
   // OPERATIONS
+  const DOW_SHORT=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const MON_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const loadDetailHtml=loadDays.length?loadDays.map(({dateStr,groups})=>{
+    const d=new Date(dateStr+'T12:00:00');
+    const lbl=`${d.getDate()} ${MON_SHORT[d.getMonth()]} (${DOW_SHORT[d.getDay()]})`;
+    const dp=groups.reduce((s,g)=>s+g.present,0);
+    const dm=groups.reduce((s,g)=>s+g.capacity,0);
+    const pct=Math.round(dp/dm*100);
+    const col=pct>=70?'var(--mint-d)':pct>=50?'#E67E00':'var(--coral)';
+    return `<div style="padding:8px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700">${lbl}</span>
+        <span style="font-size:13px;font-weight:700;color:${col}">${dp}/${dm} · ${pct}%</span>
+      </div>
+      ${groups.map(g=>`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-l);padding:1px 0">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:72%">${g.name}</span>
+        <span>${g.present}/${g.capacity}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join(''):'<div style="font-size:12px;color:var(--ink-l);padding:8px 0">Нет данных</div>';
+
+  const loadColor=loadGood?'var(--grn)':'var(--coral)';
+  const loadRowHtml=`<div style="border-bottom:1px solid var(--cream)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer;user-select:none" onclick="toggleLoadDetail()">
+      <div>
+        <div style="font-size:13px;font-weight:600">Загрузка студии</div>
+        <div style="font-size:11px;color:var(--ink-l)">${actualSlots} посещений / ${maxSlots} мест (${scheduledDays} рабочих дней)</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:11px;color:var(--ink-l)">цель: >70%</div>
+        <div style="font-size:16px;font-weight:700;color:${loadColor};min-width:60px;text-align:right">${loadPct}%</div>
+        <div id="rp-load-chevron" style="font-size:11px;color:var(--ink-l);transition:transform .2s">▼</div>
+      </div>
+    </div>
+    <div id="rp-load-detail" style="display:none;padding-bottom:6px">${loadDetailHtml}</div>
+  </div>`;
+
   document.getElementById('rp-ops').innerHTML=[
-    metricRow('Загрузка студии',loadPct+'%','>70%',loadGood,
-      actualSlots+' посещений / '+maxSlots+' мест ('+scheduledDays+' рабочих дней)'),
+    loadRowHtml,
     metricRow('Retention rate',retentionPct+'%','>75%',retGood,
       retained.length+' продлили из '+withSubs.length+' с абонементом'),
     metricRow('Churn rate',churnPct+'%','<10%',churnGood,
@@ -6810,6 +6849,15 @@ function renderReports(){
 
   // CHURN LOG
   renderChurnLog();
+}
+
+function toggleLoadDetail(){
+  const el=document.getElementById('rp-load-detail');
+  const ch=document.getElementById('rp-load-chevron');
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(ch)ch.style.transform=open?'rotate(180deg)':'';
 }
 
 function calcBreakeven(){
