@@ -1051,11 +1051,11 @@ body.is-admin .ann-input-area{display:block}
     <button class="modal-close" onclick="closeM('m-materials')">✕</button>
     <div class="modal-title">📦 Заказ материалов</div>
     <div class="form-group"><label class="form-label">Материал</label>
-      <select class="form-select"><option>Акварель (заканчивается)</option><option>Пастель (заканчивается)</option><option>Кисти</option><option>Бумага А3</option><option>Холсты</option></select></div>
+      <select class="form-select" id="mat-material" name="material"><option>Акварель (заканчивается)</option><option>Пастель (заканчивается)</option><option>Кисти</option><option>Бумага А3</option><option>Холсты</option></select></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Количество</label><input class="form-input" type="number" value="10"></div>
+      <div class="form-group"><label class="form-label">Количество</label><input class="form-input" id="mat-quantity" name="quantity" type="number" value="10"></div>
       <div class="form-group"><label class="form-label">Поставщик</label>
-        <select class="form-select"><option>АртМир</option><option>Луч</option><option>Невская палитра</option></select></div>
+        <select class="form-select" id="mat-supplier" name="supplier"><option>АртМир</option><option>Луч</option><option>Невская палитра</option></select></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeM('m-materials')">Отмена</button>
@@ -4689,7 +4689,7 @@ function renderEnrollList(){
   el.innerHTML = schedule.map(sc=>{
     const isChecked = enrolled.includes(sc.id);
     return `<label class="enroll-item${isChecked?' checked':''}" id="ei-${sc.id}">
-      <input type="checkbox" ${isChecked?'checked':''} onchange="toggleEnroll(${sc.id},this)" />
+      <input type="checkbox" id="enroll-${sc.id}" name="enroll-${sc.id}" ${isChecked?'checked':''} onchange="toggleEnroll(${sc.id},this)" />
       <div style="flex:1">
         <div class="enroll-item-name">${sc.name}</div>
         <div class="enroll-item-meta">${sc.days} · ${sc.time} · ${sc.teacher} · ${sc.room}</div>
@@ -5408,7 +5408,7 @@ function renderAttHistory(){
                   return `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
                     ${promoTag}
                     <div style="display:flex;align-items:center;gap:5px">
-                      <input class="cost-input" type="number" placeholder="₽" value="${r.cost||''}"
+                      <input class="cost-input" id="cost-${dateKey}-${r.attKey}" name="cost" type="number" placeholder="₽" value="${r.cost||''}"
                         onchange="saveLessonCost('${dateKey}','${r.attKey}',this.value)"
                         title="Стоимость занятия">
                       <span style="font-size:13px;color:var(--ink-l)">₽</span>
