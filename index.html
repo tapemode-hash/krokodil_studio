@@ -6381,6 +6381,8 @@ function getRevenuePerTeacher(from,to){
 
   console.log('getRevenuePerTeacher: processed', processedDates, 'dates in period');
   console.log('Teacher 0 lessons:', result[0]?.lessons, 'revenue:', result[0]?.revenue);
+  console.log('Attendance dates available:', Object.keys(attendance).slice(0, 10));
+  console.log('Total attendance records:', Object.keys(attendance).length);
   console.log('getRevenuePerTeacher result:', result, 'from:', from, 'to:', to);
   return result;
 }
