@@ -1890,7 +1890,8 @@ body.is-admin .ann-input-area{display:block}
       <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#F0FFF8,#EFF5FF);border:2px solid var(--mint)">
         <div class="card-title" style="font-size:18px">⚡ Ключевые показатели <span id="rp-week-label" style="font-size:13px;font-weight:400;color:var(--ink-l)"></span></div>
         <div class="stats-grid" id="rp-key-metrics">
-          <div class="stat-card peach"><span class="stat-icon">👦</span><div class="stat-value" id="km-students">—</div><div class="stat-label">Учеников сейчас</div><span class="stat-change" id="km-students-d">—</span></div>
+          <div class="stat-card peach"><span class="stat-icon">👦</span><div class="stat-value" id="km-active">—</div><div class="stat-label">Активных учеников</div><span class="stat-change" id="km-active-d">—</span></div>
+          <div class="stat-card coral"><span class="stat-icon">🗂️</span><div class="stat-value" id="km-archive">—</div><div class="stat-label">В архиве</div><span class="stat-change" id="km-archive-d">—</span></div>
           <div class="stat-card mint"><span class="stat-icon">📊</span><div class="stat-value" id="km-load">—</div><div class="stat-label">Загрузка студии</div><span class="stat-change" id="km-load-d">—</span></div>
           <div class="stat-card lav"><span class="stat-icon">🎯</span><div class="stat-value" id="km-trials">—</div><div class="stat-label">Пробных за период</div><span class="stat-change" id="km-trials-d">—</span></div>
           <div class="stat-card yel"><span class="stat-icon">💰</span><div class="stat-value" id="km-revenue">—</div><div class="stat-label">Выручка за период</div><span class="stat-change" id="km-revenue-d">—</span></div>
@@ -5689,80 +5690,76 @@ function lsSave_unused_remove(){}
 function markAtt(sid, mark, btn, attKey){
   attKey = (attKey!=null) ? String(attKey) : String(sid);
   const key=fmtDate(attDate);
-  const prev=(attendance[key]||{})[attKey];
-  if(!attendance[key])attendance[key]={};
+  const student = students.find(s => s.id === sid);
+  const isTrialStudent = student && student.trialDate;
+  const actualKey = (mark==='p' && isTrialStudent) ? student.trialDate : key;
+
+  const prev=(attendance[actualKey]||{})[attKey];
+  if(!attendance[actualKey])attendance[actualKey]={};
 
   if(prev===mark){
-    delete attendance[key][attKey];
-    if(mark==='trial'){
-      if((lessonCosts[key]||{})[attKey+'_auto']&&(lessonCosts[key]||{})[attKey+'_isTrial']){
-        delete lessonCosts[key][attKey];
-        delete lessonCosts[key][attKey+'_auto'];
-        delete lessonCosts[key][attKey+'_isTrial'];
-      }
-    }
+    delete attendance[actualKey][attKey];
     if(mark==='p'){
-      const subMeta=(lessonCosts[key]||{})[attKey+'_subIdx'];
+      const subMeta=(lessonCosts[actualKey]||{})[attKey+'_subIdx'];
       if(subMeta!==undefined){
         const subs=subscriptions[sid]||[];
         if(subs[subMeta]&&subs[subMeta].used>0)subs[subMeta].used--;
-        if(!lessonCosts[key])lessonCosts[key]={};
-        delete lessonCosts[key][attKey+'_subIdx'];
-        delete lessonCosts[key][attKey+'_via_sub'];
+        if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
+        delete lessonCosts[actualKey][attKey+'_subIdx'];
+        delete lessonCosts[actualKey][attKey+'_via_sub'];
       }
-      if((lessonCosts[key]||{})[attKey+'_auto']){
-        delete lessonCosts[key][attKey];
-        delete lessonCosts[key][attKey+'_auto'];
+      if((lessonCosts[actualKey]||{})[attKey+'_auto']){
+        delete lessonCosts[actualKey][attKey];
+        delete lessonCosts[actualKey][attKey+'_auto'];
       }
     }
   } else {
     if(mark==='p'){
-      const sub=getActiveSub(sid);
-      if(sub){
-        sub.used++;
-        const subIdx=(subscriptions[sid]||[]).indexOf(sub);
-        const perLesson=sub.total>0?sub.price/sub.total:0;
-        if(!lessonCosts[key])lessonCosts[key]={};
-        lessonCosts[key][attKey+'_subIdx']=subIdx;
-        lessonCosts[key][attKey+'_via_sub']=true;
-        lessonCosts[key][attKey+'_sub_price']=sub.price;
-        lessonCosts[key][attKey+'_sub_total']=sub.total;
-        lessonCosts[key][attKey]=perLesson;
-        lessonCosts[key][attKey+'_auto']=true;
+      if(isTrialStudent){
+        if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
+        lessonCosts[actualKey][attKey]=student.trialAmount||0;
+        lessonCosts[actualKey][attKey+'_auto']=true;
+        lessonCosts[actualKey][attKey+'_trial']=true;
       } else {
-        if(!lessonCosts[key])lessonCosts[key]={};
-        if(!lessonCosts[key][attKey]){
-          const baseP=effectivePrice(sid,true);
-          const promoP=effectivePrice(sid);
-          lessonCosts[key][attKey]=promoP;
-          lessonCosts[key][attKey+'_auto']=true;
-          if(activePromo&&activePromo.type&&promoP!==baseP){
-            lessonCosts[key][attKey+'_promo']=activePromo.name||'Акция';
-            lessonCosts[key][attKey+'_base_price']=baseP;
+        const sub=getActiveSub(sid);
+        if(sub){
+          sub.used++;
+          const subIdx=(subscriptions[sid]||[]).indexOf(sub);
+          const perLesson=sub.total>0?sub.price/sub.total:0;
+          if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
+          lessonCosts[actualKey][attKey+'_subIdx']=subIdx;
+          lessonCosts[actualKey][attKey+'_via_sub']=true;
+          lessonCosts[actualKey][attKey+'_sub_price']=sub.price;
+          lessonCosts[actualKey][attKey+'_sub_total']=sub.total;
+          lessonCosts[actualKey][attKey]=perLesson;
+          lessonCosts[actualKey][attKey+'_auto']=true;
+        } else {
+          if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
+          if(!lessonCosts[actualKey][attKey]){
+            const baseP=effectivePrice(sid,true);
+            const promoP=effectivePrice(sid);
+            lessonCosts[actualKey][attKey]=promoP;
+            lessonCosts[actualKey][attKey+'_auto']=true;
+            if(activePromo&&activePromo.type&&promoP!==baseP){
+              lessonCosts[actualKey][attKey+'_promo']=activePromo.name||'Акция';
+              lessonCosts[actualKey][attKey+'_base_price']=baseP;
+            }
           }
         }
       }
     }
     if(mark==='a'&&prev==='p'){
-      const subMeta=(lessonCosts[key]||{})[attKey+'_subIdx'];
+      const subMeta=(lessonCosts[actualKey]||{})[attKey+'_subIdx'];
       if(subMeta!==undefined){
         const subs=subscriptions[sid]||[];
         if(subs[subMeta]&&subs[subMeta].used>0)subs[subMeta].used--;
-        delete lessonCosts[key][attKey+'_subIdx'];
-        delete lessonCosts[key][attKey+'_via_sub'];
-        delete lessonCosts[key][attKey];
-        delete lessonCosts[key][attKey+'_auto'];
+        delete lessonCosts[actualKey][attKey+'_subIdx'];
+        delete lessonCosts[actualKey][attKey+'_via_sub'];
+        delete lessonCosts[actualKey][attKey];
+        delete lessonCosts[actualKey][attKey+'_auto'];
       }
     }
-    attendance[key][attKey]=mark;
-    if(mark==='trial'){
-      if(!lessonCosts[key])lessonCosts[key]={};
-      if(!lessonCosts[key][attKey]){
-        lessonCosts[key][attKey]=globalLessonPrice;
-        lessonCosts[key][attKey+'_auto']=true;
-        lessonCosts[key][attKey+'_isTrial']=true;
-      }
-    }
+    attendance[actualKey][attKey]=mark;
   }
   renderAttendance();
 }
@@ -6335,6 +6332,44 @@ function metricRow(label,value,target,good,note){
   </div>`;
 }
 
+function calculateTeacherSalary(studentCount){
+  if(studentCount<=0)return 0;
+  if(studentCount<=2)return 450;
+  if(studentCount===3)return 500;
+  return 500+(studentCount-3)*150;
+}
+
+function getRevenuePerTeacher(from,to){
+  const result={};
+  teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0});
+
+  schedule.forEach(sc=>{
+    const teacherId=sc.teacher_id||0;
+    if(!result[teacherId])result[teacherId]={name:sc.teacher||'Без педагога',revenue:0,lessons:0};
+
+    const sc_dates=getScheduleDates(sc,365);
+    sc_dates.forEach(date=>{
+      if(!inPeriod(date,from,to))return;
+      const att=attendance[fmtDate(new Date(date))]||{};
+      const costs=lessonCosts[fmtDate(new Date(date))]||{};
+
+      let dayRevenue=0,dayCount=0;
+      Object.entries(att).forEach(([key,status])=>{
+        if(status!=='p'||String(key).includes('_'))return;
+        const cost=costs[key];
+        if(cost!=null){dayRevenue+=cost; dayCount++;}
+      });
+
+      if(dayCount>0){
+        result[teacherId].revenue+=dayRevenue;
+        result[teacherId].lessons++;
+      }
+    });
+  });
+
+  return result;
+}
+
 function renderReports(){
   const {from,to}=getRpDates();
   // Label
@@ -6449,10 +6484,14 @@ function renderReports(){
   // ── Рендерим блоки
 
   // KEY METRICS
-  document.getElementById('km-students').textContent=students.length;
-  const studDelta=activeNow.size-activePrev.size;
-  document.getElementById('km-students-d').textContent=(studDelta>=0?'↑ +':'↓ ')+Math.abs(studDelta)+' vs прошлый период';
-  document.getElementById('km-students-d').className='stat-change '+(studDelta>=0?'up':'down');
+  const activeStudents=students.filter(s=>isStudentActive(s.id)).length;
+  const archiveStudents=students.filter(s=>!isStudentActive(s.id)).length;
+  document.getElementById('km-active').textContent=activeStudents;
+  document.getElementById('km-active-d').textContent=(activeNow.size>=1?'↑ активны':'↓');
+  document.getElementById('km-active-d').className='stat-change '+(activeNow.size>=1?'up':'neutral');
+  document.getElementById('km-archive').textContent=archiveStudents;
+  document.getElementById('km-archive-d').textContent='за 6+ месяцев';
+  document.getElementById('km-archive-d').className='stat-change neutral';
 
   document.getElementById('km-load').textContent=loadPct+'%';
   document.getElementById('km-load-d').textContent=loadGood?'✓ Выше 70%':'↓ Ниже ориентира';
