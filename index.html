@@ -1240,6 +1240,18 @@ body.is-admin .ann-input-area{display:block}
   </div>
 </div>
 
+<!-- ══ SUB SELECT MODAL ══ -->
+<div class="modal-overlay" id="m-sub-select">
+  <div class="modal" style="max-width:360px">
+    <button class="modal-close" onclick="closeM('m-sub-select')">✕</button>
+    <div class="modal-title">🎫 Выберите абонемент</div>
+    <div id="m-sub-select-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeM('m-sub-select')">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ LIGHTBOX ══ -->
 <div id="lightbox">
   <button id="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -5554,6 +5566,7 @@ function renderAttendance(){
         ?`<span style="font-size:11px;color:var(--ink-l)"><s style="opacity:.5">${basePrice.toLocaleString('ru')}</s> <b style="color:#E07800">${promoPrice.toLocaleString('ru')} ₽</b> 🏷️</span>`
         :`<span style="font-size:11px;color:var(--ink-l)">${(sub?subPerLesson:basePrice).toLocaleString('ru')} ₽/зан.</span>`;
       const isViaSub=!!(lessonCosts[key]||{})[attKey+'_via_sub'];
+      const activeSubs=(subscriptions[sid]||[]).filter(s=>s.total-s.used>0);
 
       // Group assignment control (admin only)
       let groupCtrl='';
@@ -5578,6 +5591,7 @@ function renderAttendance(){
           <button class="att-mark present${cur==='p'?' active':''}" onclick="markAtt(${sid},'p',this,'${attKey}')">✓ Присутствует</button>
           <button class="att-mark absent${cur==='a'?' active':''}" onclick="markAtt(${sid},'a',this,'${attKey}')">✗ Отсутствует</button>
           ${cur==='p'?`<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${sid},'${attKey}')" title="${isViaSub?'Сменить на разовое':'Списать по абонементу'}">${isViaSub?'🎫 По абон.':'→ 🎫 Абон.'}</button>`:''}
+          ${cur==='p'&&isViaSub&&activeSubs.length>=2?`<button class="att-mark" style="border-color:var(--mint-d);color:var(--mint-d);font-size:11px;padding:4px 10px" onclick="openSubSelectModal(${sid},(idx)=>doSwitchToSub(${sid},'${attKey}',idx))" title="Выбрать другой абонемент">Сменить 🎫</button>`:''}
         </div>`:''}
       </div>`;
     };
@@ -5742,6 +5756,53 @@ function removeGroupAssignment(sid){
   renderAttendance();
 }
 
+let _subSelectCb=null;
+
+function openSubSelectModal(sid, callback){
+  const subs=subscriptions[sid]||[];
+  const active=subs.map((s,i)=>({...s,idx:i})).filter(s=>s.total-s.used>0);
+  if(!active.length){toast('⚠️ Нет активного абонемента');return;}
+  if(active.length===1){callback(active[0].idx);return;}
+  _subSelectCb=callback;
+  document.getElementById('m-sub-select-list').innerHTML=active.map(s=>{
+    const left=s.total-s.used;
+    const per=s.total>0?Math.round(s.price/s.total):0;
+    return `<button onclick="selectSub(${s.idx})" style="width:100%;text-align:left;padding:12px 14px;background:var(--cream);border:2px solid transparent;border-radius:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--lav-d)'" onmouseout="this.style.borderColor='transparent'">
+      <div style="font-weight:700;font-size:14px">${s.groupName||'Абонемент'}</div>
+      <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Осталось: <b>${left}</b> из ${s.total} · ${per.toLocaleString('ru')} ₽/зан.</div>
+    </button>`;
+  }).join('');
+  openM('m-sub-select');
+}
+
+function selectSub(subIdx){
+  closeM('m-sub-select');
+  if(_subSelectCb){_subSelectCb(subIdx);_subSelectCb=null;}
+}
+
+function doSwitchToSub(sid, attKey, newSubIdx){
+  const key=fmtDate(attDate);
+  if(!lessonCosts[key])lessonCosts[key]={};
+  const costs=lessonCosts[key];
+  const subs=subscriptions[sid]||[];
+  // Return lesson to previous sub if any
+  const oldIdx=costs[attKey+'_subIdx'];
+  if(oldIdx!==undefined&&subs[oldIdx]&&subs[oldIdx].used>0)subs[oldIdx].used--;
+  // Apply to new sub
+  const sub=subs[newSubIdx];
+  if(!sub||sub.total-sub.used<=0){toast('⚠️ В абонементе нет занятий');return;}
+  sub.used++;
+  const perLesson=sub.total>0?sub.price/sub.total:0;
+  costs[attKey+'_subIdx']=newSubIdx;
+  costs[attKey+'_via_sub']=true;
+  costs[attKey+'_sub_price']=sub.price;
+  costs[attKey+'_sub_total']=sub.total;
+  costs[attKey]=perLesson;
+  persist();
+  renderAttendance();
+  toast(`🎫 ${sub.groupName||'Абонемент'} · осталось ${sub.total-sub.used}`);
+}
+
 function markAtt(sid, mark, btn, attKey){
   attKey = (attKey!=null) ? String(attKey) : String(sid);
   const key=fmtDate(attDate);
@@ -5776,10 +5837,33 @@ function markAtt(sid, mark, btn, attKey){
         lessonCosts[actualKey][attKey+'_auto']=true;
         lessonCosts[actualKey][attKey+'_trial']=true;
       } else {
-        const sub=getActiveSub(sid);
+        const allSubs=subscriptions[sid]||[];
+        const activeSubs=allSubs.filter(s=>s.total-s.used>0);
+        if(activeSubs.length>=2){
+          // Multiple active subs — ask which one to use
+          openSubSelectModal(sid,(subIdx)=>{
+            const sub=allSubs[subIdx];
+            if(!sub)return;
+            sub.used++;
+            const perLesson=sub.total>0?sub.price/sub.total:0;
+            if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
+            lessonCosts[actualKey][attKey+'_subIdx']=subIdx;
+            lessonCosts[actualKey][attKey+'_via_sub']=true;
+            lessonCosts[actualKey][attKey+'_sub_price']=sub.price;
+            lessonCosts[actualKey][attKey+'_sub_total']=sub.total;
+            lessonCosts[actualKey][attKey]=perLesson;
+            lessonCosts[actualKey][attKey+'_auto']=true;
+            if(!attendance[actualKey])attendance[actualKey]={};
+            attendance[actualKey][attKey]='p';
+            persist();renderAttendance();
+            toast(`🎫 ${sub.groupName||'Абонемент'} · осталось ${sub.total-sub.used}`);
+          });
+          return; // attendance will be set inside callback
+        }
+        const sub=activeSubs[0]||null;
         if(sub){
           sub.used++;
-          const subIdx=(subscriptions[sid]||[]).indexOf(sub);
+          const subIdx=allSubs.indexOf(sub);
           const perLesson=sub.total>0?sub.price/sub.total:0;
           if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
           lessonCosts[actualKey][attKey+'_subIdx']=subIdx;
@@ -5844,16 +5928,20 @@ function toggleSubMark(sid, attKey){
     }
     toast('💵 Переключено на разовое');
   } else {
-    const sub=getActiveSub(sid);
-    if(!sub){toast('⚠️ Нет активного абонемента');return;}
-    delete costs[attKey+'_promo']; delete costs[attKey+'_base_price']; delete costs[attKey+'_auto'];
-    sub.used++;
-    const subIdx=(subscriptions[sid]||[]).indexOf(sub);
-    const perLesson=sub.total>0?sub.price/sub.total:0;
-    costs[attKey+'_subIdx']=subIdx; costs[attKey+'_via_sub']=true;
-    costs[attKey+'_sub_price']=sub.price; costs[attKey+'_sub_total']=sub.total;
-    costs[attKey]=perLesson;
-    toast(`🎫 Переключено на абонемент · осталось ${sub.total-sub.used}`);
+    const applyToggleSub=(subIdx)=>{
+      const sub=(subscriptions[sid]||[])[subIdx];
+      if(!sub||sub.total-sub.used<=0){toast('⚠️ В абонементе нет занятий');return;}
+      delete costs[attKey+'_promo']; delete costs[attKey+'_base_price']; delete costs[attKey+'_auto'];
+      sub.used++;
+      const perLesson=sub.total>0?sub.price/sub.total:0;
+      costs[attKey+'_subIdx']=subIdx; costs[attKey+'_via_sub']=true;
+      costs[attKey+'_sub_price']=sub.price; costs[attKey+'_sub_total']=sub.total;
+      costs[attKey]=perLesson;
+      persist();renderAttendance();
+      toast(`🎫 Переключено на абонемент · осталось ${sub.total-sub.used}`);
+    };
+    openSubSelectModal(sid,applyToggleSub);
+    return;
   }
   renderAttendance();
 }
