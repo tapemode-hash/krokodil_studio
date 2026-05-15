@@ -6296,6 +6296,44 @@ function getSessionDaysInPeriod(from,to){
   return days.size;
 }
 
+function getStudioLoad(from,to){
+  const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
+  let maxSlots=0,actualSlots=0,scheduledDays=0;
+
+  const cur=new Date(from);
+  cur.setHours(12,0,0,0);
+  const end=new Date(to);
+  end.setHours(12,0,0,0);
+
+  while(cur<=end){
+    const dow=cur.getDay();
+    const dateStr=fmtDate(cur);
+
+    // Schedules active on this day of week
+    const dayScheds=schedule.filter(sc=>
+      sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow)
+    );
+
+    if(dayScheds.length>0){
+      scheduledDays++;
+      dayScheds.forEach(sc=>{
+        // Individual lessons hold 1 student, group lessons up to 12
+        maxSlots+=/индивидуальн/i.test(sc.name)?1:12;
+      });
+
+      // Count actual present students on this date
+      const att=attendance[dateStr]||{};
+      Object.entries(att).forEach(([key,status])=>{
+        if(status==='p'&&!String(key).includes('_'))actualSlots++;
+      });
+    }
+
+    cur.setDate(cur.getDate()+1);
+  }
+
+  return {maxSlots,actualSlots,scheduledDays};
+}
+
 function getStudentFirstActivity(sid){
   const sidStr=String(sid);
   let first=null;
@@ -6434,9 +6472,8 @@ function renderReports(){
   const trials=getTrialsInPeriod(from,to);
 
   // ── Загрузка студии
-  const sessionDays=getSessionDaysInPeriod(from,to);
-  const maxSlots=MAX_CAPACITY*Math.max(sessionDays,1);
-  const loadPct=activeNow.size>0?Math.round(activeNow.size/maxSlots*100):0;
+  const {maxSlots,actualSlots,scheduledDays}=getStudioLoad(from,to);
+  const loadPct=maxSlots>0?Math.round(actualSlots/maxSlots*100):0;
   const loadGood=loadPct>=70;
 
   // ── Churn rate: учеников активных в prev, неактивных в now
@@ -6552,7 +6589,7 @@ function renderReports(){
   // OPERATIONS
   document.getElementById('rp-ops').innerHTML=[
     metricRow('Загрузка студии',loadPct+'%','>70%',loadGood,
-      activeNow.size+' уч. / '+maxSlots+' слотов ('+sessionDays+' дней занятий)'),
+      actualSlots+' посещений / '+maxSlots+' мест ('+scheduledDays+' рабочих дней)'),
     metricRow('Retention rate',retentionPct+'%','>75%',retGood,
       retained.length+' продлили из '+withSubs.length+' с абонементом'),
     metricRow('Churn rate',churnPct+'%','<10%',churnGood,
