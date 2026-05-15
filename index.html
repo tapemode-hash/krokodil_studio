@@ -2001,6 +2001,7 @@ body.is-admin .ann-input-area{display:block}
 const LS = 'krok_';
 function lsSave(k,v){ try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){} }
 function lsLoad(k,fb){ try{ const v=localStorage.getItem(LS+k); return v!==null?JSON.parse(v):fb }catch(e){return fb} }
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 function persist(){
   lsSave('teachers',teachers); lsSave('students',students);
@@ -3960,7 +3961,7 @@ function renderDashboard(){
     if(el)el.innerHTML=students.slice(0,6).map(s=>`
       <div class="stu-row" onclick="nav('students',document.querySelector('[onclick*=students]'))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
-        <div><div class="stu-name">${s.name}</div><div class="stu-age">${s.age} лет${s.dir?' · '+s.dir:''}</div></div>
+        <div><div class="stu-name">${esc(s.name)}</div><div class="stu-age">${s.age} лет${s.dir?' · '+esc(s.dir):''}</div></div>
         <span class="badge ${payCls(s.pay)}">${s.pay==='paid'?'✓':s.pay==='debt'?'✗':'~'}</span>
       </div>`).join('');
   }
@@ -4061,8 +4062,8 @@ function renderTodayList(elId, liveElId, dateKey, filterScIds=null){
       <div class="t-badge" style="${isNow?'color:var(--coral)':''}">${startStr||'—'}</div>
       <div class="dot" style="background:${color}"></div>
       <div class="sch-info">
-        <div class="sch-name">${sc.name}</div>
-        <div class="sch-meta">🚪 ${sc.room} · ${sc.teacher}</div>
+        <div class="sch-name">${esc(sc.name)}</div>
+        <div class="sch-meta">🚪 ${esc(sc.room)} · ${esc(sc.teacher)}</div>
       </div>
       ${tagHtml}
     </div>`;
@@ -4101,8 +4102,8 @@ function renderParentUpcoming(filterScIds=null){
     return `<div style="padding:12px 14px;border-radius:12px;border:2px solid ${colors[i%colors.length]};background:white;display:flex;align-items:center;gap:12px">
       <div style="font-family:'Caveat',cursive;font-size:18px;font-weight:700;color:var(--coral);width:70px;flex-shrink:0">${startTime}</div>
       <div style="flex:1">
-        <div style="font-weight:700;font-size:13px">${u.sc.name}</div>
-        <div style="font-size:11px;color:var(--ink-l);margin-top:2px">${label} · ${u.sc.room} · ${u.sc.teacher}</div>
+        <div style="font-weight:700;font-size:13px">${esc(u.sc.name)}</div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:2px">${esc(label)} · ${esc(u.sc.room)} · ${esc(u.sc.teacher)}</div>
       </div>
     </div>`;
   }).join('')||`<div style="color:var(--ink-l);font-size:13px;padding:10px">Нет занятий в ближайшие 2 недели</div>`;
@@ -4143,8 +4144,8 @@ function renderParentSubs(){
     return `<div style="padding:14px;border-radius:14px;border:2px solid var(--lav);background:white;margin-bottom:10px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
         <div>
-          ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${stu.name}</div>`:''}
-          <div style="font-weight:700;font-size:14px">${sb.groupName||'Абонемент'}</div>
+          ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${esc(stu.name)}</div>`:''}
+          <div style="font-weight:700;font-size:14px">${esc(sb.groupName||'Абонемент')}</div>
           <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Куплен: ${dateStr}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -4235,14 +4236,14 @@ function renderSchedule(){
   const isA=document.body.classList.contains('is-admin');
   document.getElementById('schedule-tbody').innerHTML=schedule.map(sc=>`
     <tr>
-      <td><b>${sc.name}</b></td><td>${sc.teacher}</td><td>${sc.room}</td>
-      <td>${sc.days}</td><td>${sc.time}</td>
+      <td><b>${esc(sc.name)}</b></td><td>${esc(sc.teacher)}</td><td>${esc(sc.room)}</td>
+      <td>${esc(sc.days)}</td><td>${esc(sc.time)}</td>
       <td><span class="badge ${sc.sc}">${sc.status}</span></td>
       <td class="admin-col"><button class="edit-btn" onclick="openEditSchedule(${sc.id})">✏️</button></td>
     </tr>`).join('');
   // update teacher select in modal
   const sel=document.getElementById('sc-teacher');
-  if(sel)sel.innerHTML=teachers.map(t=>`<option>${t.name}</option>`).join('');
+  if(sel)sel.innerHTML=teachers.map(t=>`<option>${esc(t.name)}</option>`).join('');
 }
 
 function openNewSchedule(){
@@ -4389,7 +4390,7 @@ function openRequestForm(){
   // populate directions from schedule
   const sel = document.getElementById('req-direction');
   sel.innerHTML = '<option value="">— не выбрано —</option>' +
-    schedule.filter(sc=>sc.status==='Активна').map(sc=>`<option value="${sc.name}">${sc.name} (${sc.days}, ${sc.time})</option>`).join('');
+    schedule.filter(sc=>sc.status==='Активна').map(sc=>`<option value="${esc(sc.name)}">${esc(sc.name)} (${esc(sc.days)}, ${esc(sc.time)})</option>`).join('');
   openM('m-request');
 }
 
@@ -4442,13 +4443,13 @@ function renderRequests(){
     return `<div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--coral)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:15px">${r.childName}${r.age?` · ${r.age} лет`:''}</div>
+          <div style="font-weight:700;font-size:15px">${esc(r.childName)}${r.age?` · ${r.age} лет`:''}</div>
           <div style="font-size:12px;color:var(--ink-l);margin-top:3px">
-            👨‍👩‍👧 ${r.parentName} · 📞 <a href="tel:${r.phone}" style="color:var(--lav-d)">${r.phone}</a>
+            👨‍👩‍👧 ${esc(r.parentName)} · 📞 <a href="tel:${esc(r.phone)}" style="color:var(--lav-d)">${esc(r.phone)}</a>
           </div>
-          ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${r.direction}</div>`:''}
-          ${r.callTime?`<div style="font-size:12px;color:var(--lav-d);margin-top:2px;font-weight:700">🕐 Перезвонить: ${r.callTime}</div>`:''}
-          ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${r.comment}</div>`:''}
+          ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${esc(r.direction)}</div>`:''}
+          ${r.callTime?`<div style="font-size:12px;color:var(--lav-d);margin-top:2px;font-weight:700">🕐 Перезвонить: ${esc(r.callTime)}</div>`:''}
+          ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${esc(r.comment)}</div>`:''}
           <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Поступила: ${dateStr}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
@@ -4503,10 +4504,10 @@ function renderAchievements(){
       <div class="ach">
         <div class="ach-medal">${a.medal}</div>
         <div style="flex:1">
-          <div class="ach-name">${a.name}</div>
-          <div class="ach-stu">${a.student}</div>
+          <div class="ach-name">${esc(a.name)}</div>
+          <div class="ach-stu">${esc(a.student)}</div>
         </div>
-        <div class="ach-date">${a.date}</div>
+        <div class="ach-date">${esc(a.date)}</div>
         ${isAdmin?`<button class="edit-btn" style="margin-left:6px;flex-shrink:0" onclick="openEditAchievement(${a.id})">✏️</button>`:''}
       </div>`).join('')
     : '<div style="color:var(--ink-l);font-size:13px;padding:8px 0">Нет достижений</div>';
@@ -4516,8 +4517,8 @@ function renderAchievements(){
   if(pub)   pub.innerHTML   = achievements.map(a=>`
     <div class="ach">
       <div class="ach-medal">${a.medal}</div>
-      <div style="flex:1"><div class="ach-name">${a.name}</div><div class="ach-stu">${a.student}</div></div>
-      <div class="ach-date">${a.date}</div>
+      <div style="flex:1"><div class="ach-name">${esc(a.name)}</div><div class="ach-stu">${esc(a.student)}</div></div>
+      <div class="ach-date">${esc(a.date)}</div>
     </div>`).join('') || '<div style="color:var(--ink-l);font-size:13px;padding:8px 0">Нет достижений</div>';
 }
 
@@ -4581,10 +4582,10 @@ function renderAnnouncements(){
       <div class="ann-item ${a.type}">
         <div class="ann-icon">${ANN_ICONS[a.type]||'📢'}</div>
         <div class="ann-text">
-          <div class="ann-text-title">${a.title}</div>
-          ${a.body?`<div class="ann-text-body">${a.body}</div>`:''}
+          <div class="ann-text-title">${esc(a.title)}</div>
+          ${a.body?`<div class="ann-text-body">${esc(a.body)}</div>`:''}
         </div>
-        ${a.date?`<div class="ann-date">${a.date}</div>`:''}
+        ${a.date?`<div class="ann-date">${esc(a.date)}</div>`:''}
         ${isAdmin?`<button class="ann-del" onclick="deleteAnnouncement(${a.id})">✕</button>`:''}
       </div>`).join('')
     : '<div style="color:var(--ink-l);font-size:13px;padding:8px">Нет объявлений</div>';
@@ -4673,7 +4674,7 @@ function renderStudents(query){
       : `<span style="font-size:11px;color:var(--ink-l)">—</span>`;
     return `<tr>
       <td style="padding:8px 6px"><div style="background:${s.color};width:28px;height:28px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div></td>
-      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${s.name.split(' ').join('<br>')}</b>${subsHtml}${trialHtml}</td>
+      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${esc(s.name).split(' ').join('<br>')}</b>${subsHtml}${trialHtml}</td>
       <td style="white-space:nowrap">${s.age}</td>
       <td><span class="badge blue">${enrolled}</span></td>
       <td><span class="badge blue">${_attCache[s.id]||'—'}</span></td>
@@ -4721,15 +4722,15 @@ function renderEnrollList(){
   const el = document.getElementById('enroll-list');
   // update sub-group select too
   const sgSel = document.getElementById('sub-group-sel');
-  if(sgSel) sgSel.innerHTML = schedule.map(sc=>`<option value="${sc.id}">${sc.name} · ${sc.days} · ${sc.time}</option>`).join('');
+  if(sgSel) sgSel.innerHTML = schedule.map(sc=>`<option value="${sc.id}">${esc(sc.name)} · ${esc(sc.days)} · ${esc(sc.time)}</option>`).join('');
 
   el.innerHTML = schedule.map(sc=>{
     const isChecked = enrolled.includes(sc.id);
     return `<label class="enroll-item${isChecked?' checked':''}" id="ei-${sc.id}">
       <input type="checkbox" id="enroll-${sc.id}" name="enroll-${sc.id}" ${isChecked?'checked':''} onchange="toggleEnroll(${sc.id},this)" />
       <div style="flex:1">
-        <div class="enroll-item-name">${sc.name}</div>
-        <div class="enroll-item-meta">${sc.days} · ${sc.time} · ${sc.teacher} · ${sc.room}</div>
+        <div class="enroll-item-name">${esc(sc.name)}</div>
+        <div class="enroll-item-meta">${esc(sc.days)} · ${esc(sc.time)} · ${esc(sc.teacher)} · ${esc(sc.room)}</div>
       </div>
       <span class="badge ${sc.sc}" style="flex-shrink:0">${sc.status}</span>
     </label>`;
@@ -4848,8 +4849,8 @@ function renderSubList(){
     return `<div class="sub-card">
       <div class="sub-icon">🎫</div>
       <div class="sub-info">
-        <div class="sub-name">${sub.groupName}</div>
-        <div class="sub-meta">${priceInfo}${remainInfo}<br>Занятий: ${left} из ${sub.total} · Добавлен ${sub.createdAt}</div>
+        <div class="sub-name">${esc(sub.groupName)}</div>
+        <div class="sub-meta">${priceInfo}${remainInfo}<br>Занятий: ${left} из ${sub.total} · Добавлен ${esc(sub.createdAt)}</div>
         <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-sm" style="background:var(--lav);color:var(--lav-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${exhausted?'disabled':''} onclick="deductSub(${sid},${i})" title="Списать 1 занятие вручную">– Списать занятие</button>
@@ -5044,8 +5045,8 @@ function renderTeachers(){
     return `
     <div class="tc">
       <div class="tc-ava" style="background:${t.color}">${t.avatar}</div>
-      <div class="tc-name">${t.name}</div>
-      <div class="tc-role">${t.role}</div>
+      <div class="tc-name">${esc(t.name)}</div>
+      <div class="tc-role">${esc(t.role)}</div>
       <div class="tc-rating-row">
         <span class="tc-stars-display">${'⭐'.repeat(Math.floor(avgRating))}</span>
         <span style="font-family:'Caveat',cursive;font-size:17px;font-weight:700;color:var(--yel-d)">${avgRating}</span>
@@ -5206,9 +5207,9 @@ function renderReviewsInModal(tid){
     <div class="review-item">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <span class="review-stars">${'⭐'.repeat(r.stars)}</span>
-        <span style="font-size:11px;background:var(--lav);color:var(--lav-d);padding:2px 7px;border-radius:20px;font-weight:700">${r.role}</span>
+        <span style="font-size:11px;background:var(--lav);color:var(--lav-d);padding:2px 7px;border-radius:20px;font-weight:700">${esc(r.role)}</span>
       </div>
-      ${r.comment?`<div class="review-text">${r.comment}</div>`:''}
+      ${r.comment?`<div class="review-text">${esc(r.comment)}</div>`:''}
       <div class="review-meta">${r.date}</div>
     </div>`).join('');
 }
@@ -5588,7 +5589,7 @@ function renderAttendance(){
       let groupCtrl='';
       if(currentRole==='admin'){
         if(!sc&&dayActiveScheds.length){
-          const opts=dayActiveScheds.map(tsc=>`<option value="${tsc.id}">${tsc.name}${tsc.time?' · '+tsc.time:''}</option>`).join('');
+          const opts=dayActiveScheds.map(tsc=>`<option value="${tsc.id}">${esc(tsc.name)}${tsc.time?' · '+esc(tsc.time):''}</option>`).join('');
           groupCtrl=`<select onchange="assignToGroup(${sid},this.value)" style="margin-top:4px;font-size:11px;padding:2px 6px;border:1px solid var(--cream-d);border-radius:6px;background:white;color:var(--ink);cursor:pointer;max-width:200px">
             <option value="">→ Перенести в группу</option>${opts}</select>`;
         } else if(dayAssigned){
@@ -5599,7 +5600,7 @@ function renderAttendance(){
       return `<div class="att-student-row" style="border-left:3px solid ${isExtra?'var(--yel-d)':'var(--mint-d)'};padding-left:11px;background:linear-gradient(90deg,${isExtra?'#FFFDF0':'#F0FFF8'},var(--cream))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
         <div class="att-student-name" style="flex:1">
-          <div style="display:flex;align-items:center;gap:7px">${s.name} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:7px">${esc(s.name)} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
           ${groupCtrl?`<div>${groupCtrl}</div>`:''}
         </div>
         ${currentRole==='admin'?`<div style="margin-right:10px;text-align:right">${priceHint}</div>`:''}
@@ -5618,7 +5619,7 @@ function renderAttendance(){
       return t(a.sc).localeCompare(t(b.sc));
     });
     for(const {sc,rows} of sortedGroups){
-      html+=`<div class="att-group-hdr">${sc.name}<span>${[sc.time,sc.teacher].filter(Boolean).join(' · ')}</span></div>`;
+      html+=`<div class="att-group-hdr">${esc(sc.name)}<span>${[sc.time,sc.teacher].filter(Boolean).map(esc).join(' · ')}</span></div>`;
       html+=rows.map(studentRow).join('');
     }
     document.getElementById('att-list').innerHTML=html;
@@ -5784,7 +5785,7 @@ function openSubSelectModal(sid, callback){
     const left=s.total-s.used;
     const per=s.total>0?Math.round(s.price/s.total):0;
     return `<button onclick="selectSub(${s.idx})" style="width:100%;text-align:left;padding:12px 14px;background:var(--cream);border:2px solid transparent;border-radius:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--lav-d)'" onmouseout="this.style.borderColor='transparent'">
-      <div style="font-weight:700;font-size:14px">${s.groupName||'Абонемент'}</div>
+      <div style="font-weight:700;font-size:14px">${esc(s.groupName||'Абонемент')}</div>
       <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Осталось: <b>${left}</b> из ${s.total} · ${per.toLocaleString('ru')} ₽/зан.</div>
     </button>`;
   }).join('');
@@ -6085,7 +6086,7 @@ function renderPayments(){
       <td><div style="display:flex;align-items:center;gap:8px">
         <div style="background:${s.color};width:26px;height:26px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div>
         <div>
-          <div style="font-weight:700">${s.name}</div>
+          <div style="font-weight:700">${esc(s.name)}</div>
           <div style="font-size:11px;color:var(--ink-l)">${s.pricePerLesson>0?s.pricePerLesson.toLocaleString('ru')+' ₽/зан.':'по умолч.'}</div>
         </div>
       </div></td>
@@ -6129,7 +6130,7 @@ function renderPayments(){
       return `<div class="pay-card">
         <div class="pay-card-header">
           <div style="background:${s.color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${s.emoji}</div>
-          <div class="pay-card-name">${s.name}<br><span style="font-size:11px;color:var(--ink-l);font-weight:400">${s.pricePerLesson>0?s.pricePerLesson.toLocaleString('ru')+' ₽/зан.':'по умолч.'}</span></div>
+          <div class="pay-card-name">${esc(s.name)}<br><span style="font-size:11px;color:var(--ink-l);font-weight:400">${s.pricePerLesson>0?s.pricePerLesson.toLocaleString('ru')+' ₽/зан.':'по умолч.'}</span></div>
           <div class="pay-card-total">${totalRev.toLocaleString('ru')} ₽</div>
         </div>
         <div class="pay-card-row"><span class="pay-card-label">Всего занятий</span><span class="pay-card-val"><span class="badge blue">${total}</span></span></div>
@@ -6710,8 +6711,8 @@ function openTeacherSalaryDetail(tid){
   document.getElementById('mts-header').innerHTML=`
     <div style="background:${t.color};width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${t.avatar}</div>
     <div>
-      <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">${t.name}</div>
-      <div style="font-size:12px;color:var(--ink-l)">${t.role}</div>
+      <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">${esc(t.name)}</div>
+      <div style="font-size:12px;color:var(--ink-l)">${esc(t.role)}</div>
       <div style="font-size:12px;color:var(--ink-l);margin-top:2px">Период: ${getRpDates().from.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} — ${getRpDates().to.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</div>
     </div>`;
 
@@ -6721,7 +6722,7 @@ function openTeacherSalaryDetail(tid){
     <div style="display:flex;flex-direction:column;gap:5px">
     ${groups.map(g=>`
       <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--cream);border-radius:9px;font-size:13px">
-        <div style="flex:1;font-weight:600">${g.name}</div>
+        <div style="flex:1;font-weight:600">${esc(g.name)}</div>
         <span class="badge blue">${g.sessions} зан.</span>
         <span class="badge purple">${g.students} уч.</span>
         <span style="color:var(--mint-d);font-weight:700;min-width:60px;text-align:right">${Math.round(g.revenue).toLocaleString('ru')} ₽</span>
@@ -6734,9 +6735,9 @@ function openTeacherSalaryDetail(tid){
       <div style="font-weight:700;font-size:13px;margin-bottom:6px">${day.dateLabel}</div>
       ${day.dayGroups.map(g=>`
         <div style="margin-bottom:5px">
-          <div style="font-size:12px;color:var(--ink-l);margin-bottom:3px">${g.gName} · ${g.count} уч. · выручка <b style="color:var(--mint-d)">${Math.round(g.revenue).toLocaleString('ru')} ₽</b> · зарплата <b style="color:var(--lav-d)">${Math.round(g.sal).toLocaleString('ru')} ₽</b></div>
+          <div style="font-size:12px;color:var(--ink-l);margin-bottom:3px">${esc(g.gName)} · ${g.count} уч. · выручка <b style="color:var(--mint-d)">${Math.round(g.revenue).toLocaleString('ru')} ₽</b> · зарплата <b style="color:var(--lav-d)">${Math.round(g.sal).toLocaleString('ru')} ₽</b></div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
-            ${g.stuList.map(s=>`<span style="background:var(--cream);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${s.name}${s.viaSub?' 🎫':''} · ${Math.round(s.cost).toLocaleString('ru')} ₽</span>`).join('')}
+            ${g.stuList.map(s=>`<span style="background:var(--cream);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${esc(s.name)}${s.viaSub?' 🎫':''} · ${Math.round(s.cost).toLocaleString('ru')} ₽</span>`).join('')}
           </div>
         </div>`).join('')}
     </div>`).join('')
@@ -7032,7 +7033,7 @@ function renderReports(){
         const salaryPerLesson=t.lessons>0?Math.round(t.salary/t.lessons):0;
         const profit=t.revenue-totalSalary;
         return `<div style="background:var(--cream);border-radius:10px;padding:12px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:8px">${t.name}</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px">${esc(t.name)}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;font-size:12px">
             <div><div style="color:var(--ink-l)">Занятий</div><div style="font-weight:700">${t.lessons}</div></div>
             <div><div style="color:var(--ink-l)">Ср. учеников</div><div style="font-weight:700">${avgStudents.toFixed(1)}</div></div>
@@ -7060,9 +7061,9 @@ function renderReports(){
         return `<div style="background:var(--cream);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px">
           <div style="font-size:22px;width:38px;height:38px;background:${s.color};border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${s.emoji}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:14px">${s.name}</div>
-            <div style="font-size:12px;color:var(--ink-l);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${groups}</div>
-            ${s.parentName||s.phone?`<div style="font-size:12px;color:var(--ink-l);margin-top:1px">${s.parentName?s.parentName+' · ':''}${s.phone?`<a href="tel:${s.phone}" style="color:var(--mint-d);text-decoration:none">${s.phone}</a>`:''}</div>`:''}
+            <div style="font-weight:700;font-size:14px">${esc(s.name)}</div>
+            <div style="font-size:12px;color:var(--ink-l);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(groups)}</div>
+            ${s.parentName||s.phone?`<div style="font-size:12px;color:var(--ink-l);margin-top:1px">${s.parentName?esc(s.parentName)+' · ':''}${s.phone?`<a href="tel:${esc(s.phone)}" style="color:var(--mint-d);text-decoration:none">${esc(s.phone)}</a>`:''}</div>`:''}
           </div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-weight:700;font-size:16px;color:${color}">${s.daysSince} дн.</div>
@@ -7113,7 +7114,7 @@ function saveMarketingCost(){
 function openAddChurn(){
   const sel=document.getElementById('churn-sid');
   if(sel){
-    sel.innerHTML=students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    sel.innerHTML=students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
   }
   const dateEl=document.getElementById('churn-date');
   if(dateEl)dateEl.value=fmtDate(new Date());
@@ -7165,11 +7166,11 @@ function renderChurnLog(){
     <tbody>${churnLog.slice().reverse().map(c=>`
       <tr style="border-top:1px solid var(--cream)">
         <td style="padding:8px">${new Date(c.date).toLocaleDateString('ru-RU')}</td>
-        <td style="padding:8px;font-weight:600">${c.studentName}</td>
+        <td style="padding:8px;font-weight:600">${esc(c.studentName)}</td>
         <td style="padding:8px">${c.months||'—'}</td>
-        <td style="padding:8px">${reasons[c.reason]||'•'} ${c.reason}</td>
-        <td style="padding:8px">${c.source||'—'}</td>
-        <td style="padding:8px;color:var(--ink-l)">${c.note||'—'}</td>
+        <td style="padding:8px">${reasons[c.reason]||'•'} ${esc(c.reason)}</td>
+        <td style="padding:8px">${esc(c.source||'—')}</td>
+        <td style="padding:8px;color:var(--ink-l)">${esc(c.note||'—')}</td>
         <td style="padding:8px"><button class="btn btn-ghost btn-sm" onclick="deleteChurn(${c.id})">✕</button></td>
       </tr>`).join('')}
     </tbody>
@@ -7355,8 +7356,8 @@ function renderGallery(){
         : `<span style="font-size:48px">🎨</span>`}
       </div>
       <div class="gal-info">
-        <div class="gal-title">${p.title||'Без названия'}</div>
-        <div class="gal-meta">${p.author||''}${p.author&&p.date?' · ':''}${p.date||''}</div>
+        <div class="gal-title">${esc(p.title||'Без названия')}</div>
+        <div class="gal-meta">${esc(p.author||'')}${p.author&&p.date?' · ':''}${esc(p.date||'')}</div>
       </div>
       ${isAdmin?`<button class="gal-del" onclick="event.stopPropagation();deletePhoto(${p.id})" title="Удалить">✕</button>`:''}
     </div>`).join('');
@@ -7440,7 +7441,7 @@ function openLightbox(id){
   document.getElementById('lightbox-img').src = p.dataUrl||'';
   document.getElementById('lightbox-img').style.display = p.dataUrl?'block':'none';
   document.getElementById('lightbox-caption').innerHTML =
-    `<b style="font-size:16px">${p.title||'Без названия'}</b>${p.author?`<br><span style="opacity:.7">${p.author}</span>`:''}${p.date?`<br><span style="opacity:.5;font-size:12px">${p.date}</span>`:''}`;
+    `<b style="font-size:16px">${esc(p.title||'Без названия')}</b>${p.author?`<br><span style="opacity:.7">${esc(p.author)}</span>`:''}${p.date?`<br><span style="opacity:.5;font-size:12px">${esc(p.date)}</span>`:''}` ;
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
 }
