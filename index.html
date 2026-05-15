@@ -1303,13 +1303,6 @@ body.is-admin .ann-input-area{display:block}
           </div>
         </div>
 
-        <!-- ── QR CODE ── -->
-        <div class="card" style="text-align:center;margin-bottom:20px">
-          <div class="card-title">📱 Поделиться сайтом</div>
-          <div style="display:flex;justify-content:center;padding:20px;background:white;border-radius:12px"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https%3A%2F%2Ftapemode-hash.github.io%2Fkrokodil_studio%2F" width="200" height="200" alt="QR код" style="border-radius:8px"></div>
-          <div style="font-size:12px;color:var(--ink-l);margin-top:10px">Отсканируйте для быстрого доступа</div>
-        </div>
-
         <!-- ── CONTACTS FOOTER ── -->
         <div class="studio-contacts-footer">
           <div class="contacts-footer-title">📬 Контакты студии</div>
@@ -1437,13 +1430,6 @@ body.is-admin .ann-input-area{display:block}
           <div class="card-title">👩‍🏫 Наши педагоги <span style="font-size:13px;font-weight:400;color:var(--ink-l)">— нажмите чтобы оценить</span></div>
           <div class="teachers-grid" id="teachers-grid-parent" style="grid-template-columns:repeat(3,1fr)"></div>
         </div>
-
-        <!-- QR CODE for parents -->
-        <div class="card" style="text-align:center;margin-bottom:20px">
-          <div class="card-title">📱 Поделиться сайтом</div>
-          <div style="display:flex;justify-content:center;padding:20px;background:white;border-radius:12px"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https%3A%2F%2Ftapemode-hash.github.io%2Fkrokodil_studio%2F" width="200" height="200" alt="QR код" style="border-radius:8px"></div>
-          <div style="font-size:12px;color:var(--ink-l);margin-top:10px">Отсканируйте для быстрого доступа</div>
-        </div>
       </div>
 
       <!-- GUEST DASHBOARD -->
@@ -1495,13 +1481,6 @@ body.is-admin .ann-input-area{display:block}
           <div class="card-title">👩‍🏫 Наши педагоги <span style="font-size:13px;font-weight:400;color:var(--ink-l)">— нажмите чтобы оценить</span></div>
           <div class="teachers-grid" id="teachers-grid-public" style="grid-template-columns:repeat(3,1fr)"></div>
         </div>
-        <!-- QR CODE for guests -->
-        <div class="card" style="text-align:center;margin-bottom:22px">
-          <div class="card-title">📱 Поделиться сайтом</div>
-          <div style="display:flex;justify-content:center;padding:20px;background:white;border-radius:12px"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https%3A%2F%2Ftapemode-hash.github.io%2Fkrokodil_studio%2F" width="200" height="200" alt="QR код" style="border-radius:8px"></div>
-          <div style="font-size:12px;color:var(--ink-l);margin-top:10px">Отсканируйте для быстрого доступа</div>
-        </div>
-
         <!-- ── CONTACTS FOOTER ── -->
         <div class="studio-contacts-footer">
           <div class="contacts-footer-title">📬 Контакты студии</div>
@@ -3818,27 +3797,6 @@ function renderDashboard(){
 
   // Always render the calendar — called once here for all roles
   renderMiniCal();
-
-  // Generate QR code for website URL
-  generateQRCode('https://tapemode-hash.github.io/krokodil_studio/');
-}
-
-// Generate QR code using Canvas (no external dependencies)
-function generateQRCode(url){
-  ['qr-code','qr-code-parent','qr-code-guest'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el||el.querySelector('img,canvas'))return;
-    const img=document.createElement('img');
-    img.width=200; img.height=200;
-    img.alt='QR код сайта';
-    img.style.cssText='border-radius:8px;display:block';
-    img.onerror=function(){
-      this.src=`https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(url)}`;
-    };
-    img.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-    el.innerHTML='';
-    el.appendChild(img);
-  });
 }
 
 // Parse "HH:MM" → minutes since midnight
