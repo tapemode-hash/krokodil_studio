@@ -1815,9 +1815,53 @@ body.is-admin .ann-input-area{display:block}
           </table>
         </div>
       </div>
+      <!-- ── Teacher salary section ── -->
+      <div class="card admin-only-block" style="margin-top:20px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+          <div class="card-title" style="margin:0">💼 Зарплата педагогов</div>
+          <select id="report-salary-month" class="form-select" style="width:auto;padding:4px 10px;font-size:13px" onchange="renderReportTeachers()">
+            <option value="">Весь период</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Педагог</th>
+                <th style="text-align:center">Групп</th>
+                <th style="text-align:center">Занятий</th>
+                <th style="text-align:center">Учеников</th>
+                <th style="text-align:right">Выручка с группы</th>
+              </tr>
+            </thead>
+            <tbody id="report-teachers-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
   </main>
+</div>
+
+<!-- ══ TEACHER SALARY MODAL ══ -->
+<div class="modal-overlay" id="m-teacher-salary">
+  <div class="modal" style="max-width:620px">
+    <button class="modal-close" onclick="closeM('m-teacher-salary')">✕</button>
+    <div class="modal-title" id="mts-title">💼 Расчётный период</div>
+    <div id="mts-header" style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:12px 14px;background:var(--cream);border-radius:12px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:13px;color:var(--ink-l);font-weight:600">Период:</span>
+      <select id="mts-month" class="form-select" style="width:auto;padding:5px 12px;font-size:13px" onchange="refreshTeacherSalaryModal()">
+        <option value="">Весь период</option>
+      </select>
+    </div>
+    <div id="mts-groups" style="margin-bottom:16px"></div>
+    <div id="mts-log" style="max-height:280px;overflow-y:auto;border:1px solid var(--peach);border-radius:10px;padding:4px 0"></div>
+    <div id="mts-total" style="margin-top:14px;padding:12px 16px;background:var(--mint);border-radius:12px;display:flex;align-items:center;justify-content:space-between"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeM('m-teacher-salary')">Закрыть</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -6011,8 +6055,213 @@ function renderReportTable(){
       <td><span class="badge blue">${getAttPct(s.id)}</span></td>
       <td><span class="badge ${payCls(s.pay)}">${payLabel(s.pay)}</span></td>
     </tr>`).join('');
+  renderReportTeachers();
 }
 
+// ══════════════════════════════════════════════════════════════
+//  TEACHER SALARY (reports page)
+// ══════════════════════════════════════════════════════════════
+
+function calcTeacherSalary(tid, filterMonth){
+  const t = teachers.find(x=>x.id===tid); if(!t) return null;
+  const teacherScIds = new Set(schedule.filter(sc=>sc.teacher===t.name).map(sc=>sc.id));
+
+  // Students enrolled in teacher's groups
+  const teacherStudentIds = new Set();
+  Object.entries(enrollments).forEach(([sid,scIds])=>{
+    if(scIds.some(id=>teacherScIds.has(id))) teacherStudentIds.add(+sid);
+  });
+
+  const RU_DAYS_SHORT=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const RU_MONTHS_LONG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+  const dateBreakdown = [];
+  const groupStats = {};
+  let totalRevenue = 0, totalLessons = 0;
+  const uniqueStudents = new Set();
+
+  Object.entries(attendance).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,dayAtt])=>{
+    if(filterMonth && !dateKey.startsWith(filterMonth)) return;
+    const costs = lessonCosts[dateKey]||{};
+    const dayEntries = [];
+
+    Object.entries(dayAtt).forEach(([attKey,status])=>{
+      if(status!=='p') return;
+      if(String(attKey).includes('_')) return;
+
+      const sid = sidFromAttKey(attKey);
+      let scId = null;
+
+      if(String(attKey).includes(':')){
+        scId = +String(attKey).split(':')[1];
+        if(!teacherScIds.has(scId)) return;
+      } else {
+        if(!teacherStudentIds.has(sid)) return;
+        const stuEnrolled = (enrollments[sid]||[]).filter(id=>teacherScIds.has(id));
+        scId = stuEnrolled[0]||null;
+      }
+
+      const sc = schedule.find(x=>x.id===scId);
+      const groupName = sc ? sc.name : '—';
+      const viaSub = costs[attKey+'_via_sub'];
+      let cost;
+      if(viaSub){
+        cost = costs[attKey]!==undefined ? +costs[attKey] : 0;
+        if(!cost && costs[attKey+'_sub_price'] && costs[attKey+'_sub_total'])
+          cost = +costs[attKey+'_sub_price'] / +costs[attKey+'_sub_total'];
+      } else {
+        cost = costs[attKey]!==undefined ? +costs[attKey] : effectivePrice(sid);
+      }
+
+      const stu = students.find(x=>x.id===sid);
+      dayEntries.push({sid, attKey, groupName, scId, cost, viaSub, stuName: stu?stu.name:'?'});
+      totalRevenue += cost;
+      totalLessons++;
+      uniqueStudents.add(sid);
+
+      if(scId!==null){
+        if(!groupStats[scId]) groupStats[scId]={name:groupName, lessons:0, revenue:0, students:new Set()};
+        groupStats[scId].lessons++;
+        groupStats[scId].revenue += cost;
+        groupStats[scId].students.add(sid);
+      }
+    });
+
+    if(dayEntries.length>0){
+      const d = new Date(dateKey);
+      const label = `${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+      dateBreakdown.push({dateKey, label, entries:dayEntries, dayTotal:dayEntries.reduce((s,e)=>s+e.cost,0)});
+    }
+  });
+
+  return {teacher:t, dateBreakdown, totalRevenue, totalLessons, groupStats, uniqueStudents:uniqueStudents.size};
+}
+
+function renderReportTeachers(){
+  const tbody = document.getElementById('report-teachers-tbody'); if(!tbody) return;
+  const sel = document.getElementById('report-salary-month');
+
+  // Populate month options
+  const allDates = Object.keys(attendance).sort().reverse();
+  const RU_MONTHS_NOM=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const seenMonths = [...new Set(allDates.map(d=>d.slice(0,7)))];
+  if(sel && sel.options.length <= 1){
+    seenMonths.forEach(ym=>{
+      const [y,m]=ym.split('-');
+      const opt=document.createElement('option');
+      opt.value=ym; opt.textContent=RU_MONTHS_NOM[+m-1]+' '+y;
+      sel.appendChild(opt);
+    });
+  }
+  const filterMonth = sel ? sel.value : '';
+
+  if(!teachers.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--ink-l)">Педагоги не добавлены</td></tr>'; return; }
+
+  tbody.innerHTML = teachers.map(t=>{
+    const d = calcTeacherSalary(t.id, filterMonth);
+    if(!d) return '';
+    const rev = Math.round(d.totalRevenue);
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="background:${t.color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${t.avatar}</div>
+          <div>
+            <div style="font-weight:700">${t.name}</div>
+            <div style="font-size:11px;color:var(--ink-l)">${t.role}</div>
+          </div>
+        </div>
+      </td>
+      <td style="text-align:center"><span class="badge blue">${Object.keys(d.groupStats).length}</span></td>
+      <td style="text-align:center"><span class="badge green">${d.totalLessons}</span></td>
+      <td style="text-align:center"><span class="badge purple">${d.uniqueStudents}</span></td>
+      <td style="text-align:right">
+        <b class="salary-click" style="font-family:'Caveat',cursive;font-size:19px;color:var(--mint-d);cursor:pointer;border-bottom:2px dashed var(--mint-d);padding-bottom:1px" onclick="openTeacherSalary(${t.id})" title="Подробнее">
+          ${rev>0?rev.toLocaleString('ru')+' ₽':'—'}
+        </b>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+let _salaryTeacherId = null;
+
+function openTeacherSalary(tid){
+  _salaryTeacherId = tid;
+  const t = teachers.find(x=>x.id===tid); if(!t) return;
+
+  // Populate month selector in modal
+  const sel = document.getElementById('mts-month');
+  const allDates = Object.keys(attendance).sort().reverse();
+  const RU_MONTHS_NOM=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  sel.innerHTML='<option value="">Весь период</option>';
+  const seenMonths=[...new Set(allDates.map(d=>d.slice(0,7)))];
+  seenMonths.forEach(ym=>{
+    const [y,m]=ym.split('-');
+    const opt=document.createElement('option');
+    opt.value=ym; opt.textContent=RU_MONTHS_NOM[+m-1]+' '+y;
+    sel.appendChild(opt);
+  });
+  // Sync with reports page month filter
+  const repSel=document.getElementById('report-salary-month');
+  if(repSel) sel.value=repSel.value;
+
+  document.getElementById('mts-title').textContent=`💼 ${t.name}`;
+  document.getElementById('mts-header').innerHTML=`
+    <div style="background:${t.color};width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:2px 3px 0 var(--peach)">${t.avatar}</div>
+    <div>
+      <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">${t.name}</div>
+      <div style="font-size:12px;color:var(--ink-l)">${t.role}</div>
+    </div>`;
+
+  _fillTeacherSalaryModal(tid, sel.value);
+  openM('m-teacher-salary');
+}
+
+function refreshTeacherSalaryModal(){
+  if(_salaryTeacherId) _fillTeacherSalaryModal(_salaryTeacherId, document.getElementById('mts-month').value);
+}
+
+function _fillTeacherSalaryModal(tid, filterMonth){
+  const d = calcTeacherSalary(tid, filterMonth);
+
+  // Groups breakdown
+  const groups = Object.values(d.groupStats);
+  document.getElementById('mts-groups').innerHTML = groups.length ? `
+    <div style="font-size:12px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">По группам</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+    ${groups.map(g=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--cream);border-radius:10px">
+        <div style="flex:1;font-weight:600;font-size:13px">${g.name}</div>
+        <span class="badge blue" style="font-size:11px">${g.lessons} зан.</span>
+        <span class="badge purple" style="font-size:11px">${g.students.size} уч.</span>
+        <b style="font-family:'Caveat',cursive;font-size:16px;color:var(--mint-d);min-width:70px;text-align:right">${Math.round(g.revenue).toLocaleString('ru')} ₽</b>
+      </div>`).join('')}
+    </div>` : `<div style="color:var(--ink-l);font-size:13px;padding:8px">Нет данных за выбранный период</div>`;
+
+  // Date log
+  document.getElementById('mts-log').innerHTML = d.dateBreakdown.length ? d.dateBreakdown.map(day=>`
+    <div style="padding:8px 14px;border-bottom:1px solid var(--peach)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <span style="font-weight:700;font-size:13px">${day.label}</span>
+        <b style="font-family:'Caveat',cursive;font-size:15px;color:var(--mint-d)">${Math.round(day.dayTotal).toLocaleString('ru')} ₽</b>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${day.entries.map(e=>`
+          <span style="background:var(--cream);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600">
+            ${e.stuName}${e.viaSub?' 🎫':''} · ${Math.round(e.cost).toLocaleString('ru')} ₽
+          </span>`).join('')}
+      </div>
+    </div>`).join('') : `<div style="padding:16px;text-align:center;color:var(--ink-l);font-size:13px">Нет занятий за выбранный период</div>`;
+
+  // Total
+  const rev = Math.round(d.totalRevenue);
+  document.getElementById('mts-total').innerHTML=`
+    <div>
+      <div style="font-size:12px;color:var(--ink);font-weight:600">Итого за период</div>
+      <div style="font-size:12px;color:var(--ink-l)">${d.totalLessons} занятий · ${d.uniqueStudents} учеников</div>
+    </div>
+    <b style="font-family:'Caveat',cursive;font-size:26px;color:#2a7a50">${rev>0?rev.toLocaleString('ru')+' ₽':'0 ₽'}</b>`;
+}
 
 function exportExcel(){
   // Load SheetJS on demand
