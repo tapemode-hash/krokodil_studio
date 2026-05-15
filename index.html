@@ -1945,6 +1945,12 @@ body.is-admin .ann-input-area{display:block}
         <div id="rp-teachers" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
 
+      <!-- 6. Группа риска -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">⚠️ Группа риска — долго не приходят</div>
+        <div id="rp-at-risk" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
       <!-- 7. Журнал оттока -->
       <div class="card" style="margin-bottom:20px">
         <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -6372,6 +6378,26 @@ function getStudentLastActivity(sid){
   return last;
 }
 
+function getAtRiskStudents(){
+  const now=new Date(); now.setHours(12,0,0,0);
+  const MS=86400000;
+  const MIN=21, MAX=51; // 3 недели — 3 недели+1 месяц
+  return students
+    .filter(s=>isStudentActive(s.id))
+    .map(s=>{
+      const last=getStudentLastActivity(s.id);
+      if(!last)return null;
+      const days=Math.floor((now-last)/MS);
+      if(days<MIN||days>MAX)return null;
+      const scNames=(enrollments[String(s.id)]||[])
+        .map(scid=>schedule.find(sc=>sc.id===scid)?.name)
+        .filter(Boolean);
+      return {...s,daysSince:days,lastVisit:last,scNames};
+    })
+    .filter(Boolean)
+    .sort((a,b)=>b.daysSince-a.daysSince);
+}
+
 function metricRow(label,value,target,good,note){
   const ok=good!=null?(good?'var(--grn)':value==='—'?'var(--ink-l)':'var(--coral)'):null;
   return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cream)">
@@ -6706,6 +6732,34 @@ function renderReports(){
             <div><div style="color:var(--ink-l)">Зарплата</div><div style="font-weight:700;color:var(--lav-d)">${Math.round(totalSalary).toLocaleString('ru')} ₽</div></div>
           </div>
           <div style="margin-top:8px;font-size:12px;color:var(--ink-l)">${salaryPerLesson} ₽/занятие · прибыль: <b style="color:${profit>=0?'var(--mint-d)':'var(--coral-d)'}">${Math.round(profit).toLocaleString('ru')} ₽</b></div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // AT-RISK STUDENTS
+  const riskEl=document.getElementById('rp-at-risk');
+  if(riskEl){
+    const atRisk=getAtRiskStudents();
+    if(!atRisk.length){
+      riskEl.innerHTML='<div style="font-size:13px;color:var(--ink-l)">Нет учеников в зоне риска</div>';
+    } else {
+      riskEl.innerHTML=atRisk.map(s=>{
+        const urgent=s.daysSince>=35;
+        const color=urgent?'var(--coral)':'#E67E00';
+        const lastFmt=s.lastVisit.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+        const groups=s.scNames.length?s.scNames.join(', '):'без группы';
+        return `<div style="background:var(--cream);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px;width:38px;height:38px;background:${s.color};border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${s.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14px">${s.name}</div>
+            <div style="font-size:12px;color:var(--ink-l);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${groups}</div>
+            ${s.parentName||s.phone?`<div style="font-size:12px;color:var(--ink-l);margin-top:1px">${s.parentName?s.parentName+' · ':''}${s.phone?`<a href="tel:${s.phone}" style="color:var(--mint-d);text-decoration:none">${s.phone}</a>`:''}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-weight:700;font-size:16px;color:${color}">${s.daysSince} дн.</div>
+            <div style="font-size:11px;color:var(--ink-l)">был ${lastFmt}</div>
+          </div>
         </div>`;
       }).join('');
     }
