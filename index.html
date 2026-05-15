@@ -5544,7 +5544,8 @@ function renderAttendance(){
       // Check for a day-specific manual assignment
       const assignedScId=(dayAssignments[key]||{})[String(s.id)];
       const assignedSc=assignedScId!=null?schedule.find(sc=>sc.id===assignedScId):null;
-      pairs.push({s,sc:assignedSc||null,attKey:String(s.id),isExtra,dayAssigned:!!assignedSc});
+      const attKey=assignedSc?`${s.id}:${assignedScId}`:String(s.id);
+      pairs.push({s,sc:assignedSc||null,attKey,isExtra,dayAssigned:!!assignedSc});
     }
   };
   dateEnrolledStudents.forEach(s=>addPairs(s,false));
@@ -5759,16 +5760,48 @@ function lsSave_unused_remove(){}
 function assignToGroup(sid, scId){
   if(!scId)return;
   const key=fmtDate(attDate);
+  const scIdInt=parseInt(scId);
+  const plainKey=String(sid);
+  const compositeKey=`${sid}:${scIdInt}`;
+  // Migrate existing plain-key attendance → composite so reports attribute correctly
+  if(attendance[key]&&attendance[key][plainKey]!==undefined){
+    attendance[key][compositeKey]=attendance[key][plainKey];
+    delete attendance[key][plainKey];
+  }
+  if(lessonCosts[key]){
+    Object.keys(lessonCosts[key]).forEach(k=>{
+      if(k===plainKey||k.startsWith(plainKey+'_')){
+        lessonCosts[key][compositeKey+k.slice(plainKey.length)]=lessonCosts[key][k];
+        delete lessonCosts[key][k];
+      }
+    });
+  }
   if(!dayAssignments[key])dayAssignments[key]={};
-  dayAssignments[key][String(sid)]=parseInt(scId);
+  dayAssignments[key][plainKey]=scIdInt;
   persist();
   renderAttendance();
 }
 
 function removeGroupAssignment(sid){
   const key=fmtDate(attDate);
-  if(!dayAssignments[key])return;
-  delete dayAssignments[key][String(sid)];
+  const scIdInt=(dayAssignments[key]||{})[String(sid)];
+  if(scIdInt===undefined)return;
+  const compositeKey=`${sid}:${scIdInt}`;
+  const plainKey=String(sid);
+  // Migrate composite → plain on removal
+  if(attendance[key]&&attendance[key][compositeKey]!==undefined){
+    attendance[key][plainKey]=attendance[key][compositeKey];
+    delete attendance[key][compositeKey];
+  }
+  if(lessonCosts[key]){
+    Object.keys(lessonCosts[key]).forEach(k=>{
+      if(k===compositeKey||k.startsWith(compositeKey+'_')){
+        lessonCosts[key][plainKey+k.slice(compositeKey.length)]=lessonCosts[key][k];
+        delete lessonCosts[key][k];
+      }
+    });
+  }
+  delete dayAssignments[key][plainKey];
   if(!Object.keys(dayAssignments[key]).length)delete dayAssignments[key];
   persist();
   renderAttendance();
