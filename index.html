@@ -7346,7 +7346,7 @@ document.addEventListener('keydown', e=>{
 const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
-  'dateEnrollments','announcements','nextAnnId','subscriptions','lessonCosts',
+  'dateEnrollments','dayAssignments','announcements','nextAnnId','subscriptions','lessonCosts',
   'globalLessonPrice','teacherReviews','photos','nextPhotoId',
   'achievements','nextAchId','requests','nextReqId',
   'nextTId','nextSId','nextScId','dataVersion'];
@@ -7358,6 +7358,7 @@ function loadStateFromStorage(){
   attendance        = lsLoad('attendance',        {});
   enrollments       = lsLoad('enrollments',       DEFAULT_ENROLLMENTS);
   dateEnrollments   = lsLoad('dateEnrollments',   {});
+  dayAssignments    = lsLoad('dayAssignments',    {});
   announcements     = lsLoad('announcements',     []);
   nextAnnId         = lsLoad('nextAnnId',         4);
   subscriptions     = lsLoad('subscriptions',     {});
