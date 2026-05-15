@@ -864,6 +864,13 @@ body.is-admin .ann-input-area{display:block}
         <label class="form-label">Цена разового занятия, ₽ <span style="font-weight:400;color:var(--ink-l)">(0 = использовать глобальную)</span></label>
         <input class="form-input" type="number" id="s-price" placeholder="0 — по умолчанию" min="0">
       </div>
+      <div style="background:var(--lav);border-radius:11px;padding:12px 14px;margin-top:4px">
+        <div style="font-size:12px;font-weight:700;color:var(--lav-d);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🎯 Пробное занятие</div>
+        <div class="form-row" style="margin-bottom:0">
+          <div class="form-group" style="margin:0"><label class="form-label">Дата</label><input class="form-input" type="date" id="s-trial-date"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Сумма, ₽</label><input class="form-input" type="number" id="s-trial-amount" placeholder="500" min="0"></div>
+        </div>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-danger btn-sm" id="s-del-btn" style="display:none" onclick="deleteStudent()">🗑️ Удалить</button>
         <button class="btn btn-ghost" onclick="closeM('m-student')">Отмена</button>
@@ -1591,6 +1598,10 @@ body.is-admin .ann-input-area{display:block}
       <div class="topbar">
         <div class="page-title">Ученики 👦<span id="students-sub"></span></div>
         <div class="topbar-actions">
+          <div style="display:flex;background:var(--cream);border-radius:10px;padding:2px;gap:2px" class="admin-only">
+            <button id="stu-tab-active" class="btn btn-sm" style="padding:5px 12px;font-size:12px;background:white;border-radius:8px;border:none;font-weight:700;color:var(--ink)" onclick="setStudentTab(false)">Активные</button>
+            <button id="stu-tab-archive" class="btn btn-sm" style="padding:5px 12px;font-size:12px;background:transparent;border-radius:8px;border:none;color:var(--ink-l)" onclick="setStudentTab(true)">Архив</button>
+          </div>
           <button class="btn btn-ghost admin-only" onclick="exportExcel()">📊 Excel</button>
           <button class="btn btn-primary admin-only" onclick="openNewStudent()">+ Ученик</button>
         </div>
@@ -3715,6 +3726,7 @@ function logout(){
 let currentPage = 'dashboard';
 let studentsPage = 0;
 let _studentQuery = '';
+let showArchived = false;
 const STUDENTS_PAGE = 50;
 let _attCache = null;
 function invalidateAttCache(){ _attCache = null; }
@@ -3730,6 +3742,22 @@ function buildAttCache(){
     _attCache[s.id]=Math.round(present/dates.length*100)+'%';
   });
 }
+function isStudentActive(sid){
+  const cutoff=new Date(); cutoff.setMonth(cutoff.getMonth()-6);
+  const cutoffStr=fmtDate(cutoff);
+  const sidStr=String(sid);
+  const hasAtt=Object.entries(attendance).some(([dateKey,dayAtt])=>{
+    if(dateKey<cutoffStr)return false;
+    return Object.entries(dayAtt).some(([k,v])=>{
+      if(String(k).includes('_'))return false;
+      return sidFromAttKey(k)===sid&&(v==='p'||v==='a'||v==='trial');
+    });
+  });
+  if(hasAtt)return true;
+  const today=fmtDate(new Date());
+  return (dateEnrollments[sid]||[]).some(d=>d>=cutoffStr);
+}
+
 const guestPages=['dashboard','schedule','teachers','gallery'];
 const parentPages=['dashboard','schedule','teachers','gallery','attendance'];
 
@@ -4556,18 +4584,34 @@ function deleteAnnouncement(id){
 function payLabel(p){ return p==='paid'?'✓ Оплачено':p==='debt'?'✗ Долг':'~ Частично'; }
 function payCls(p){ return p==='paid'?'green':p==='debt'?'red':'yellow'; }
 
+function setStudentTab(archived){
+  showArchived=archived; studentsPage=0;
+  const aBtn=document.getElementById('stu-tab-active');
+  const zBtn=document.getElementById('stu-tab-archive');
+  if(aBtn&&zBtn){
+    aBtn.style.background=archived?'transparent':'white';
+    aBtn.style.color=archived?'var(--ink-l)':'var(--ink)';
+    aBtn.style.fontWeight=archived?'400':'700';
+    zBtn.style.background=archived?'white':'transparent';
+    zBtn.style.color=archived?'var(--ink)':'var(--ink-l)';
+    zBtn.style.fontWeight=archived?'700':'400';
+  }
+  renderStudents();
+}
+
 function renderStudents(query){
   if(query !== undefined){ _studentQuery = query; studentsPage = 0; }
   const isAdmin = document.body.classList.contains('is-admin');
   const q = _studentQuery.toLowerCase();
-  const list = q ? students.filter(s=>s.name.toLowerCase().includes(q)) : students;
+  let list = q ? students.filter(s=>s.name.toLowerCase().includes(q)) : students.slice();
+  list = list.filter(s=> showArchived ? !isStudentActive(s.id) : isStudentActive(s.id));
   const total = list.length;
   const totalPages = Math.max(1, Math.ceil(total / STUDENTS_PAGE));
   if(studentsPage >= totalPages) studentsPage = totalPages - 1;
   const pageList = list.slice(studentsPage * STUDENTS_PAGE, (studentsPage + 1) * STUDENTS_PAGE);
 
   const subEl = document.getElementById('students-sub');
-  if(subEl) subEl.textContent = isAdmin ? `${total} учеников` : '';
+  if(subEl) subEl.textContent = isAdmin ? (showArchived ? ` · ${total} в архиве` : ` · ${total} активных`) : '';
 
   if(!_attCache) buildAttCache();
   const today = fmtDate(new Date());
@@ -4577,6 +4621,7 @@ function renderStudents(query){
     const enrolled = (enrollments[s.id]||[]).length;
     const subs = (subscriptions[s.id]||[]).filter(sb=>sb.total-sb.used>0).length;
     const subsHtml = subs ? `<span class="badge purple" style="margin-left:4px" title="${subs} абонемент(а)">🎫${subs}</span>` : '';
+    const trialHtml = s.trialDate ? `<span class="badge" style="margin-left:4px;background:var(--lav);color:var(--lav-d);border-color:var(--lav-d)" title="Пробное: ${s.trialDate}${s.trialAmount?' · '+s.trialAmount+' ₽':''}">🎯</span>` : '';
     const futureDates = (dateEnrollments[s.id]||[]).filter(d=>d>=today);
     const datesHtml = futureDates.length
       ? futureDates.slice(0,3).map(d=>{ const dt=new Date(d); return `<span class="badge blue" style="margin:1px">${dt.getDate()} ${RU_M[dt.getMonth()]}</span>`; }).join('')
@@ -4584,7 +4629,7 @@ function renderStudents(query){
       : `<span style="font-size:11px;color:var(--ink-l)">—</span>`;
     return `<tr>
       <td style="padding:8px 6px"><div style="background:${s.color};width:28px;height:28px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div></td>
-      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${s.name.split(' ').join('<br>')}</b>${subsHtml}</td>
+      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${s.name.split(' ').join('<br>')}</b>${subsHtml}${trialHtml}</td>
       <td style="white-space:nowrap">${s.age}</td>
       <td><span class="badge blue">${enrolled}</span></td>
       <td><span class="badge blue">${_attCache[s.id]||'—'}</span></td>
@@ -4838,6 +4883,8 @@ function openNewStudent(){
   ageEl.value=''; ageEl.readOnly=false; ageEl.style.cssText='';
   document.getElementById('s-dir').value='';
   document.getElementById('s-source').value='';
+  document.getElementById('s-trial-date').value='';
+  document.getElementById('s-trial-amount').value='';
   document.getElementById('s-del-btn').style.display='none';
   stuTab('info');
   openM('m-student');
@@ -4854,6 +4901,8 @@ function openEditStudent(id){
   document.getElementById('s-phone').value=s.phone||'';
   document.getElementById('s-dir').value=s.dir||'';
   document.getElementById('s-source').value=s.source||'';
+  document.getElementById('s-trial-date').value=s.trialDate||'';
+  document.getElementById('s-trial-amount').value=s.trialAmount||'';
   document.getElementById('s-pay').value=s.pay;
   document.getElementById('s-price').value=s.pricePerLesson||0;
   onDobChange();
@@ -4876,6 +4925,8 @@ function saveStudent(){
     phone:document.getElementById('s-phone').value.trim(),
     dir:document.getElementById('s-dir').value,
     source:document.getElementById('s-source').value,
+    trialDate:document.getElementById('s-trial-date').value||'',
+    trialAmount:parseFloat(document.getElementById('s-trial-amount').value)||0,
     group: id ? (students.find(x=>x.id==id)||{}).group||'' : '',
     pay:document.getElementById('s-pay').value,
     pricePerLesson: parseFloat(document.getElementById('s-price').value)||0,
@@ -5488,7 +5539,6 @@ function renderAttendance(){
         ${currentRole==='admin'?`<div class="att-controls">
           <button class="att-mark present${cur==='p'?' active':''}" onclick="markAtt(${sid},'p',this,'${attKey}')">✓ Присутствует</button>
           <button class="att-mark absent${cur==='a'?' active':''}" onclick="markAtt(${sid},'a',this,'${attKey}')">✗ Отсутствует</button>
-          <button class="att-mark${cur==='trial'?' active':''}" style="background:${cur==='trial'?'var(--lav)':''};border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="markAtt(${sid},'trial',this,'${attKey}')">🎯 Пробное</button>
           ${cur==='p'?`<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${sid},'${attKey}')" title="${isViaSub?'Сменить на разовое':'Списать по абонементу'}">${isViaSub?'🎫 По абон.':'→ 🎫 Абон.'}</button>`:''}
         </div>`:''}
       </div>`;
@@ -6190,37 +6240,35 @@ function inPeriod(dateStr,from,to){
 }
 
 function getRevenueInPeriod(from,to){
-  let total=0,subRev=0,trialRev=0,lessonCount=0;
+  let total=0,subRev=0,lessonCount=0;
   Object.entries(lessonCosts).forEach(([date,costs])=>{
     if(!inPeriod(date,from,to))return;
     const att=attendance[date]||{};
     Object.entries(att).forEach(([key,status])=>{
-      if(status!=='p'&&status!=='trial')return;
+      if(status!=='p')return;
       const cost=costs[key];
       if(cost==null)return;
       total+=cost;
       lessonCount++;
       if(costs[key+'_via_sub'])subRev+=cost;
-      if(costs[key+'_isTrial'])trialRev+=cost;
     });
   });
-  return {total,subRev,trialRev,lessonCount};
+  // пробные занятия из карточек учеников
+  const trialRev=students.reduce((s,st)=>{
+    if(st.trialDate&&inPeriod(st.trialDate,from,to)&&st.trialAmount)
+      return s+st.trialAmount;
+    return s;
+  },0);
+  return {total:total+trialRev,subRev,trialRev,lessonCount};
 }
 
 function getTrialsInPeriod(from,to){
-  let count=0;
   const studentSet=new Set();
-  Object.entries(attendance).forEach(([date,dayAtt])=>{
-    if(!inPeriod(date,from,to))return;
-    Object.entries(dayAtt).forEach(([key,status])=>{
-      if(status==='trial'){
-        count++;
-        const sid=key.split(':')[0];
-        studentSet.add(sid);
-      }
-    });
+  students.forEach(s=>{
+    if(s.trialDate&&inPeriod(s.trialDate,from,to))
+      studentSet.add(String(s.id));
   });
-  return {count,students:studentSet.size};
+  return {count:studentSet.size,students:studentSet.size};
 }
 
 function getActiveStudentsInPeriod(from,to){
@@ -6228,9 +6276,7 @@ function getActiveStudentsInPeriod(from,to){
   Object.entries(attendance).forEach(([date,dayAtt])=>{
     if(!inPeriod(date,from,to))return;
     Object.entries(dayAtt).forEach(([key,status])=>{
-      if(status==='p'||status==='trial'){
-        set.add(key.split(':')[0]);
-      }
+      if(status==='p') set.add(key.split(':')[0]);
     });
   });
   return set;
@@ -6241,7 +6287,7 @@ function getSessionDaysInPeriod(from,to){
   Object.keys(attendance).forEach(date=>{
     if(!inPeriod(date,from,to))return;
     const dayAtt=attendance[date];
-    const hasPresent=Object.values(dayAtt).some(s=>s==='p'||s==='trial');
+    const hasPresent=Object.values(dayAtt).some(s=>s==='p');
     if(hasPresent)days.add(date);
   });
   return days.size;
@@ -6338,12 +6384,7 @@ function renderReports(){
   const retGood=retentionPct>=75;
 
   // ── Конверсия пробного → абонемент
-  const trialStudentIds=new Set();
-  Object.entries(attendance).forEach(([date,dayAtt])=>{
-    Object.entries(dayAtt).forEach(([key,status])=>{
-      if(status==='trial')trialStudentIds.add(key.split(':')[0]);
-    });
-  });
+  const trialStudentIds=new Set(students.filter(s=>s.trialDate).map(s=>String(s.id)));
   const trialConverted=students.filter(s=>
     trialStudentIds.has(String(s.id))&&(subscriptions[s.id]||[]).length>0
   ).length;
