@@ -6792,15 +6792,15 @@ function renderReports(){
   });
 
   // ── Retention: ученики с 2+ абонементами
-  const withSubs=students.filter(s=>(subscriptions[s.id]||[]).length>0);
-  const retained=students.filter(s=>(subscriptions[s.id]||[]).length>=2);
+  const withSubs=students.filter(s=>isStudentActive(s.id)&&(subscriptions[s.id]||[]).length>0);
+  const retained=students.filter(s=>isStudentActive(s.id)&&(subscriptions[s.id]||[]).length>=2);
   const retentionPct=withSubs.length>0?Math.round(retained.length/withSubs.length*100):0;
   const retGood=retentionPct>=75;
 
   // ── Конверсия пробного → абонемент
-  const trialStudentIds=new Set(students.filter(s=>s.trialDate).map(s=>String(s.id)));
+  const trialStudentIds=new Set(students.filter(s=>isStudentActive(s.id)&&s.trialDate).map(s=>String(s.id)));
   const trialConverted=students.filter(s=>
-    trialStudentIds.has(String(s.id))&&(subscriptions[s.id]||[]).length>0
+    isStudentActive(s.id)&&trialStudentIds.has(String(s.id))&&(subscriptions[s.id]||[]).length>0
   ).length;
   const trialConvPct=trialStudentIds.size>0?Math.round(trialConverted/trialStudentIds.size*100):0;
   const trialConvGood=trialConvPct>=40;
@@ -6832,7 +6832,7 @@ function renderReports(){
   // Lifetime через churn rate; fallback — фактический span удержания
   const churnRate=activePrev.size>0?churned/activePrev.size:0;
   const avgLifetime=churnRate>0?1/churnRate:(()=>{
-    const spans=students.map(s=>{
+    const spans=students.filter(s=>isStudentActive(s.id)).map(s=>{
       const first=getStudentFirstActivity(s.id);
       const last=isStudentActive(s.id)?new Date():getStudentLastActivity(s.id);
       if(!first||!last)return null;
@@ -6863,7 +6863,7 @@ function renderReports(){
 
   // ── Качество: средняя посещаемость
   let totalAttPct=0,attCount=0;
-  students.forEach(s=>{
+  students.filter(s=>isStudentActive(s.id)).forEach(s=>{
     const pct=parseFloat(getAttPct(s.id));
     if(!isNaN(pct)){totalAttPct+=pct;attCount++;}
   });
