@@ -6458,7 +6458,8 @@ function metricRow(label,value,target,good,note){
   </div>`;
 }
 
-function calculateTeacherSalary(studentCount){
+function calculateTeacherSalary(studentCount, isIndividual){
+  if(isIndividual) return 700;
   if(studentCount<=0)return 0;
   if(studentCount<=2)return 450;
   if(studentCount===3)return 500;
@@ -6522,7 +6523,7 @@ function getRevenuePerTeacher(from,to){
       result[tid].revenue+=revenue;
       result[tid].lessons++;
       result[tid].studentsTotal+=count;
-      result[tid].salary+=calculateTeacherSalary(count);
+      result[tid].salary+=calculateTeacherSalary(count,sc&&/индивидуальн/i.test(sc.name));
     });
   });
 
