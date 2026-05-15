@@ -6367,6 +6367,7 @@ function getRevenuePerTeacher(from,to){
       const costs=lessonCosts[dateStr]||{};
 
       let dayRevenue=0,dayCount=0;
+      const attEntries=Object.entries(att);
       Object.entries(att).forEach(([key,status])=>{
         if(status!=='p'||String(key).includes('_'))return;
         dayCount++;
@@ -6374,6 +6375,7 @@ function getRevenuePerTeacher(from,to){
         if(cost!=null)dayRevenue+=cost;
       });
 
+      if(dateStr==='2026-05-02')console.log('2026-05-02: attEntries=',attEntries.length,'dayCount=',dayCount,'dayRevenue=',dayRevenue,'teacherId=',teacherId);
       if(dayCount>0){
         result[teacherId].revenue+=dayRevenue;
         result[teacherId].lessons++;
