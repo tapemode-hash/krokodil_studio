@@ -816,6 +816,15 @@ body.is-admin .ann-input-area{display:block}
       </div>
       <div class="form-group"><label class="form-label">Направление <span style="font-weight:400;color:var(--ink-l)">(необязательно)</span></label>
         <select class="form-select" id="s-dir"><option value="">— не выбрано —</option><option>Акварель</option><option>Масло</option><option>Графика</option><option>Лепка</option><option>Батик</option></select></div>
+      <div class="form-group"><label class="form-label">Источник клиента <span style="font-weight:400;color:var(--ink-l)">(откуда пришёл)</span></label>
+        <select class="form-select" id="s-source">
+          <option value="">— не указан —</option>
+          <option value="сарафан">👥 Сарафанное радио</option>
+          <option value="соцсети">📱 Соцсети (ВКонтакте)</option>
+          <option value="флаер">📄 Флаер / объявление</option>
+          <option value="поиск">🔍 Поиск в интернете</option>
+          <option value="другое">🔹 Другое</option>
+        </select></div>
       <input type="hidden" id="s-pay" value="paid">
       <div class="form-group">
         <label class="form-label">Цена разового занятия, ₽ <span style="font-weight:400;color:var(--ink-l)">(0 = использовать глобальную)</span></label>
@@ -1814,29 +1823,84 @@ body.is-admin .ann-input-area{display:block}
     <!-- ── REPORTS ── -->
     <div class="page" id="page-reports">
       <div class="topbar">
-        <div class="page-title">Отчёты 📊<span>Апрель 2025</span></div>
+        <div class="page-title">Аналитика 📊 <span id="rp-label" style="font-size:14px;font-weight:400;color:var(--ink-l)"></span></div>
         <div class="topbar-actions">
-          <button class="btn btn-primary" onclick="exportExcel()">📊 Скачать Excel</button>
+          <select class="form-select" id="rp-period" style="font-size:13px;padding:7px 10px" onchange="onRpPeriod()">
+            <option value="month">Текущий месяц</option>
+            <option value="prev">Прошлый месяц</option>
+            <option value="quarter">Квартал</option>
+            <option value="year">Год</option>
+            <option value="custom">Произвольный период</option>
+          </select>
+          <span id="rp-custom" style="display:none;gap:6px;align-items:center;display:none">
+            <input type="date" id="rp-from" class="form-input" style="padding:7px;font-size:13px">
+            <span>—</span>
+            <input type="date" id="rp-to" class="form-input" style="padding:7px;font-size:13px">
+          </span>
+          <button class="btn btn-primary btn-sm" onclick="renderReports()">Рассчитать</button>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card peach"><span class="stat-icon">👦</span><div class="stat-value" id="r-students">—</div><div class="stat-label">Учеников</div><span class="stat-change up">↑ +6</span></div>
-        <div class="stat-card mint"><span class="stat-icon">💰</span><div class="stat-value">283К</div><div class="stat-label">Выручка</div><span class="stat-change up">↑ +12%</span></div>
-        <div class="stat-card lav"><span class="stat-icon">📚</span><div class="stat-value">162</div><div class="stat-label">Занятий</div><span class="stat-change neutral">→ норма</span></div>
-        <div class="stat-card yel"><span class="stat-icon">⭐</span><div class="stat-value">4.9</div><div class="stat-label">Рейтинг</div><span class="stat-change up">↑ +0.1</span></div>
-      </div>
-      <div class="two-col">
-        <div class="card">
-          <div class="card-title">📈 Посещаемость по месяцам</div>
-          <div class="chart-bars" id="chart-bars"></div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px" id="chart-labels"></div>
+
+      <!-- 5. Еженедельный дашборд (вверху для быстрого просмотра) -->
+      <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#F0FFF8,#EFF5FF);border:2px solid var(--mint)">
+        <div class="card-title" style="font-size:18px">⚡ Ключевые показатели <span id="rp-week-label" style="font-size:13px;font-weight:400;color:var(--ink-l)"></span></div>
+        <div class="stats-grid" id="rp-key-metrics">
+          <div class="stat-card peach"><span class="stat-icon">👦</span><div class="stat-value" id="km-students">—</div><div class="stat-label">Учеников сейчас</div><span class="stat-change" id="km-students-d">—</span></div>
+          <div class="stat-card mint"><span class="stat-icon">📊</span><div class="stat-value" id="km-load">—</div><div class="stat-label">Загрузка студии</div><span class="stat-change" id="km-load-d">—</span></div>
+          <div class="stat-card lav"><span class="stat-icon">🎯</span><div class="stat-value" id="km-trials">—</div><div class="stat-label">Пробных за период</div><span class="stat-change" id="km-trials-d">—</span></div>
+          <div class="stat-card yel"><span class="stat-icon">💰</span><div class="stat-value" id="km-revenue">—</div><div class="stat-label">Выручка за период</div><span class="stat-change" id="km-revenue-d">—</span></div>
+          <div class="stat-card sky"><span class="stat-icon">📈</span><div class="stat-value" id="km-new">—</div><div class="stat-label">Новых / ушедших</div><span class="stat-change" id="km-new-d">—</span></div>
         </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <!-- 1. Операционные метрики -->
         <div class="card">
-          <div class="card-title">📋 Список учеников</div>
-          <table>
-            <thead><tr><th>Имя</th><th>Посещ.</th><th>Оплата</th></tr></thead>
-            <tbody id="report-tbody"></tbody>
-          </table>
+          <div class="card-title">⚙️ Операционные метрики</div>
+          <div id="rp-ops" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <!-- 2. Финансовые метрики -->
+        <div class="card">
+          <div class="card-title">💰 Финансовые метрики</div>
+          <div id="rp-fin" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div style="margin-top:14px;padding-top:14px;border-top:2px dashed var(--cream)">
+            <div style="font-size:12px;font-weight:700;color:var(--ink-l);margin-bottom:8px">Маркетинговые затраты (для CAC)</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="rp-mkt-cost" class="form-input" placeholder="₽ за период" style="font-size:13px;padding:7px">
+              <button class="btn btn-ghost btn-sm" onclick="saveMarketingCost()">Сохранить</button>
+            </div>
+            <div style="font-size:11px;color:var(--ink-l);margin-top:4px" id="rp-mkt-saved"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <!-- 3. Маркетинговые метрики -->
+        <div class="card">
+          <div class="card-title">📣 Маркетинговые метрики</div>
+          <div id="rp-mkt" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div style="margin-top:14px" id="rp-sources-chart"></div>
+        </div>
+        <!-- 4. Метрики качества -->
+        <div class="card">
+          <div class="card-title">⭐ Качество</div>
+          <div id="rp-qual" style="display:flex;flex-direction:column;gap:10px"></div>
+          <!-- LTV калькулятор -->
+          <div style="margin-top:14px;padding-top:14px;border-top:2px dashed var(--cream)">
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px">📐 Калькулятор LTV и точки безубыточности</div>
+            <div style="font-size:12px;background:var(--cream);border-radius:10px;padding:12px;line-height:1.8" id="rp-ltv-calc">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Журнал оттока -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          📋 Журнал оттока
+          <button class="btn btn-ghost btn-sm" onclick="openAddChurn()">+ Добавить запись</button>
+        </div>
+        <div id="rp-churn-list">
+          <div style="color:var(--ink-l);font-size:13px;text-align:center;padding:20px">Записей об уходе нет</div>
         </div>
       </div>
     </div>
@@ -1871,6 +1935,9 @@ function persist(){
   lsSave('nextAchId', nextAchId);
   lsSave('requests', requests);
   lsSave('nextReqId', nextReqId);
+  lsSave('churnLog',churnLog);
+  lsSave('marketingCosts',marketingCosts);
+  lsSave('nextChurnId',nextChurnId);
   showSaved();
   syncToFirebase();
 }
@@ -3409,6 +3476,9 @@ let teachers   = lsLoad('teachers',  DEFAULT_TEACHERS);
 let students   = lsLoad('students',  DEFAULT_STUDENTS);
 let schedule   = lsLoad('schedule',  DEFAULT_SCHEDULE);
 let attendance = lsLoad('attendance', {}); // { 'YYYY-MM-DD': {studentId: 'p'|'a'} }
+let churnLog = lsLoad('churnLog', []);
+let marketingCosts = lsLoad('marketingCosts', []);
+let nextChurnId = lsLoad('nextChurnId', 1);
 // enrollments: { studentId: [scheduleId, ...] }
 let enrollments   = lsLoad('enrollments', DEFAULT_ENROLLMENTS);
 // dateEnrollments: { studentId: ['YYYY-MM-DD', ...] }
@@ -4733,6 +4803,7 @@ function openNewStudent(){
   const ageEl=document.getElementById('s-age');
   ageEl.value=''; ageEl.readOnly=false; ageEl.style.cssText='';
   document.getElementById('s-dir').value='';
+  document.getElementById('s-source').value='';
   document.getElementById('s-del-btn').style.display='none';
   stuTab('info');
   openM('m-student');
@@ -4748,6 +4819,7 @@ function openEditStudent(id){
   document.getElementById('s-parent').value=s.parentName||'';
   document.getElementById('s-phone').value=s.phone||'';
   document.getElementById('s-dir').value=s.dir||'';
+  document.getElementById('s-source').value=s.source||'';
   document.getElementById('s-pay').value=s.pay;
   document.getElementById('s-price').value=s.pricePerLesson||0;
   onDobChange();
@@ -4769,6 +4841,7 @@ function saveStudent(){
     parentName:document.getElementById('s-parent').value.trim(),
     phone:document.getElementById('s-phone').value.trim(),
     dir:document.getElementById('s-dir').value,
+    source:document.getElementById('s-source').value,
     group: id ? (students.find(x=>x.id==id)||{}).group||'' : '',
     pay:document.getElementById('s-pay').value,
     pricePerLesson: parseFloat(document.getElementById('s-price').value)||0,
@@ -5381,6 +5454,7 @@ function renderAttendance(){
         ${currentRole==='admin'?`<div class="att-controls">
           <button class="att-mark present${cur==='p'?' active':''}" onclick="markAtt(${sid},'p',this,'${attKey}')">✓ Присутствует</button>
           <button class="att-mark absent${cur==='a'?' active':''}" onclick="markAtt(${sid},'a',this,'${attKey}')">✗ Отсутствует</button>
+          <button class="att-mark${cur==='trial'?' active':''}" style="background:${cur==='trial'?'var(--lav)':''};border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="markAtt(${sid},'trial',this,'${attKey}')">🎯 Пробное</button>
           ${cur==='p'?`<button class="att-mark" style="border-color:var(--lav-d);color:var(--lav-d);font-size:11px;padding:4px 10px" onclick="toggleSubMark(${sid},'${attKey}')" title="${isViaSub?'Сменить на разовое':'Списать по абонементу'}">${isViaSub?'🎫 По абон.':'→ 🎫 Абон.'}</button>`:''}
         </div>`:''}
       </div>`;
@@ -5536,6 +5610,13 @@ function markAtt(sid, mark, btn, attKey){
 
   if(prev===mark){
     delete attendance[key][attKey];
+    if(mark==='trial'){
+      if((lessonCosts[key]||{})[attKey+'_auto']&&(lessonCosts[key]||{})[attKey+'_isTrial']){
+        delete lessonCosts[key][attKey];
+        delete lessonCosts[key][attKey+'_auto'];
+        delete lessonCosts[key][attKey+'_isTrial'];
+      }
+    }
     if(mark==='p'){
       const subMeta=(lessonCosts[key]||{})[attKey+'_subIdx'];
       if(subMeta!==undefined){
@@ -5590,6 +5671,14 @@ function markAtt(sid, mark, btn, attKey){
       }
     }
     attendance[key][attKey]=mark;
+    if(mark==='trial'){
+      if(!lessonCosts[key])lessonCosts[key]={};
+      if(!lessonCosts[key][attKey]){
+        lessonCosts[key][attKey]=globalLessonPrice;
+        lessonCosts[key][attKey+'_auto']=true;
+        lessonCosts[key][attKey+'_isTrial']=true;
+      }
+    }
   }
   renderAttendance();
 }
