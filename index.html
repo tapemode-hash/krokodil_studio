@@ -6578,8 +6578,8 @@ function getRevenuePerTeacher(from,to){
   teachers.forEach(t=>teacherByName[t.name]=t.id);
 
   const result={};
-  teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
-  if(!result[0])result[0]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+  teachers.forEach(t=>result[t.id]={id:t.id,name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
+  if(!result[0])result[0]={id:0,name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
 
   // Build schedule lookup by id
   const scheduleMap={};
@@ -6623,7 +6623,7 @@ function getRevenuePerTeacher(from,to){
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
       const tid=teacherByName[tName]??0;
-      if(!result[tid])result[tid]={name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+      if(!result[tid])result[tid]={id:tid,name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
       result[tid].revenue+=revenue;
       result[tid].lessons++;
       result[tid].studentsTotal+=count;
