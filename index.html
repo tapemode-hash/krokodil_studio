@@ -6381,8 +6381,11 @@ function getRevenuePerTeacher(from,to){
 
   console.log('getRevenuePerTeacher: processed', processedDates, 'dates in period');
   console.log('Teacher 0 lessons:', result[0]?.lessons, 'revenue:', result[0]?.revenue);
-  console.log('Attendance dates available:', Object.keys(attendance).slice(0, 10));
+  const attDates = Object.keys(attendance).slice(0, 10);
+  console.log('Attendance dates available:', attDates);
   console.log('Total attendance records:', Object.keys(attendance).length);
+  console.log('Sample attendance for 2026-05-02:', attendance['2026-05-02']);
+  console.log('Sample lesson costs for 2026-05-02:', lessonCosts['2026-05-02']);
   console.log('getRevenuePerTeacher result:', result, 'from:', from, 'to:', to);
   return result;
 }
