@@ -1438,6 +1438,13 @@ body.is-admin .ann-input-area{display:block}
           <div class="card-title">👩‍🏫 Наши педагоги <span style="font-size:13px;font-weight:400;color:var(--ink-l)">— нажмите чтобы оценить</span></div>
           <div class="teachers-grid" id="teachers-grid-parent" style="grid-template-columns:repeat(3,1fr)"></div>
         </div>
+
+        <!-- QR CODE for parents -->
+        <div class="card" style="text-align:center;margin-bottom:20px">
+          <div class="card-title">📱 Поделиться сайтом</div>
+          <div id="qr-code-parent" style="display:flex;justify-content:center;padding:20px;background:white;border-radius:12px"></div>
+          <div style="font-size:12px;color:var(--ink-l);margin-top:10px">Отсканируйте для быстрого доступа</div>
+        </div>
       </div>
 
       <!-- GUEST DASHBOARD -->
@@ -1489,6 +1496,13 @@ body.is-admin .ann-input-area{display:block}
           <div class="card-title">👩‍🏫 Наши педагоги <span style="font-size:13px;font-weight:400;color:var(--ink-l)">— нажмите чтобы оценить</span></div>
           <div class="teachers-grid" id="teachers-grid-public" style="grid-template-columns:repeat(3,1fr)"></div>
         </div>
+        <!-- QR CODE for guests -->
+        <div class="card" style="text-align:center;margin-bottom:22px">
+          <div class="card-title">📱 Поделиться сайтом</div>
+          <div id="qr-code-guest" style="display:flex;justify-content:center;padding:20px;background:white;border-radius:12px"></div>
+          <div style="font-size:12px;color:var(--ink-l);margin-top:10px">Отсканируйте для быстрого доступа</div>
+        </div>
+
         <!-- ── CONTACTS FOOTER ── -->
         <div class="studio-contacts-footer">
           <div class="contacts-footer-title">📬 Контакты студии</div>
@@ -3812,16 +3826,18 @@ function renderDashboard(){
 
 // Generate QR code
 function generateQRCode(url){
-  const qrContainer=document.getElementById('qr-code');
-  if(!qrContainer)return;
-  qrContainer.innerHTML='';
-  new QRCode(qrContainer, {
-    text: url,
-    width: 200,
-    height: 200,
-    colorDark: '#3A2E2E',
-    colorLight: '#FFFDF9',
-    correctLevel: QRCode.CorrectLevel.H
+  ['qr-code','qr-code-parent','qr-code-guest'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML='';
+    new QRCode(el,{
+      text:url,
+      width:200,
+      height:200,
+      colorDark:'#3A2E2E',
+      colorLight:'#FFFDF9',
+      correctLevel:QRCode.CorrectLevel.H
+    });
   });
 }
 
