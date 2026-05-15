@@ -780,13 +780,13 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- TOAST / SAVE -->
-<div class="toast" id="toast"></div>
-<div class="save-indicator" id="save-ind">💾 Сохранено</div>
+<div class="toast" id="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+<div class="save-indicator" id="save-ind" role="status" aria-live="polite">💾 Сохранено</div>
 
 <!-- ══ MODALS ══════════════════════════════════════════════ -->
 
 <!-- Churn Log Modal -->
-<div class="modal-overlay" id="m-churn">
+<div class="modal-overlay" id="m-churn" role="dialog" aria-modal="true" aria-label="Запись об уходе ученика">
   <div class="modal" style="width:500px">
     <button class="modal-close" onclick="closeM('m-churn')">✕</button>
     <div class="modal-title">📋 Запись об уходе ученика</div>
@@ -820,7 +820,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- New / Edit Student -->
-<div class="modal-overlay" id="m-student">
+<div class="modal-overlay" id="m-student" role="dialog" aria-modal="true" aria-labelledby="m-student-title">
   <div class="modal" style="width:540px">
     <button class="modal-close" onclick="closeM('m-student')">✕</button>
     <div class="modal-title" id="m-student-title">🦊 Новый ученик</div>
@@ -935,7 +935,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- New / Edit Schedule -->
-<div class="modal-overlay" id="m-schedule">
+<div class="modal-overlay" id="m-schedule" role="dialog" aria-modal="true" aria-labelledby="m-schedule-title">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-schedule')">✕</button>
     <div class="modal-title" id="m-schedule-title">📅 Занятие</div>
@@ -1014,7 +1014,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- New / Edit Teacher -->
-<div class="modal-overlay" id="m-teacher">
+<div class="modal-overlay" id="m-teacher" role="dialog" aria-modal="true" aria-labelledby="m-teacher-title">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-teacher')">✕</button>
     <div class="modal-title" id="m-teacher-title">👩‍🏫 Педагог</div>
@@ -1065,7 +1065,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- Request modal (for parents) -->
-<div class="modal-overlay" id="m-request">
+<div class="modal-overlay" id="m-request" role="dialog" aria-modal="true" aria-label="Заявка на запись">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-request')">✕</button>
     <div class="modal-title">📝 Запись на занятие</div>
@@ -1107,7 +1107,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- Achievement modal -->
-<div class="modal-overlay" id="m-achievement">
+<div class="modal-overlay" id="m-achievement" role="dialog" aria-modal="true" aria-label="Достижение">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-achievement')">✕</button>
     <div class="modal-title" id="ach-modal-title">🏆 Достижение</div>
@@ -1135,7 +1135,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- Announcement modal -->
-<div class="modal-overlay" id="m-announce">
+<div class="modal-overlay" id="m-announce" role="dialog" aria-modal="true" aria-label="Объявление">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-announce')">✕</button>
     <div class="modal-title">📢 Новое объявление</div>
@@ -1211,7 +1211,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- ══ PHOTO MODAL ══ -->
-<div class="modal-overlay" id="m-photo">
+<div class="modal-overlay" id="m-photo" role="dialog" aria-modal="true" aria-label="Добавить работу">
   <div class="modal" style="max-width:420px">
     <button class="modal-close" onclick="closeM('m-photo')">✕</button>
     <div class="modal-title">📸 Добавить работу</div>
@@ -1241,7 +1241,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- ══ SUB SELECT MODAL ══ -->
-<div class="modal-overlay" id="m-sub-select">
+<div class="modal-overlay" id="m-sub-select" role="dialog" aria-modal="true" aria-label="Выбор абонемента">
   <div class="modal" style="max-width:360px">
     <button class="modal-close" onclick="closeM('m-sub-select')">✕</button>
     <div class="modal-title">🎫 Выберите абонемент</div>
@@ -1979,7 +1979,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- ══ TEACHER SALARY DETAIL MODAL ══ -->
-<div class="modal-overlay" id="m-tsalary">
+<div class="modal-overlay" id="m-tsalary" role="dialog" aria-modal="true" aria-label="Детализация зарплаты">
   <div class="modal" style="max-width:640px">
     <button class="modal-close" onclick="closeM('m-tsalary')">✕</button>
     <div class="modal-title" id="mts-title">💼 Детали зарплаты</div>
@@ -3864,7 +3864,12 @@ function nav(page, btn){
 const PUBLIC_MODALS = ['m-request'];
 function openM(id){
   if(!PUBLIC_MODALS.includes(id) && !document.body.classList.contains('is-admin')){ toast('🔒 Только для администратора'); return; }
-  document.getElementById(id).classList.add('open');
+  const el=document.getElementById(id);
+  el.classList.add('open');
+  requestAnimationFrame(()=>{
+    const first=el.querySelector('input:not([type=hidden]),select,textarea');
+    if(first) first.focus();
+  });
 }
 function closeM(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(o=>{
@@ -4258,6 +4263,12 @@ function renderMiniCal(){
 // ══════════════════════════════════════════════════════════════
 function renderSchedule(){
   const isA=document.body.classList.contains('is-admin');
+  if(schedule.length === 0){
+    const isA2=document.body.classList.contains('is-admin');
+    document.getElementById('schedule-tbody').innerHTML=
+      `<tr><td colspan="7" style="text-align:center;padding:40px 16px;color:var(--ink-l);font-size:15px">Расписание пусто${
+        isA2?'<br><button class="btn" style="margin-top:12px" onclick="openNewSchedule()">+ Добавить занятие</button>':''}</td></tr>`;
+  } else {
   document.getElementById('schedule-tbody').innerHTML=schedule.map(sc=>`
     <tr>
       <td><b>${esc(sc.name)}</b></td><td>${esc(sc.teacher)}</td><td>${esc(sc.room)}</td>
@@ -4265,6 +4276,7 @@ function renderSchedule(){
       <td><span class="badge ${sc.sc}">${sc.status}</span></td>
       <td class="admin-col"><button class="edit-btn" onclick="openEditSchedule(${sc.id})">✏️</button></td>
     </tr>`).join('');
+  }
   // update teacher select in modal
   const sel=document.getElementById('sc-teacher');
   if(sel)sel.innerHTML=teachers.map(t=>`<option>${esc(t.name)}</option>`).join('');
@@ -4686,6 +4698,20 @@ function renderStudents(query){
   const today = fmtDate(new Date());
   const RU_M=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 
+  if(total === 0){
+    const msg = q
+      ? `Ничего не найдено по запросу «${esc(q)}»`
+      : (showArchived ? 'Нет архивных учеников' : 'Нет активных учеников');
+    const btn = (!q && !showArchived && isAdmin)
+      ? `<br><button class="btn" style="margin-top:12px" onclick="openNewStudent()">+ Добавить первого ученика</button>`
+      : '';
+    document.getElementById('students-tbody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;padding:40px 16px;color:var(--ink-l);font-size:15px">${msg}${btn}</td></tr>`;
+    const pagEl = document.getElementById('students-pagination');
+    if(pagEl) pagEl.innerHTML = '';
+    return;
+  }
+
   document.getElementById('students-tbody').innerHTML = pageList.map(s=>{
     const enrolled = (getEnrolls(s.id)).length;
     const subs = (getSubs(s.id)).filter(sb=>sb.total-sb.used>0).length;
@@ -5060,6 +5086,12 @@ function renderTeachers(){
   const isA=document.body.classList.contains('is-admin');
   document.getElementById('teachers-sub').textContent=teachers.length+' педагогов';
   renderTeachersPublic();
+  if(teachers.length === 0){
+    document.getElementById('teachers-grid').innerHTML=
+      `<div style="grid-column:1/-1;text-align:center;padding:48px 16px;color:var(--ink-l);font-size:15px">Нет педагогов${
+        isA?'<br><button class="btn" style="margin-top:12px" onclick="openNewTeacher()">+ Добавить педагога</button>':''}</div>`;
+    return;
+  }
   document.getElementById('teachers-grid').innerHTML=teachers.map(t=>{
     const reviews = teacherReviews[t.id]||[];
     const avgRating = reviews.length
@@ -7503,7 +7535,11 @@ function startClock(){
 }
 
 document.addEventListener('keydown', e=>{
-  if(e.key==='Escape') closeLightbox();
+  if(e.key==='Escape'){
+    const openModal=document.querySelector('.modal-overlay.open');
+    if(openModal){ closeM(openModal.id); return; }
+    closeLightbox();
+  }
 });
 
 // ══════════════════════════════════════════════════════════════
