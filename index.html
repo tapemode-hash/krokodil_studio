@@ -6372,6 +6372,12 @@ function getRevenuePerTeacher(from,to){
 
       let dayRevenue=0,dayCount=0;
       const attEntries=Object.entries(att);
+      if(dateStr==='2026-05-15'){
+        console.log('2026-05-15 attendance entries:', Object.entries(att));
+        Object.entries(att).forEach(([key,status])=>{
+          console.log('2026-05-15 entry - key:', key, 'status:', status, 'includes underscore:', String(key).includes('_'));
+        });
+      }
       Object.entries(att).forEach(([key,status])=>{
         if(status!=='p'||String(key).includes('_'))return;
         dayCount++;
