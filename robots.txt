@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tapemode-hash.github.io/krokodil_studio/sitemap.xml
