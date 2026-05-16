@@ -5019,22 +5019,25 @@ function toggleSharedSub(){
 function renderStudentAttHistory(sid){
   const el=document.getElementById('stab-att-body-inner');
   if(!el||!sid)return;
-  const sidStr=String(sid);
   const DOW=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
   const MON=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   const MON_TITLE=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-  // Собрать все записи
+  // Собрать все записи — та же логика что в buildAttCache
   const records=[];
   Object.entries(attendance).forEach(([dateKey,dayAtt])=>{
-    let status=null;
+    if(!dayAtt||typeof dayAtt!=='object')return;
+    let status=null, attKey=null;
     Object.entries(dayAtt).forEach(([k,v])=>{
-      if(k.split(':')[0]===sidStr&&(v==='p'||v==='a'||v==='trial')) status=v;
+      if(String(k).includes('_'))return;
+      if(sidFromAttKey(k)!==sid)return;
+      if(v==='p'||v==='a'||v==='trial'){status=v;attKey=k;}
     });
-    if(status===null) return;
+    if(!status)return;
     const costs=lessonCosts[dateKey]||{};
-    const viaSub=!!costs[sid+K_VIA_SUB];
-    const cost=costs[sid]!==undefined?+costs[sid]:null;
+    const viaSub=!!(costs[(attKey||sid)+K_VIA_SUB]||costs[sid+K_VIA_SUB]);
+    const costRaw=attKey&&costs[attKey]!==undefined?costs[attKey]:(costs[sid]!==undefined?costs[sid]:null);
+    const cost=costRaw!==null?+costRaw:null;
     records.push({dateKey,status,viaSub,cost});
   });
 
