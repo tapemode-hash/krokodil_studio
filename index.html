@@ -5023,6 +5023,9 @@ function renderStudentAttHistory(sid){
   const MON=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   const MON_TITLE=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
+  // debug
+  const _dbg={sid,attDates:Object.keys(attendance).length,el:!!el};
+  console.log('attHistory',_dbg);
   // Собрать все записи — та же логика что в buildAttCache
   const records=[];
   Object.entries(attendance).forEach(([dateKey,dayAtt])=>{
