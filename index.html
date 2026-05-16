@@ -6923,14 +6923,15 @@ function renderReports(){
   const mktAmount=mktEntry.amount||0;
   const cac=newStudents.length>0&&mktAmount>0?Math.round(mktAmount/newStudents.length):null;
 
-  // ── Маркетинг: источники
+  // ── Маркетинг: источники (только активные ученики)
   const sourceMap={};
-  students.forEach(s=>{
+  students.filter(s=>isStudentActive(s.id)).forEach(s=>{
     const src=s.source||'не указан';
     sourceMap[src]=(sourceMap[src]||0)+1;
   });
   const referralCount=sourceMap['сарафан']||0;
-  const referralPct=students.length>0?Math.round(referralCount/students.length*100):0;
+  const activeStudentCount=students.filter(s=>isStudentActive(s.id)).length;
+  const referralPct=activeStudentCount>0?Math.round(referralCount/activeStudentCount*100):0;
 
   // ── Качество: средняя посещаемость
   let totalAttPct=0,attCount=0;
@@ -7280,7 +7281,7 @@ function _doExport(){
     [],
     ['УЧЕНИКИ'],
     ['Имя','Возраст','Направление','Группа','Посещаемость','Оплата'],
-    ...students.map(s=>[
+    ...students.filter(s=>isStudentActive(s.id)).map(s=>[
       s.name, s.age, s.dir, s.group,
       getAttPct(s.id),
       s.pay==='paid'?'Оплачено':s.pay==='debt'?'Долг':'Частично'
@@ -7297,7 +7298,7 @@ function _doExport(){
   const attDates=Object.keys(attendance).sort();
   if(attDates.length>0){
     const header=['Ученик',...attDates,'Итого (%)'];
-    const attRows=students.map(s=>{
+    const attRows=students.filter(s=>isStudentActive(s.id)).map(s=>{
       const row=[s.name];
       let present=0;
       attDates.forEach(d=>{
