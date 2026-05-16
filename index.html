@@ -2005,6 +2005,18 @@ body.is-admin .ann-input-area{display:block}
   </div>
 </div>
 
+<!-- Cohort detail: new / churned students -->
+<div class="modal-overlay" id="m-cohort" role="dialog" aria-modal="true" aria-label="Детализация учеников">
+  <div class="modal" style="width:460px">
+    <button class="modal-close" onclick="closeM('m-cohort')">✕</button>
+    <div class="modal-title" id="m-cohort-title">—</div>
+    <div id="m-cohort-list" style="max-height:60vh;overflow-y:auto;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeM('m-cohort')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════════════════════
 //  STORAGE
@@ -3653,6 +3665,8 @@ let currentRole = 'guest';
 let selectedRole = 'guest';
 let _parentStudentIds = []; // IDs студентов текущего родителя
 let _paySort = 'att_desc';  // сортировка в оплате: name | att_desc | att_asc
+let _cohortNew = [];      // sid-строки новых учеников за последний рассчитанный период
+let _cohortChurned = [];  // sid-строки ушедших учеников за последний рассчитанный период
 const ADMIN_PW_H  = '9511aa000732a111985d7c746e454b746d7e4cd69c5c941ed0d5dac9c99c228b';
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -6860,7 +6874,8 @@ function renderReports(){
   const loadGood=loadPct>=70;
 
   // ── Churn rate: учеников активных в prev, неактивных в now
-  const churned=[...activePrev].filter(s=>!activeNow.has(s)).length;
+  const churnedSids=[...activePrev].filter(s=>!activeNow.has(s));
+  const churned=churnedSids.length;
   const totalStudents=Math.max(students.length,1);
   const churnPct=activePrev.size>0?Math.round(churned/activePrev.size*100):0;
   const churnGood=churnPct<10;
@@ -6870,6 +6885,8 @@ function renderReports(){
     const first=getStudentFirstActivity(sid);
     return first&&first>=from&&first<=to;
   });
+  _cohortNew=newStudents;
+  _cohortChurned=churnedSids;
 
   // ── Retention: ученики с 2+ абонементами
   const withSubs=students.filter(s=>(getSubs(s.id)).length>0);
@@ -6966,7 +6983,7 @@ function renderReports(){
   document.getElementById('km-revenue-d').textContent=(revDelta>=0?'↑ +':'↓ ')+Math.abs(revDelta)+'% vs прошлый';
   document.getElementById('km-revenue-d').className='stat-change '+(revDelta>=0?'up':'down');
 
-  document.getElementById('km-new').textContent='+'+newStudents.length+' / -'+churned;
+  document.getElementById('km-new').innerHTML=`<span onclick="openCohortModal('new')" style="cursor:pointer" title="Новые ученики">+${newStudents.length}</span> / <span onclick="openCohortModal('churned')" style="cursor:pointer" title="Ушедшие ученики">-${churned}</span>`;
   document.getElementById('km-new-d').className='stat-change '+(newStudents.length>=churned?'up':'down');
   document.getElementById('km-new-d').textContent=newStudents.length>=churned?'↑ Рост':'↓ Убыль';
 
@@ -7256,6 +7273,38 @@ function deleteChurn(id){
   churnLog=churnLog.filter(c=>c.id!==id);
   persist();
   renderChurnLog();
+}
+
+function openCohortModal(type){
+  const isNew=type==='new';
+  const sids=isNew?_cohortNew:_cohortChurned;
+  document.getElementById('m-cohort-title').textContent=
+    isNew?'🆕 Новые ученики за период':'📉 Ушедшие ученики за период';
+  const list=document.getElementById('m-cohort-list');
+  if(!sids.length){
+    list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--ink-l);font-size:14px">${isNew?'Новых учеников нет':'Ушедших учеников нет'}</div>`;
+  } else {
+    list.innerHTML=sids.map(sid=>{
+      const s=students.find(x=>String(x.id)===String(sid));
+      if(!s) return '';
+      const activity=isNew?getStudentFirstActivity(s.id):getStudentLastActivity(s.id);
+      const dateStr=activity?activity.toLocaleDateString('ru-RU',{day:'numeric',month:'long'}):'—';
+      const dateLabel=isNew?'первое занятие: ':'последнее: ';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--cream);cursor:pointer"
+        onclick="openEditStudent(${s.id});closeM('m-cohort')"
+        onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+        <span style="font-size:22px;flex-shrink:0">${esc(s.emoji||'👤')}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${esc(s.name)}</div>
+          <div style="font-size:12px;color:var(--ink-l)">${esc(s.dir||'')}${s.group?' · '+esc(s.group):''}</div>
+        </div>
+        <div style="font-size:12px;color:${isNew?'var(--grn)':'var(--coral)'};white-space:nowrap;flex-shrink:0">
+          ${dateLabel}${dateStr}
+        </div>
+      </div>`;
+    }).filter(Boolean).join('');
+  }
+  openM('m-cohort');
 }
 
 function exportExcel(){
