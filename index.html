@@ -1091,6 +1091,16 @@ body.is-admin .ann-input-area{display:block}
         </div>
         <input class="form-input" id="req-calltime" placeholder="или укажите своё время..." style="font-size:13px">
       </div>
+      <div class="form-group"><label class="form-label">Откуда узнали о нас?</label>
+        <select class="form-select" id="req-source">
+          <option value="">— не указано —</option>
+          <option value="сарафан">👥 Сарафанное радио</option>
+          <option value="соцсети">📱 Соцсети (ВКонтакте)</option>
+          <option value="флаер">📄 Флаер / объявление</option>
+          <option value="поиск">🔍 Поиск в интернете</option>
+          <option value="другое">🔹 Другое</option>
+        </select>
+      </div>
       <div class="form-group"><label class="form-label">Комментарий</label><textarea class="form-input" id="req-comment" rows="2" placeholder="Дополнительная информация..." style="resize:vertical"></textarea></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeM('m-request')">Отмена</button>
@@ -1514,6 +1524,17 @@ body.is-admin .ann-input-area{display:block}
       <div id="dash-guest" style="display:none">
         <div class="topbar"><div class="page-title">Добро пожаловать! 🌻<span>Арт-студия Крокодил</span></div></div>
         <div class="parent-hero"><h2>Арт-студия 🐊 Крокодил</h2><p>Развиваем творческий потенциал каждого ребёнка</p></div>
+
+        <!-- ENROLLMENT CTA -->
+        <div style="background:linear-gradient(135deg,var(--lav),#c8b8f8);border-radius:18px;padding:20px 22px;margin-bottom:22px;display:flex;align-items:center;gap:16px">
+          <div style="font-size:36px">📝</div>
+          <div style="flex:1">
+            <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">Записать ребёнка</div>
+            <div style="font-size:13px;opacity:.85;margin-top:2px">Заполните форму — мы свяжемся и подберём удобное время</div>
+          </div>
+          <button class="btn" style="background:white;color:var(--lav-d);font-weight:700;white-space:nowrap" onclick="openRequestForm()">Подать заявку</button>
+        </div>
+
         <!-- Announcements for guests -->
         <div class="ann-board" style="margin-bottom:22px">
           <div class="ann-header"><div class="ann-title">📢 Объявления</div></div>
@@ -1542,16 +1563,6 @@ body.is-admin .ann-input-area{display:block}
             <div class="card-title">🏆 Достижения</div>
             <div class="ach-list" id="ach-list-public"></div>
           </div>
-        </div>
-
-        <!-- ENROLLMENT CTA -->
-        <div style="background:linear-gradient(135deg,var(--lav),#c8b8f8);border-radius:18px;padding:20px 22px;margin-bottom:22px;display:flex;align-items:center;gap:16px">
-          <div style="font-size:36px">📝</div>
-          <div style="flex:1">
-            <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">Записать ребёнка</div>
-            <div style="font-size:13px;opacity:.85;margin-top:2px">Заполните форму — мы свяжемся и подберём удобное время</div>
-          </div>
-          <button class="btn" style="background:white;color:var(--lav-d);font-weight:700;white-space:nowrap" onclick="openRequestForm()">Подать заявку</button>
         </div>
 
         <!-- Teachers mini-block for guest/parent -->
@@ -4421,6 +4432,7 @@ function openRequestForm(){
   document.getElementById('req-parent-name').value = '';
   document.getElementById('req-phone').value = '';
   document.getElementById('req-calltime').value = '';
+  document.getElementById('req-source').value = '';
   document.getElementById('req-comment').value = '';
   document.querySelectorAll('.call-time-btn').forEach(b=>b.classList.remove('active'));
   // populate directions from schedule
@@ -4454,6 +4466,7 @@ function submitRequest(){
     phone,
     direction: document.getElementById('req-direction').value,
     callTime:  document.getElementById('req-calltime').value.trim(),
+    source:    document.getElementById('req-source').value,
     comment:   document.getElementById('req-comment').value.trim(),
     createdAt: new Date().toISOString(),
   };
@@ -4485,6 +4498,7 @@ function renderRequests(){
           </div>
           ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${esc(r.direction)}</div>`:''}
           ${r.callTime?`<div style="font-size:12px;color:var(--lav-d);margin-top:2px;font-weight:700">🕐 Перезвонить: ${esc(r.callTime)}</div>`:''}
+          ${r.source?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📣 Откуда: ${esc(r.source)}</div>`:''}
           ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${esc(r.comment)}</div>`:''}
           <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Поступила: ${dateStr}</div>
         </div>
