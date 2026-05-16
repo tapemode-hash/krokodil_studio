@@ -4176,7 +4176,7 @@ function renderParentSubs(){
       rows.push({stu,sb,remaining,dateStr});
     });
     Object.values(sharedSubs).forEach(sb=>{
-      if(!sb.members||!sb.members.includes(sid)||seenShared.has(sb.id)) return;
+      if(!sb.members||!sb.members.some(m=>+m===+sid)||seenShared.has(sb.id)) return;
       seenShared.add(sb.id);
       const remaining=sb.total-sb.used;
       let dateStr='—';
@@ -4934,7 +4934,7 @@ function _subCardHTML(sub, deductFn, restoreFn, delFn, extraStyle=''){
 function renderSubList(){
   const sid = +document.getElementById('s-id').value;
   const subs = subscriptions[sid] || [];
-  const shared = Object.values(sharedSubs).filter(s=>s.members&&s.members.includes(sid));
+  const shared = Object.values(sharedSubs).filter(s=>s.members&&s.members.some(m=>+m===+sid));
   const el = document.getElementById('sub-list');
   if(!subs.length && !shared.length){
     el.innerHTML='<div style="color:var(--ink-l);font-size:13px;padding:10px 0 14px">Абонементов нет</div>';
@@ -5842,13 +5842,13 @@ function renderAttendance(){
 function getActiveSub(sid){
   const personal = (subscriptions[sid]||[]).find(s=>s.total-s.used>0);
   if(personal) return personal;
-  return Object.values(sharedSubs).find(s=>s.members&&s.members.includes(sid)&&s.total-s.used>0)||null;
+  return Object.values(sharedSubs).find(s=>s.members&&s.members.some(m=>+m===+sid)&&s.total-s.used>0)||null;
 }
 
 // Returns [{sub, ref}] — ref is numeric index (personal) or 'ss:id' (shared)
 function getActiveSubsForStudent(sid){
   const personal=(subscriptions[sid]||[]).map((s,i)=>({sub:s,ref:i})).filter(x=>x.sub.total-x.sub.used>0);
-  const shared=Object.values(sharedSubs).filter(s=>s.members&&s.members.includes(sid)&&s.total-s.used>0).map(s=>({sub:s,ref:'ss:'+s.id}));
+  const shared=Object.values(sharedSubs).filter(s=>s.members&&s.members.some(m=>+m===+sid)&&s.total-s.used>0).map(s=>({sub:s,ref:'ss:'+s.id}));
   return [...personal,...shared];
 }
 
@@ -5862,7 +5862,7 @@ function getSubByRef(sid, ref){
 
 function hasAnySub(sid){
   if((subscriptions[sid]||[]).length>0) return true;
-  return Object.values(sharedSubs).some(x=>x.members&&x.members.includes(sid));
+  return Object.values(sharedSubs).some(x=>x.members&&x.members.some(m=>+m===+sid));
 }
 
 // Helper: effective lesson price for a student (учитывает акцию если нет абонемента)
@@ -7036,7 +7036,7 @@ function renderReports(){
 
   // ── Retention: ученики с 2+ абонементами
   const withSubs=students.filter(s=>isStudentActive(s.id)&&hasAnySub(s.id));
-  const retained=students.filter(s=>isStudentActive(s.id)&&((subscriptions[s.id]||[]).length+(Object.values(sharedSubs).filter(x=>x.members&&x.members.includes(s.id)).length))>=2);
+  const retained=students.filter(s=>isStudentActive(s.id)&&((subscriptions[s.id]||[]).length+(Object.values(sharedSubs).filter(x=>x.members&&x.members.some(m=>+m===+s.id)).length))>=2);
   const retentionPct=withSubs.length>0?Math.round(retained.length/withSubs.length*100):0;
   const retGood=retentionPct>=75;
 
@@ -7778,6 +7778,7 @@ function loadStateFromStorage(){
   announcements     = lsLoad('announcements',     []);
   nextAnnId         = lsLoad('nextAnnId',         4);
   subscriptions     = lsLoad('subscriptions',     {});
+  sharedSubs        = lsLoad('sharedSubs',        {});
   lessonCosts       = lsLoad('lessonCosts',       {});
   globalLessonPrice = lsLoad('globalLessonPrice', 500);
   teacherReviews    = lsLoad('teacherReviews',    {});
