@@ -832,6 +832,7 @@ body.is-admin .ann-input-area{display:block}
       <button class="att-btn" id="stab-enroll" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('enroll')">📅 Занятия</button>
       <button class="att-btn" id="stab-dates" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('dates')">🗓️ Числа</button>
       <button class="att-btn" id="stab-sub" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('sub')">🎫 Абонементы</button>
+      <button class="att-btn" id="stab-att" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('att')">📊 История</button>
     </div>
 
     <!-- Tab: Info -->
@@ -939,6 +940,14 @@ body.is-admin .ann-input-area{display:block}
         </div>
         <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="addSubscription()">➕ Добавить абонемент</button>
       </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeM('m-student')">Закрыть</button>
+      </div>
+    </div>
+
+    <!-- Tab: Attendance History -->
+    <div id="stab-att-body" style="display:none">
+      <div id="stab-att-body-inner" style="max-height:55vh;overflow-y:auto;padding-right:2px"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeM('m-student')">Закрыть</button>
       </div>
@@ -4796,7 +4805,7 @@ function filterStudents(q){ clearTimeout(_stuSearchTimer); _stuSearchTimer=setTi
 
 // ── Student modal tabs ──
 function stuTab(tab){
-  ['info','enroll','dates','sub'].forEach(t=>{
+  ['info','enroll','dates','sub','att'].forEach(t=>{
     document.getElementById('stab-'+t+'-body').style.display = t===tab?'block':'none';
     const btn = document.getElementById('stab-'+t);
     btn.style.background = t===tab?'white':'var(--cream)';
@@ -4806,6 +4815,7 @@ function stuTab(tab){
   if(tab==='enroll') renderEnrollList();
   if(tab==='dates') renderDateCal();
   if(tab==='sub') renderSubList();
+  if(tab==='att') renderStudentAttHistory(+document.getElementById('s-id').value);
 }
 
 function renderEnrollList(){
@@ -5004,6 +5014,73 @@ function toggleSharedSub(){
     _renderSubMembersList('');
     requestAnimationFrame(()=>document.getElementById('sub-members-search').focus());
   }
+}
+
+function renderStudentAttHistory(sid){
+  const el=document.getElementById('stab-att-body-inner');
+  if(!el||!sid)return;
+  const sidStr=String(sid);
+  const DOW=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const MON=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const MON_TITLE=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+  // Собрать все записи
+  const records=[];
+  Object.entries(attendance).forEach(([dateKey,dayAtt])=>{
+    let status=null;
+    Object.entries(dayAtt).forEach(([k,v])=>{
+      if(k.split(':')[0]===sidStr&&(v==='p'||v==='a'||v==='trial')) status=v;
+    });
+    if(status===null) return;
+    const costs=lessonCosts[dateKey]||{};
+    const viaSub=!!costs[sid+K_VIA_SUB];
+    const cost=costs[sid]!==undefined?+costs[sid]:null;
+    records.push({dateKey,status,viaSub,cost});
+  });
+
+  if(!records.length){
+    el.innerHTML='<div style="text-align:center;padding:32px 16px;color:var(--ink-l);font-size:13px">Нет записей посещений</div>';
+    return;
+  }
+
+  records.sort((a,b)=>b.dateKey.localeCompare(a.dateKey));
+
+  let html='', curMonth='';
+  let totalP=0, totalA=0;
+  records.forEach(r=>{
+    if(r.status==='p') totalP++;
+    else if(r.status==='a') totalA++;
+    const month=r.dateKey.slice(0,7);
+    if(month!==curMonth){
+      curMonth=month;
+      const [y,m]=month.split('-');
+      html+=`<div style="font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:.7px;margin:${html?'12px':'0'} 0 5px">${MON_TITLE[+m-1]} ${y}</div>`;
+    }
+    const d=new Date(r.dateKey+'T12:00:00');
+    const day=d.getDate(), dow=DOW[d.getDay()], mon=MON[d.getMonth()];
+    let icon,color,bg;
+    if(r.status==='p'){     icon='✓'; color='var(--grn)';   bg='var(--mint)';}
+    else if(r.status==='trial'){icon='🎯';color='var(--lav-d)';bg='var(--lav)';}
+    else{                   icon='✗'; color='var(--coral)'; bg='var(--cream)';}
+    const costBadge=r.status==='p'&&r.cost!==null
+      ?(r.viaSub?'<span style="font-size:10px;background:var(--lav);color:var(--lav-d);padding:1px 6px;border-radius:5px;font-weight:700">🎫 аб.</span>'
+                :`<span style="font-size:11px;color:var(--ink-l)">${r.cost} ₽</span>`)
+      :'';
+    html+=`<div style="display:flex;align-items:center;gap:9px;padding:5px 8px;background:${bg};border-radius:8px;margin-bottom:3px">
+      <div style="font-size:13px;font-weight:700;color:${color};width:18px;text-align:center;flex-shrink:0">${icon}</div>
+      <div style="flex:1;font-size:13px;font-weight:600">${day} ${mon}<span style="font-size:11px;color:var(--ink-l);font-weight:400"> (${dow})</span></div>
+      ${costBadge}
+    </div>`;
+  });
+
+  // Summary header
+  const pct=records.length>0?Math.round(totalP/records.length*100):0;
+  const summary=`<div style="display:flex;gap:10px;margin-bottom:10px;padding:8px 10px;background:var(--cream);border-radius:10px">
+    <div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--grn)">${totalP}</div><div style="font-size:11px;color:var(--ink-l)">присутствовал</div></div>
+    <div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--coral)">${totalA}</div><div style="font-size:11px;color:var(--ink-l)">пропустил</div></div>
+    <div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--lav-d)">${pct}%</div><div style="font-size:11px;color:var(--ink-l)">посещаемость</div></div>
+  </div>`;
+  el.innerHTML=summary+html;
 }
 
 function addSubscription(){
