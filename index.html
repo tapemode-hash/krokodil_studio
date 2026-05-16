@@ -4156,6 +4156,7 @@ function renderParentSubs(){
   const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 
   const rows=[];
+  const seenShared=new Set();
   _parentStudentIds.forEach(sid=>{
     const stu=students.find(s=>s.id===sid); if(!stu)return;
     (subscriptions[sid]||[]).forEach(sb=>{
@@ -4173,6 +4174,17 @@ function renderParentSubs(){
       }
       rows.push({stu,sb,remaining,dateStr});
     });
+    Object.values(sharedSubs).forEach(sb=>{
+      if(!sb.members||!sb.members.includes(sid)||seenShared.has(sb.id)) return;
+      seenShared.add(sb.id);
+      const remaining=sb.total-sb.used;
+      let dateStr='—';
+      if(sb.createdAt){
+        const p=sb.createdAt.split('.');
+        if(p.length===3){ const d=new Date(+p[2],+p[1]-1,+p[0]); if(!isNaN(d)) dateStr=`${d.getDate()} ${RU_MON[d.getMonth()]} ${d.getFullYear()}`; }
+      }
+      rows.push({stu,sb:{...sb,_shared:true},remaining,dateStr});
+    });
   });
 
   if(!rows.length){ if(card)card.style.display='none'; return; }
@@ -4186,7 +4198,7 @@ function renderParentSubs(){
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
         <div>
           ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${stu.name}</div>`:''}
-          <div style="font-weight:700;font-size:14px">${sb.groupName||'Абонемент'}</div>
+          <div style="font-weight:700;font-size:14px">${esc(sb.groupName||'Абонемент')}${sb._shared?` <span style="font-size:11px;font-weight:400;color:var(--ink-l)">👨‍👩‍👧 общий</span>`:''}</div>
           <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Куплен: ${dateStr}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -4728,7 +4740,7 @@ function renderStudents(query){
 
   document.getElementById('students-tbody').innerHTML = pageList.map(s=>{
     const enrolled = (enrollments[s.id]||[]).length;
-    const subs = (subscriptions[s.id]||[]).filter(sb=>sb.total-sb.used>0).length;
+    const subs = getActiveSubsForStudent(s.id).length;
     const subsHtml = subs ? `<span class="badge purple" style="margin-left:4px" title="${subs} абонемент(а)">🎫${subs}</span>` : '';
     const trialHtml = s.trialDate ? `<span class="badge" style="margin-left:4px;background:var(--lav);color:var(--lav-d);border-color:var(--lav-d)" title="Пробное: ${s.trialDate}${s.trialAmount?' · '+s.trialAmount+' ₽':''}">🎯</span>` : '';
     const futureDates = (dateEnrollments[s.id]||[]).filter(d=>d>=today);
@@ -5510,8 +5522,7 @@ function renderAttHistory(){
           cost=+costs[attKey+'_sub_price']/+costs[attKey+'_sub_total'];
         if(!cost){
           const subIdx=costs[attKey+'_subIdx'];
-          const subs=subscriptions[sid]||[];
-          const sub=subIdx!==undefined?subs[subIdx]:null;
+          const sub=getSubByRef(sid,subIdx);
           cost=sub&&sub.total>0?sub.price/sub.total:0;
         }
       } else {
@@ -5814,6 +5825,11 @@ function getSubByRef(sid, ref){
   const r=String(ref);
   if(r.startsWith('ss:')) return sharedSubs[r.slice(3)]||null;
   return (subscriptions[sid]||[])[+r]||null;
+}
+
+function hasAnySub(sid){
+  if((subscriptions[sid]||[]).length>0) return true;
+  return Object.values(sharedSubs).some(x=>x.members&&x.members.includes(sid));
 }
 
 // Helper: effective lesson price for a student (учитывает акцию если нет абонемента)
@@ -6243,13 +6259,14 @@ function renderPayments(){
   // ── Per-student rows ──
   document.getElementById('payments-tbody').innerHTML=sortedStudents.map(s=>{
     const {total, viaSub, single, revenue, subRevProrata} = lessonsMap.get(s.id);
-    const hasSubs = (subscriptions[s.id]||[]).length > 0;
+    const hasSubs = hasAnySub(s.id);
     if(total === 0 && !hasSubs) return '';
-    const activeSubs = (subscriptions[s.id]||[]).filter(sb=>sb.total-sb.used>0);
+    const activeSubs = getActiveSubsForStudent(s.id).map(x=>x.sub);
     const subBadge = activeSubs.length
       ? activeSubs.map(sb=>{
           const perLesson = sb.total>0 ? Math.round(sb.price/sb.total) : 0;
-          return `<span class="badge purple" title="${sb.groupName}: ${sb.total-sb.used} ост. · ${perLesson} ₽/зан.">🎫${sb.total-sb.used}</span>`;
+          const sharedMark = sb.members ? ' 👨‍👩‍👧' : '';
+          return `<span class="badge purple" title="${sb.groupName}${sharedMark}: ${sb.total-sb.used} ост. · ${perLesson} ₽/зан.">🎫${sb.total-sb.used}</span>`;
         }).join(' ')
       : '<span style="color:var(--ink-l);font-size:12px">—</span>';
 
@@ -6302,10 +6319,10 @@ function renderPayments(){
     let mobTotalRev=0;
     mobStudCards.innerHTML = sortedStudents.map(s=>{
       const {total,viaSub,single,revenue,subRevProrata} = countLessons(s.id);
-      if(total === 0 && !(subscriptions[s.id]||[]).length) return '';
+      if(total === 0 && !hasAnySub(s.id)) return '';
       const totalRev = Math.round(revenue+subRevProrata);
       mobTotalRev += totalRev;
-      const activeSubs = (subscriptions[s.id]||[]).filter(sb=>sb.total-sb.used>0);
+      const activeSubs = getActiveSubsForStudent(s.id).map(x=>x.sub);
       const subText = activeSubs.length ? activeSubs.map(sb=>`🎫${sb.total-sb.used}`).join(' ') : '—';
       return `<div class="pay-card">
         <div class="pay-card-header">
@@ -6373,9 +6390,7 @@ function renderPayments(){
             if(!perL && costs[sid+'_sub_price'] && costs[sid+'_sub_total'])
               perL = +costs[sid+'_sub_price']/+costs[sid+'_sub_total'];
             if(!perL){
-              const subIdx=costs[sid+'_subIdx'];
-              const subs=subscriptions[sid]||[];
-              const sub=subIdx!==undefined?subs[subIdx]:null;
+              const sub=getSubByRef(sid,costs[sid+'_subIdx']);
               perL=sub&&sub.total>0?sub.price/sub.total:0;
             }
             daySubInc += perL;
@@ -6443,7 +6458,7 @@ function renderPayments(){
                 dVS++;
                 let perL=costs2[sid]!==undefined?+costs2[sid]:0;
                 if(!perL&&costs2[sid+'_sub_price']&&costs2[sid+'_sub_total'])perL=+costs2[sid+'_sub_price']/+costs2[sid+'_sub_total'];
-                if(!perL){const subIdx=costs2[sid+'_subIdx'];const subs=subscriptions[sid]||[];const sub=subIdx!==undefined?subs[subIdx]:null;perL=sub&&sub.total>0?sub.price/sub.total:0;}
+                if(!perL){const sub=getSubByRef(sid,costs2[sid+'_subIdx']);perL=sub&&sub.total>0?sub.price/sub.total:0;}
                 dSubI+=perL;
               } else {
                 dSi++;
@@ -6516,18 +6531,34 @@ function renderPayments(){
   if(subsEl){
     const rows=[];
     students.forEach(s=>{
-      (subscriptions[s.id]||[]).forEach((sub,i)=>{
+      (subscriptions[s.id]||[]).forEach(sub=>{
         if(sub.total-sub.used<=0) return;
         const pct=Math.round(sub.used/sub.total*100);
         rows.push(`<div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-weight:700;font-size:12px">${s.name}</span>
+            <span style="font-weight:700;font-size:12px">${esc(s.name)}</span>
             <span style="font-family:'Caveat',cursive;font-size:16px;font-weight:700;color:var(--lav-d)">${sub.total-sub.used} ост.</span>
           </div>
-          <div style="font-size:11px;color:var(--ink-l);margin-bottom:4px">${sub.groupName}</div>
+          <div style="font-size:11px;color:var(--ink-l);margin-bottom:4px">${esc(sub.groupName)}</div>
           <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
         </div>`);
       });
+    });
+    // Shared subs (show once, listing all members)
+    const shownShared = new Set();
+    Object.values(sharedSubs).forEach(sub=>{
+      if(sub.total-sub.used<=0||shownShared.has(sub.id)) return;
+      shownShared.add(sub.id);
+      const pct=Math.round(sub.used/sub.total*100);
+      const memberNames=sub.members.map(mid=>{const st=students.find(x=>x.id===mid);return st?esc(st.name.split(' ')[0]):'?';}).join(', ');
+      rows.push(`<div style="margin-bottom:10px;border-left:3px solid var(--sky);padding-left:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:700;font-size:12px">👨‍👩‍👧 ${memberNames}</span>
+          <span style="font-family:'Caveat',cursive;font-size:16px;font-weight:700;color:var(--lav-d)">${sub.total-sub.used} ост.</span>
+        </div>
+        <div style="font-size:11px;color:var(--ink-l);margin-bottom:4px">${esc(sub.groupName)}</div>
+        <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
+      </div>`);
     });
     subsEl.innerHTML = rows.length ? rows.join('') : '<div style="color:var(--ink-l);font-size:12px;padding:6px 0">Нет активных абонементов</div>';
   }
@@ -6971,15 +7002,15 @@ function renderReports(){
   });
 
   // ── Retention: ученики с 2+ абонементами
-  const withSubs=students.filter(s=>isStudentActive(s.id)&&(subscriptions[s.id]||[]).length>0);
-  const retained=students.filter(s=>isStudentActive(s.id)&&(subscriptions[s.id]||[]).length>=2);
+  const withSubs=students.filter(s=>isStudentActive(s.id)&&hasAnySub(s.id));
+  const retained=students.filter(s=>isStudentActive(s.id)&&((subscriptions[s.id]||[]).length+(Object.values(sharedSubs).filter(x=>x.members&&x.members.includes(s.id)).length))>=2);
   const retentionPct=withSubs.length>0?Math.round(retained.length/withSubs.length*100):0;
   const retGood=retentionPct>=75;
 
   // ── Конверсия пробного → абонемент
   const trialStudentIds=new Set(students.filter(s=>isStudentActive(s.id)&&s.trialDate).map(s=>String(s.id)));
   const trialConverted=students.filter(s=>
-    isStudentActive(s.id)&&trialStudentIds.has(String(s.id))&&(subscriptions[s.id]||[]).length>0
+    isStudentActive(s.id)&&trialStudentIds.has(String(s.id))&&hasAnySub(s.id)
   ).length;
   const trialConvPct=trialStudentIds.size>0?Math.round(trialConverted/trialStudentIds.size*100):0;
   const trialConvGood=trialConvPct>=40;
@@ -6989,12 +7020,12 @@ function renderReports(){
   const singleVisitors=students.filter(s=>{
     const hasPres=Object.values(attendance).some(dayAtt=>
       Object.entries(dayAtt).some(([key,status])=>key.split(':')[0]===String(s.id)&&status==='p'));
-    const hasSub=(subscriptions[s.id]||[]).length>0;
+    const hasSub=hasAnySub(s.id);
     return hasPres&&!hasSub&&!trialStudentIds.has(String(s.id));
   });
   const singleConverted=students.filter(s=>{
     const wasSingle=singleVisitors.some(sv=>sv.id===s.id);
-    return wasSingle&&(subscriptions[s.id]||[]).length>0;
+    return wasSingle&&hasAnySub(s.id);
   }).length;
   const singleConvPct=singleVisitors.length>0?Math.round(singleConverted/Math.max(singleVisitors.length,1)*100):0;
 
