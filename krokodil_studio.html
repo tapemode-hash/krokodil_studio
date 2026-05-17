@@ -772,10 +772,10 @@ body.is-admin .ann-input-area{display:block}
     </div>
     <div class="pw-wrap" id="pw-wrap" style="display:none">
       <label id="pw-label">Пароль</label>
-      <input class="pw-input" type="password" id="pw-input" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="pw-input" type="password" id="pw-input" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')loginClick(document.getElementById('login-btn'))">
     </div>
-    <div class="login-err" id="login-err"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="doLogin()">Войти →</button>
+    <div id="login-err" style="min-height:18px;margin-bottom:10px;font-size:14px;font-weight:700;color:#E53935;text-align:center"></div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="loginClick(this)">Войти →</button>
   </div>
 </div>
 
@@ -3712,24 +3712,39 @@ function showMobileUI(role){
   updateMobSheet(role);
 }
 
+function loginClick(btn){
+  btn.textContent='⏳ Проверяем...';
+  btn.disabled=true;
+  doLogin().finally(()=>{ btn.textContent='Войти →'; btn.disabled=false; });
+}
+
 async function doLogin(){
-  const pw = document.getElementById('pw-input').value;
-  if(selectedRole==='admin'){
-    if(await sha256(pw) !== ADMIN_PW_H){
-      document.getElementById('login-err').textContent='❌ Неверный пароль'; return;
+  const errEl=document.getElementById('login-err');
+  errEl.textContent='';
+  try{
+    const pw=document.getElementById('pw-input').value;
+    if(selectedRole==='admin'){
+      if(await sha256(pw)!==ADMIN_PW_H){ errEl.textContent='❌ Неверный пароль'; return; }
     }
+    if(selectedRole==='parent'){
+      const digits=pw.replace(/\D/g,'');
+      if(!digits){ errEl.textContent='❌ Введите номер телефона'; return; }
+      const matched=students.filter(s=>{
+        if(!s.phone) return false;
+        return String(s.phone).replace(/\D/g,'').slice(-10)===digits.slice(-10);
+      });
+      if(!matched.length){ errEl.textContent='❌ Телефон не найден'; return; }
+      _parentStudentIds=matched.map(s=>s.id);
+    }
+    currentRole=selectedRole;
+    applyRole(); renderAll(); startClock();
+    document.getElementById('login-screen').classList.add('hidden');
+    showMobileUI(currentRole);
+  }catch(e){
+    errEl.textContent='❌ Ошибка: '+e.message;
+    currentRole='guest'; selectedRole='guest'; _parentStudentIds=[];
+    console.error('doLogin error:',e);
   }
-  if(selectedRole==='parent'){
-    const digits=pw.replace(/\D/g,'');
-    if(!digits){ document.getElementById('login-err').textContent='❌ Введите номер телефона'; return; }
-    const matched=students.filter(s=>s.phone&&s.phone.replace(/\D/g,'').slice(-10)===digits.slice(-10));
-    if(!matched.length){ document.getElementById('login-err').textContent='❌ Телефон не найден'; return; }
-    _parentStudentIds=matched.map(s=>s.id);
-  }
-  currentRole=selectedRole;
-  applyRole(); renderAll(); startClock();
-  document.getElementById('login-screen').classList.add('hidden');
-  showMobileUI(currentRole);
 }
 
 function applyRole(){
