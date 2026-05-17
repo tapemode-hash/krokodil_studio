@@ -792,6 +792,7 @@ body.is-admin .ann-input-area{display:block}
     </div>
     <div class="login-err" id="login-err"></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="doLogin()">Войти →</button>
+    <div style="font-size:10px;color:#ccc;text-align:center;margin-top:8px">v2025-05-17c</div>
   </div>
 </div>
 
@@ -3820,6 +3821,8 @@ function showMobileUI(role){
 
 async function doLogin(){
   const errEl = document.getElementById('login-err');
+  // DEBUG: покажем что происходит
+  toast('🔄 Вход: роль=' + selectedRole);
   try {
     const pw = document.getElementById('pw-input').value;
     if(selectedRole==='admin'){
