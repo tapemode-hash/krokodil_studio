@@ -5314,8 +5314,11 @@ function renderParentAttendance(){
     _parentStudentIds.forEach(sid=>{
       const stu=students.find(s=>s.id===sid); if(!stu)return;
       // attended entries
-      const myKeys=Object.entries(dayAtt)
+      let myKeys=Object.entries(dayAtt)
         .filter(([k])=>!String(k).includes('_')&&sidFromAttKey(k)===sid);
+      // If composite sid:scid keys exist, drop legacy plain-sid keys (avoid duplicates)
+      if(myKeys.some(([k])=>String(k).includes(':')))
+        myKeys=myKeys.filter(([k])=>String(k).includes(':'));
       if(myKeys.length){
         myKeys.forEach(([attKey,status])=>{
           let scName='';
