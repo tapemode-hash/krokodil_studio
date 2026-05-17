@@ -765,7 +765,7 @@ body.is-admin .ann-input-area{display:block}
     <span class="login-croc">🐊</span>
     <div class="login-title"><span>Крокодил</span></div>
     <div class="login-sub">Детская арт-студия · Выберите роль</div>
-    <div style="font-size:11px;font-weight:700;color:#999;margin-bottom:16px;letter-spacing:.5px">v2025-05-17f</div>
+    <div style="font-size:12px;font-weight:800;color:var(--lav-d);margin-bottom:16px;letter-spacing:.5px;background:var(--lav);padding:2px 10px;border-radius:20px;display:inline-block">v2026-05-17a</div>
     <div class="role-select">
       <button class="role-btn selected" id="rb-guest" onclick="selRole('guest')"><span class="ri">👁️</span>Гость</button>
       <button class="role-btn" id="rb-parent" onclick="selRole('parent')"><span class="ri">👨‍👩‍👧</span>Родитель</button>
@@ -5411,7 +5411,7 @@ function renderAttHistory(){
   allKeys.forEach(dateKey=>{
     const dayAtt = attendance[dateKey]||{};
     const costs  = lessonCosts[dateKey]||{};
-    const d = new Date(dateKey);
+    const d = new Date(dateKey+'T12:00:00');
     const isFuture=dateKey>today;
     const dayLabel = `${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 
@@ -6242,7 +6242,7 @@ function renderPayments(){
         });
         const dayTotal=Math.round(daySingleInc+daySubInc);
         filterTotalSingle+=daySingleInc; filterTotalSub+=daySubInc; filterTotalPresent+=dayPresent;
-        const d=new Date(dateKey);
+        const d=new Date(dateKey+'T12:00:00');
         const dayLabel=`${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS_LONG[d.getMonth()]}`;
         const isToday = dateKey===todayKey;
         return `<tr${isToday?' style="background:linear-gradient(90deg,#F0FFF8,white)"':''}>
@@ -6308,7 +6308,7 @@ function renderPayments(){
             });
             const dTotal=Math.round(dSinI+dSubI);
             mobFiltSingle+=dSinI; mobFiltSub+=dSubI; mobFiltPresent+=dp;
-            const d2=new Date(dateKey);
+            const d2=new Date(dateKey+'T12:00:00');
             const dLabel=RU_DAYS_SHORT[d2.getDay()]+', '+d2.getDate()+' '+RU_MONTHS_LONG[d2.getMonth()];
             const isT=dateKey===todayKey;
             return '<div class="date-card"'+(isT?' style="background:linear-gradient(90deg,#E8FFF4,var(--cream))"':'')+'>'+
@@ -6720,7 +6720,7 @@ function openTeacherSalaryDetail(tid){
     });
 
     if(perSchedule.size===0)return;
-    const d=new Date(dateStr);
+    const d=new Date(dateStr+'T12:00:00');
     const dateLabel=`${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
     const dayGroups=[];
     perSchedule.forEach(({revenue,count,students:stuList},scId)=>{
@@ -6880,7 +6880,7 @@ function renderReports(){
   const ltv=Math.round(avgSubPrice*avgDuration);
 
   // CAC
-  const periodKey=from.toISOString().slice(0,7);
+  const periodKey=from.getFullYear()+'-'+String(from.getMonth()+1).padStart(2,'0');
   const mktEntry=marketingCosts.find(m=>m.month===periodKey)||{amount:0};
   const mktAmount=mktEntry.amount||0;
   const cac=newStudents.length>0&&mktAmount>0?Math.round(mktAmount/newStudents.length):null;
@@ -7138,7 +7138,7 @@ function calcBreakeven(){
 function saveMarketingCost(){
   const amount=parseFloat(document.getElementById('rp-mkt-cost').value)||0;
   const {from}=getRpDates();
-  const month=from.toISOString().slice(0,7);
+  const month=from.getFullYear()+'-'+String(from.getMonth()+1).padStart(2,'0');
   const idx=marketingCosts.findIndex(m=>m.month===month);
   if(idx>=0)marketingCosts[idx].amount=amount;
   else marketingCosts.push({month,amount});
