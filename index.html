@@ -6847,8 +6847,8 @@ function getRevenuePerTeacher(from,to){
   teachers.forEach(t=>teacherByName[t.name]=t.id);
 
   const result={};
-  teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
-  if(!result[0])result[0]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+  teachers.forEach(t=>result[t.id]={id:t.id,name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
+  if(!result[0])result[0]={id:0,name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
 
   // Build schedule lookup by id
   const scheduleMap={};
@@ -6892,7 +6892,7 @@ function getRevenuePerTeacher(from,to){
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
       const tid=teacherByName[tName]??0;
-      if(!result[tid])result[tid]={name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+      if(!result[tid])result[tid]={id:tid,name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
       result[tid].revenue+=revenue;
       result[tid].lessons++;
       result[tid].studentsTotal+=count;
@@ -7074,6 +7074,50 @@ function renderReports(){
   const retentionPct=withSubs.length>0?Math.round(retained.length/withSubs.length*100):0;
   const retGood=retentionPct>=75;
 
+  // ── Retention detail
+  const retainedSet=new Set(retained.map(s=>s.id));
+  const withSubsOnce=withSubs.filter(s=>!retainedSet.has(s.id));
+  const activeNoSubs=students.filter(s=>isStudentActive(s.id)&&!hasAnySub(s.id));
+  function _retGroup(title,color,bg,list,extra){
+    if(!list.length)return '';
+    return `<div style="font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.8px;margin:8px 0 5px">${title} (${list.length})</div>`+
+      list.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:${bg};border-radius:8px;margin-bottom:3px;cursor:pointer"
+          onclick="openEditStudent(${s.id})"
+          onmouseover="this.style.filter='brightness(.96)'" onmouseout="this.style.filter=''">
+        <span style="font-size:18px;flex-shrink:0">${esc(s.emoji||'👤')}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700">${esc(s.name)}</div>
+          ${s.group?`<div style="font-size:11px;color:var(--ink-l)">${esc(s.group)}</div>`:''}
+        </div>
+        <div style="font-size:11px;color:var(--ink-l);white-space:nowrap">${extra(s)}</div>
+      </div>`).join('');
+  }
+  const retDetailHtml=
+    _retGroup('✓ Продолжают','var(--grn)','var(--mint)',retained,s=>{
+      const n=(subscriptions[s.id]||[]).length+Object.values(sharedSubs).filter(x=>x.members&&x.members.some(m=>+m===+s.id)).length;
+      return n+' аб.';
+    })+
+    _retGroup('⚠ Первый абонемент','#C07000','#FEF3C7',withSubsOnce,s=>{
+      const sub=getActiveSub(s.id);
+      return sub?(sub.total-sub.used)+' ост.':'';
+    })+
+    _retGroup('✗ Без абонемента','var(--coral)','var(--cream)',activeNoSubs,()=>'');
+  const retColor=retGood?'var(--grn)':'var(--coral)';
+  const retRowHtml=`<div style="border-bottom:1px solid var(--cream)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer;user-select:none" onclick="toggleRetentionDetail()">
+      <div>
+        <div style="font-size:13px;font-weight:600">Retention rate</div>
+        <div style="font-size:11px;color:var(--ink-l)">${retained.length} продлили из ${withSubs.length} с абонементом</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:11px;color:var(--ink-l)">цель: >75%</div>
+        <div style="font-size:16px;font-weight:700;color:${retColor};min-width:60px;text-align:right">${retentionPct}%</div>
+        <div id="rp-ret-chevron" style="font-size:11px;color:var(--ink-l);transition:transform .2s">▼</div>
+      </div>
+    </div>
+    <div id="rp-ret-detail" style="display:none;padding-bottom:6px">${retDetailHtml||'<div style="font-size:12px;color:var(--ink-l);padding:8px 0">Нет активных учеников</div>'}</div>
+  </div>`;
+
   // ── Конверсия пробного → абонемент
   const trialStudentIds=new Set(students.filter(s=>s.trialDate).map(s=>String(s.id)));
   const trialConverted=students.filter(s=>
@@ -7207,8 +7251,7 @@ function renderReports(){
 
   document.getElementById('rp-ops').innerHTML=[
     loadRowHtml,
-    metricRow('Retention rate',retentionPct+'%','>75%',retGood,
-      retained.length+' продлили из '+withSubs.length+' с абонементом'),
+    retRowHtml,
     metricRow('Churn rate',churnPct+'%','<10%',churnGood,
       churned+' ушли из '+activePrev.size+' активных'),
     metricRow('Конверсия пробный → аб.',trialConvPct+'%','>40%',trialConvGood,
@@ -7353,6 +7396,15 @@ function renderReports(){
 function toggleLoadDetail(){
   const el=document.getElementById('rp-load-detail');
   const ch=document.getElementById('rp-load-chevron');
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(ch)ch.style.transform=open?'rotate(180deg)':'';
+}
+
+function toggleRetentionDetail(){
+  const el=document.getElementById('rp-ret-detail');
+  const ch=document.getElementById('rp-ret-chevron');
   if(!el)return;
   const open=el.style.display==='none';
   el.style.display=open?'block':'none';
