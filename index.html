@@ -778,6 +778,7 @@ body.is-admin .ann-input-area{display:block}
 <!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
+    <div style="font-size:12px;font-weight:800;color:var(--lav-d);margin-bottom:16px;letter-spacing:.5px;background:var(--lav);padding:2px 10px;border-radius:20px;display:inline-block">v2026-05-17b</div>
     <span class="login-croc">🐊</span>
     <div class="login-title"><span>Крокодил</span></div>
     <div class="login-sub">Детская арт-студия · Выберите роль</div>
@@ -788,10 +789,10 @@ body.is-admin .ann-input-area{display:block}
     </div>
     <div class="pw-wrap" id="pw-wrap" style="display:none">
       <label id="pw-label">Пароль</label>
-      <input class="pw-input" type="password" id="pw-input" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="pw-input" type="password" id="pw-input" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')loginClick(document.getElementById('login-btn'))">
     </div>
-    <div class="login-err" id="login-err"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="doLogin()">Войти →</button>
+    <div class="login-err" id="login-err" style="min-height:18px;font-size:13px;font-weight:600;color:#E53935;text-align:center;margin-bottom:4px"></div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="loginClick(this)">Войти →</button>
   </div>
 </div>
 
@@ -3841,24 +3842,42 @@ function showMobileUI(role){
   updateMobSheet(role);
 }
 
+function loginClick(btn){
+  btn.textContent='⏳ Проверяем...';
+  btn.disabled=true;
+  doLogin().finally(()=>{ btn.textContent='Войти →'; btn.disabled=false; });
+}
 async function doLogin(){
-  const pw = document.getElementById('pw-input').value;
-  if(selectedRole==='admin'){
-    if(await sha256(pw) !== ADMIN_PW_H){
-      document.getElementById('login-err').textContent='❌ Неверный пароль'; return;
+  const errEl=document.getElementById('login-err');
+  errEl.textContent='';
+  try{
+    const pw=document.getElementById('pw-input').value;
+    if(selectedRole==='admin'){
+      if(await sha256(pw)!==ADMIN_PW_H){ errEl.textContent='❌ Неверный пароль'; return; }
     }
+    if(selectedRole==='parent'){
+      const digits=pw.replace(/\D/g,'');
+      if(!digits){ errEl.textContent='❌ Введите номер телефона'; return; }
+      const matched=students.filter(s=>{
+        if(!s.phone) return false;
+        return String(s.phone).replace(/\D/g,'').slice(-10)===digits.slice(-10);
+      });
+      if(!matched.length){
+        const withPhone=students.filter(s=>s.phone).length;
+        errEl.textContent='❌ Телефон не найден (в базе '+withPhone+' уч. с телефоном)';
+        return;
+      }
+      _parentStudentIds=matched.map(s=>s.id);
+    }
+    currentRole=selectedRole;
+    applyRole(); renderAll(); startClock();
+    document.getElementById('login-screen').classList.add('hidden');
+    showMobileUI(currentRole);
+  }catch(e){
+    errEl.textContent='❌ Ошибка: '+e.message;
+    currentRole='guest'; selectedRole='guest'; _parentStudentIds=[];
+    console.error('doLogin error:',e);
   }
-  if(selectedRole==='parent'){
-    const digits=pw.replace(/\D/g,'');
-    if(!digits){ document.getElementById('login-err').textContent='❌ Введите номер телефона'; return; }
-    const matched=students.filter(s=>s.phone&&s.phone.replace(/\D/g,'').slice(-10)===digits.slice(-10));
-    if(!matched.length){ document.getElementById('login-err').textContent='❌ Телефон не найден'; return; }
-    _parentStudentIds=matched.map(s=>s.id);
-  }
-  currentRole=selectedRole;
-  applyRole(); renderAll(); startClock();
-  document.getElementById('login-screen').classList.add('hidden');
-  showMobileUI(currentRole);
 }
 
 function applyRole(){
@@ -5605,8 +5624,11 @@ function renderParentAttendance(){
     _parentStudentIds.forEach(sid=>{
       const stu=students.find(s=>s.id===sid); if(!stu)return;
       // attended entries
-      const myKeys=Object.entries(dayAtt)
+      let myKeys=Object.entries(dayAtt)
         .filter(([k])=>!String(k).includes('_')&&sidFromAttKey(k)===sid);
+      // If composite sid:scid keys exist, drop legacy plain-sid keys (avoid duplicates)
+      if(myKeys.some(([k])=>String(k).includes(':')))
+        myKeys=myKeys.filter(([k])=>String(k).includes(':'));
       if(myKeys.length){
         myKeys.forEach(([attKey,status])=>{
           let scName='';
@@ -5699,7 +5721,7 @@ function renderAttHistory(){
   allKeys.forEach(dateKey=>{
     const dayAtt = attendance[dateKey]||{};
     const costs  = lessonCosts[dateKey]||{};
-    const d = new Date(dateKey);
+    const d = new Date(dateKey+'T12:00:00');
     const isFuture=dateKey>today;
     const dayLabel = `${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 
@@ -5818,7 +5840,7 @@ function saveLessonCost(dateKey, attKey, val){
 // ══════════════════════════════════════════════════════════════
 //  ATTENDANCE (mark tab)
 // ══════════════════════════════════════════════════════════════
-function fmtDate(d){ return d.toISOString().split('T')[0]; }
+function fmtDate(d){ const m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return d.getFullYear()+'-'+m+'-'+dd; }
 function setAttDate(delta){ attDate.setDate(attDate.getDate()+delta); renderAttendance(); }
 
 // Attendance key format: 'sid' (single group) or 'sid:scId' (multi-group)
@@ -6652,7 +6674,7 @@ function renderPayments(){
         });
         const dayTotal=Math.round(daySingleInc+daySubInc);
         filterTotalSingle+=daySingleInc; filterTotalSub+=daySubInc; filterTotalPresent+=dayPresent;
-        const d=new Date(dateKey);
+        const d=new Date(dateKey+'T12:00:00');
         const dayLabel=`${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS_LONG[d.getMonth()]}`;
         const isToday = dateKey===todayKey;
         return `<tr${isToday?' style="background:linear-gradient(90deg,#F0FFF8,white)"':''}>
@@ -6718,7 +6740,7 @@ function renderPayments(){
             });
             const dTotal=Math.round(dSinI+dSubI);
             mobFiltSingle+=dSinI; mobFiltSub+=dSubI; mobFiltPresent+=dp;
-            const d2=new Date(dateKey);
+            const d2=new Date(dateKey+'T12:00:00');
             const dLabel=RU_DAYS_SHORT[d2.getDay()]+', '+d2.getDate()+' '+RU_MONTHS_LONG[d2.getMonth()];
             const isT=dateKey===todayKey;
             return '<div class="date-card"'+(isT?' style="background:linear-gradient(90deg,#E8FFF4,var(--cream))"':'')+'>'+
@@ -6838,7 +6860,7 @@ function getRpDates(){
 function fmtRpDate(d){ return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'}); }
 
 function inPeriod(dateStr,from,to){
-  const d=new Date(dateStr);
+  const d=new Date(dateStr+'T12:00:00');
   return d>=from && d<=to;
 }
 
@@ -7157,7 +7179,7 @@ function openTeacherSalaryDetail(tid){
     });
 
     if(perSchedule.size===0)return;
-    const d=new Date(dateStr);
+    const d=new Date(dateStr+'T12:00:00');
     const dateLabel=`${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
     const dayGroups=[];
     perSchedule.forEach(({revenue,count,students:stuList},scId)=>{
@@ -7364,7 +7386,7 @@ function renderReports(){
   const ltv=Math.round(avgSubPrice*avgDuration);
 
   // CAC
-  const periodKey=from.toISOString().slice(0,7);
+  const periodKey=from.getFullYear()+'-'+String(from.getMonth()+1).padStart(2,'0');
   const mktEntry=marketingCosts.find(m=>m.month===periodKey)||{amount:0};
   const mktAmount=mktEntry.amount||0;
   const cac=newStudents.length>0&&mktAmount>0?Math.round(mktAmount/newStudents.length):null;
@@ -7631,7 +7653,7 @@ function calcBreakeven(){
 function saveMarketingCost(){
   const amount=parseFloat(document.getElementById('rp-mkt-cost').value)||0;
   const {from}=getRpDates();
-  const month=from.toISOString().slice(0,7);
+  const month=from.getFullYear()+'-'+String(from.getMonth()+1).padStart(2,'0');
   const idx=marketingCosts.findIndex(m=>m.month===month);
   if(idx>=0)marketingCosts[idx].amount=amount;
   else marketingCosts.push({month,amount});
