@@ -3693,6 +3693,8 @@ const DEFAULT_PRICE_LIST = {
 
 // subscriptions: { studentId: [{id, groupName, total, used, price, createdAt}, ...] }
 let subscriptions = lsLoad('subscriptions', {});
+// sharedSubs: { id: {id, groupName, total, used, price, createdAt, members:[sid,...]} }
+let sharedSubs = lsLoad('sharedSubs', {});
 // lessonCosts: { 'YYYY-MM-DD': { studentId: cost } }
 let lessonCosts   = lsLoad('lessonCosts', {});
 // globalLessonPrice: default price per single visit (₽), overridable per student
