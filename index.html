@@ -8073,7 +8073,29 @@ document.addEventListener('keydown', e=>{
 // ══════════════════════════════════════════════════════════════
 //  FIREBASE SYNC  (прямые fetch-запросы, без CDN)
 // ══════════════════════════════════════════════════════════════
-const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
+const FB_URL     = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
+// Firebase Console → Project Settings → General → Web API Key
+const FB_API_KEY = 'AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+
+// Anonymous Firebase Auth — получаем idToken для записи
+let _fbToken = null;
+let _fbTokenExpiry = 0;
+async function getFirebaseToken(){
+  const now = Date.now();
+  if(_fbToken && now < _fbTokenExpiry - 60_000) return _fbToken;
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_API_KEY}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({returnSecureToken:true}) }
+    );
+    if(!res.ok) return null;
+    const d = await res.json();
+    _fbToken = d.idToken;
+    _fbTokenExpiry = now + (+d.expiresIn || 3600) * 1000;
+    return _fbToken;
+  } catch(e){ console.warn('[Firebase Auth]', e); return null; }
+}
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
   'dateEnrollments','dayAssignments','announcements','nextAnnId','subscriptions','sharedSubs','lessonCosts',
@@ -8126,7 +8148,9 @@ async function syncToFirebase(){
     const payload = {};
     SYNC_KEYS.forEach(k => { const v = lsLoad(k, null); if(v !== null) payload[k] = v; });
     payload._ts = Date.now();
-    const res = await fetch(FB_URL + '.json', {
+    const token = await getFirebaseToken();
+    const url = token ? `${FB_URL}.json?auth=${token}` : `${FB_URL}.json`;
+    const res = await fetch(url, {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
