@@ -7141,9 +7141,9 @@ function renderReports(){
   // ── Рендерим блоки
 
   // KEY METRICS
-  const activeStudents=activeStudents().length;
+  const activeStudentTotal=activeStudents().length;
   const archiveStudents=students.filter(s=>!isStudentActive(s.id)).length;
-  document.getElementById('km-active').textContent=activeStudents;
+  document.getElementById('km-active').textContent=activeStudentTotal;
   document.getElementById('km-active-d').textContent=(activeNow.size>=1?'↑ активны':'↓');
   document.getElementById('km-active-d').className='stat-change '+(activeNow.size>=1?'up':'neutral');
   document.getElementById('km-archive').textContent=archiveStudents;
