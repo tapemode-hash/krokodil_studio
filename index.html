@@ -1528,13 +1528,6 @@ body.is-admin .ann-input-area{display:block}
           <div class="card">
             <div class="card-title">📅 Ближайшие занятия</div>
             <div style="display:flex;flex-direction:column;gap:10px" id="parent-upcoming"></div>
-            <div style="margin-top:18px">
-              <div class="card-title" style="font-size:17px;margin-bottom:10px">💳 Оплата апреля</div>
-              <div class="pay-status" id="parent-pay-status">
-                <div><div class="pay-status-label">3 500 ₽ · Акварель</div><div style="font-size:12px;color:var(--ink-l);margin-top:3px">Апрель 2025</div></div>
-                <span class="badge green" id="parent-pay-badge">✓ Оплачено</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1582,8 +1575,8 @@ body.is-admin .ann-input-area{display:block}
         <div class="stats-grid">
           <div class="stat-card mint"><span class="stat-icon">📚</span><div class="stat-value" id="guest-stat-groups">—</div><div class="stat-label">Групп</div></div>
           <div class="stat-card lav"><span class="stat-icon">🎓</span><div class="stat-value" id="guest-stat-teachers">—</div><div class="stat-label">Педагогов</div></div>
-          <div class="stat-card yel"><span class="stat-icon">🏆</span><div class="stat-value">3</div><div class="stat-label">Победы в апреле</div></div>
-          <div class="stat-card peach"><span class="stat-icon">🎨</span><div class="stat-value">5</div><div class="stat-label">Направлений</div></div>
+          <div class="stat-card yel"><span class="stat-icon">🏆</span><div class="stat-value" id="guest-stat-achievements">—</div><div class="stat-label">Достижений</div></div>
+          <div class="stat-card peach"><span class="stat-icon">🎨</span><div class="stat-value" id="guest-stat-dirs">—</div><div class="stat-label">Направлений</div></div>
         </div>
 
         <!-- TODAY'S CLASSES for guests -->
@@ -4117,6 +4110,8 @@ function renderDashboard(){
     const activeGroups=schedule.filter(s=>s.status==='Активна').length;
     const gEl=document.getElementById('guest-stat-groups'); if(gEl)gEl.textContent=activeGroups||'—';
     const tEl=document.getElementById('guest-stat-teachers'); if(tEl)tEl.textContent=teachers.length||'—';
+    const aEl=document.getElementById('guest-stat-achievements'); if(aEl)aEl.textContent=achievements.length||'—';
+    const dEl=document.getElementById('guest-stat-dirs'); if(dEl)dEl.textContent=new Set(schedule.filter(s=>s.status==='Активна').map(s=>s.name.split('·')[0].trim())).size||'—';
     updateTodayLabel('guest-today-label', _calSelectedDate);
     renderTodayList('guest-today-list','guest-live-badge', _calSelectedDate);
   }
@@ -4288,11 +4283,17 @@ function renderParentSubs(){
     const pct=sb.total>0?Math.round(remaining/sb.total*100):0;
     const barColor=pct>50?'var(--mint-d)':pct>20?'var(--yel-d)':'var(--coral)';
     const multiStudent=_parentStudentIds.length>1;
-    return `<div style="padding:14px;border-radius:14px;border:2px solid var(--lav);background:white;margin-bottom:10px">
+    const isShared=!!sb.members;
+    const memberNames=isShared?sb.members.map(id=>{const s=students.find(x=>x.id===+id);return s?s.name.split(' ')[0]:'?';}).join(', '):'';
+    return `<div style="padding:14px;border-radius:14px;border:2px solid ${isShared?'var(--lav-d)':'var(--lav)'};background:white;margin-bottom:10px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
-        <div>
+        <div style="flex:1;min-width:0">
           ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${esc(stu.name)}</div>`:''}
-          <div style="font-weight:700;font-size:14px">${esc(sb.groupName||'Абонемент')}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-weight:700;font-size:14px">${esc(sb.groupName||'Абонемент')}</span>
+            ${isShared?`<span style="font-size:10px;font-weight:700;background:var(--lav);color:var(--lav-d);padding:2px 7px;border-radius:20px">👨‍👩‍👧 общий</span>`:''}
+          </div>
+          ${isShared?`<div style="font-size:11px;color:var(--ink-l);margin-top:3px">Участники: ${esc(memberNames)}</div>`:''}
           <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Куплен: ${dateStr}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
