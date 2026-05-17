@@ -749,6 +749,22 @@ body.is-admin .ann-input-area{display:block}
 .ph-upload-zone:hover{background:var(--cream)}
 .call-time-btn{padding:5px 12px;border-radius:20px;border:2px solid var(--peach);background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--ink-l);transition:all .15s}
 .call-time-btn.active{background:var(--lav);border-color:var(--lav-d);color:var(--lav-d)}
+/* ── Price list ── */
+.price-header-banner{background:linear-gradient(135deg,var(--lav),var(--peach));border-radius:18px;padding:18px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.price-trial-badge{background:white;border-radius:12px;padding:10px 18px;font-family:'Caveat',cursive;font-size:22px;font-weight:700;color:var(--peach-d);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.price-category{margin-bottom:22px;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.price-cat-header{display:flex;align-items:center;gap:10px;padding:12px 18px;font-weight:800;font-size:16px;color:white}
+.price-cat-header.lav{background:var(--lav-d)}.price-cat-header.mint{background:var(--mint-d)}.price-cat-header.peach{background:var(--peach-d)}.price-cat-header.yel{background:#e8a800}.price-cat-header.rose{background:#c0448a}
+.price-table{width:100%;border-collapse:collapse;background:white}
+.price-table th{background:#f9f5ff;font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;padding:8px 12px;text-align:center;border-bottom:1px solid var(--cream-d)}
+.price-table th:first-child{text-align:left}
+.price-table td{padding:10px 12px;border-bottom:1px solid var(--cream);font-size:14px}
+.price-table tr:last-child td{border-bottom:none}
+.price-table td:not(:first-child){text-align:center;font-weight:700;color:var(--ink)}
+.price-val.editable{cursor:pointer;border-radius:6px;padding:2px 6px}
+.price-val.editable:hover{background:var(--cream)}
+.price-notes{font-size:11px;color:var(--ink-l);margin-top:12px;line-height:1.6}
+.price-notes span{display:block}
 </style>
 </head>
 <body>
@@ -832,7 +848,6 @@ body.is-admin .ann-input-area{display:block}
       <button class="att-btn" id="stab-enroll" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('enroll')">📅 Занятия</button>
       <button class="att-btn" id="stab-dates" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('dates')">🗓️ Числа</button>
       <button class="att-btn" id="stab-sub" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('sub')">🎫 Абонементы</button>
-      <button class="att-btn" id="stab-att" style="border-radius:9px 9px 0 0;border:2px solid var(--cream);border-bottom:none;padding:7px 14px;font-size:12px;background:var(--cream);color:var(--ink-l)" onclick="stuTab('att')">📊 История</button>
     </div>
 
     <!-- Tab: Info -->
@@ -926,28 +941,8 @@ body.is-admin .ann-input-area{display:block}
         </div>
         <div class="form-group" style="margin-bottom:10px"><label class="form-label">Группа / направление</label>
           <select class="form-select" id="sub-group-sel"></select></div>
-        <div class="form-group" style="margin-bottom:8px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)">
-            <input type="checkbox" id="sub-shared" onchange="toggleSharedSub()" style="width:16px;height:16px;accent-color:var(--lav-d);cursor:pointer">
-            👨‍👩‍👧 Общий абонемент (несколько детей)
-          </label>
-        </div>
-        <div id="sub-shared-members" style="display:none;margin-bottom:10px">
-          <label class="form-label">Другие участники <span style="color:var(--coral)">*</span></label>
-          <input class="form-input" id="sub-members-search" type="text" placeholder="🔍 Найти ученика..." oninput="filterSubMembers()" style="margin-bottom:6px;font-size:13px">
-          <div id="sub-members-list" style="max-height:160px;overflow-y:auto;border:1.5px solid var(--cream-d);border-radius:10px;padding:4px;background:white"></div>
-          <div id="sub-members-hint" style="font-size:11px;color:var(--ink-l);margin-top:4px"></div>
-        </div>
         <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="addSubscription()">➕ Добавить абонемент</button>
       </div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeM('m-student')">Закрыть</button>
-      </div>
-    </div>
-
-    <!-- Tab: Attendance History -->
-    <div id="stab-att-body" style="display:none">
-      <div id="stab-att-body-inner" style="max-height:55vh;overflow-y:auto;padding-right:2px"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeM('m-student')">Закрыть</button>
       </div>
@@ -1086,7 +1081,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- Request modal (for parents) -->
-<div class="modal-overlay" id="m-request" role="dialog" aria-modal="true" aria-label="Запись на занятие">
+<div class="modal-overlay" id="m-request" role="dialog" aria-modal="true" aria-label="Заявка на запись">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-request')">✕</button>
     <div class="modal-title">📝 Запись на занятие</div>
@@ -1138,7 +1133,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- Achievement modal -->
-<div class="modal-overlay" id="m-achievement" role="dialog" aria-modal="true" aria-labelledby="ach-modal-title">
+<div class="modal-overlay" id="m-achievement" role="dialog" aria-modal="true" aria-label="Достижение">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-achievement')">✕</button>
     <div class="modal-title" id="ach-modal-title">🏆 Достижение</div>
@@ -1166,7 +1161,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- Announcement modal -->
-<div class="modal-overlay" id="m-announce" role="dialog" aria-modal="true" aria-label="Новое объявление">
+<div class="modal-overlay" id="m-announce" role="dialog" aria-modal="true" aria-label="Объявление">
   <div class="modal">
     <button class="modal-close" onclick="closeM('m-announce')">✕</button>
     <div class="modal-title">📢 Новое объявление</div>
@@ -1272,7 +1267,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- ══ SUB SELECT MODAL ══ -->
-<div class="modal-overlay" id="m-sub-select" role="dialog" aria-modal="true" aria-label="Выберите абонемент">
+<div class="modal-overlay" id="m-sub-select" role="dialog" aria-modal="true" aria-label="Выбор абонемента">
   <div class="modal" style="max-width:360px">
     <button class="modal-close" onclick="closeM('m-sub-select')">✕</button>
     <div class="modal-title">🎫 Выберите абонемент</div>
@@ -1301,6 +1296,7 @@ body.is-admin .ann-input-area{display:block}
 
     <div class="nav-label">Главное</div>
     <button class="nav-item active" onclick="nav('dashboard',this);closeMobSidebar()"><span class="nav-icon">🏠</span>Дашборд</button>
+    <button class="nav-item" onclick="nav('pricelist',this);closeMobSidebar()"><span class="nav-icon">💸</span>Прайс</button>
     <button class="nav-item" onclick="nav('schedule',this);closeMobSidebar()"><span class="nav-icon">📅</span>Расписание</button>
     <button class="nav-item admin-only-block" onclick="nav('students',this);closeMobSidebar()"><span class="nav-icon">👦</span>Ученики</button>
     <button class="nav-item" onclick="nav('teachers',this);closeMobSidebar()"><span class="nav-icon">👩‍🏫</span>Педагоги</button>
@@ -1325,6 +1321,7 @@ body.is-admin .ann-input-area{display:block}
         </div>
       </div>
       <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+      <button class="logout-btn admin-only" onclick="resetToDefaults()" style="margin-top:6px;border-color:var(--sky);color:var(--sky-d)">🔄 Сбросить данные</button>
     </div>
   </aside>
 
@@ -1908,6 +1905,17 @@ body.is-admin .ann-input-area{display:block}
       </div>
     </div>
 
+    <!-- ── PRICELIST ── -->
+    <div class="page" id="page-pricelist">
+      <div class="topbar">
+        <div class="page-title">Прайс 💸<span>Актуальные цены</span></div>
+        <div class="topbar-actions admin-only-flex">
+          <button class="btn btn-sm btn-ghost" onclick="resetPriceList()" title="Вернуть цены по умолчанию">↺ Сбросить</button>
+        </div>
+      </div>
+      <div id="pricelist-content"></div>
+    </div>
+
     <!-- ── REPORTS ── -->
     <div class="page" id="page-reports">
       <div class="topbar">
@@ -2010,7 +2018,7 @@ body.is-admin .ann-input-area{display:block}
 </div>
 
 <!-- ══ TEACHER SALARY DETAIL MODAL ══ -->
-<div class="modal-overlay" id="m-tsalary" role="dialog" aria-modal="true" aria-labelledby="mts-title">
+<div class="modal-overlay" id="m-tsalary" role="dialog" aria-modal="true" aria-label="Детализация зарплаты">
   <div class="modal" style="max-width:640px">
     <button class="modal-close" onclick="closeM('m-tsalary')">✕</button>
     <div class="modal-title" id="mts-title">💼 Детали зарплаты</div>
@@ -2046,6 +2054,22 @@ function lsSave(k,v){ try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){
 function lsLoad(k,fb){ try{ const v=localStorage.getItem(LS+k); return v!==null?JSON.parse(v):fb }catch(e){return fb} }
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
+// ── Суффиксы мета-ключей стоимости занятий ──
+const K_VIA_SUB    = '_via_sub';
+const K_SUB_IDX    = '_subIdx';
+const K_SUB_PRICE  = '_sub_price';
+const K_SUB_TOTAL  = '_sub_total';
+const K_AUTO       = '_auto';
+const K_PROMO      = '_promo';
+const K_BASE_PRICE = '_base_price';
+const K_TRIAL      = '_trial';
+
+// ── Хелперы доступа к данным (читают; запись — напрямую) ──
+function getSubs(sid){ return subscriptions[sid]||[]; }
+function getEnrolls(sid){ return enrollments[sid]||[]; }
+function getDateEnrolls(sid){ return dateEnrollments[sid]||[]; }
+function activeStudents(){ return students.filter(s=>isStudentActive(s.id)); }
+
 function persist(){
   lsSave('teachers',teachers); lsSave('students',students);
   lsSave('schedule',schedule); lsSave('nextTId',nextTId);
@@ -2057,7 +2081,6 @@ function persist(){
   lsSave('announcements',announcements);
   lsSave('nextAnnId',nextAnnId);
   lsSave('subscriptions',subscriptions);
-  lsSave('sharedSubs',sharedSubs);
   lsSave('lessonCosts',lessonCosts);
   lsSave('globalLessonPrice', globalLessonPrice);
   lsSave('teacherReviews', teacherReviews);
@@ -2069,9 +2092,8 @@ function persist(){
   lsSave('nextReqId', nextReqId);
   lsSave('churnLog',churnLog);
   lsSave('marketingCosts',marketingCosts);
-  lsSave('fixedCostsData',fixedCostsData);
   lsSave('nextChurnId',nextChurnId);
-  _activeIds = null;
+  _attCache=null; _activeIds=null;
   showSaved();
   syncToFirebase();
 }
@@ -2079,14 +2101,14 @@ function persist(){
 function resetToDefaults(){
   if(!confirm('Сбросить всех учеников, педагогов и расписание к исходным данным?\n\nПосещения, оплаты и отзывы тоже будут сброшены.')) return;
   const keys=['teachers','students','schedule','attendance','enrollments','dateEnrollments',
-    'announcements','nextAnnId','subscriptions','sharedSubs','lessonCosts','teacherReviews',
+    'announcements','nextAnnId','subscriptions','lessonCosts','teacherReviews',
     'nextTId','nextSId','nextScId','globalLessonPrice'];
   keys.forEach(k=>localStorage.removeItem(LS+k));
   teachers=JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
   students=JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
   schedule=JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
   attendance={}; enrollments=JSON.parse(JSON.stringify(DEFAULT_ENROLLMENTS)); dateEnrollments={};
-  subscriptions={}; sharedSubs={}; lessonCosts={}; teacherReviews={};
+  subscriptions={}; lessonCosts={}; teacherReviews={};
   nextTId=4; nextSId=1411; nextScId=37;
   globalLessonPrice=500;
   lsSave('dataVersion', DATA_VERSION);
@@ -2114,7 +2136,6 @@ function syncFromStorage(){
   announcements = lsLoad('announcements', []);
   nextAnnId  = lsLoad('nextAnnId', 4);
   subscriptions = lsLoad('subscriptions', {});
-  sharedSubs    = lsLoad('sharedSubs', {});
   lessonCosts   = lsLoad('lessonCosts', {});
   globalLessonPrice = lsLoad('globalLessonPrice', 500);
   nextTId    = lsLoad('nextTId', 4);
@@ -3614,7 +3635,6 @@ let attendance = lsLoad('attendance', {}); // { 'YYYY-MM-DD': {studentId: 'p'|'a
 let churnLog = lsLoad('churnLog', []);
 let marketingCosts = lsLoad('marketingCosts', []);
 let nextChurnId = lsLoad('nextChurnId', 1);
-let fixedCostsData = lsLoad('fixedCostsData', []); // [{month:'YYYY-MM',rent:0,utilities:0,other:0}]
 // enrollments: { studentId: [scheduleId, ...] }
 let enrollments   = lsLoad('enrollments', DEFAULT_ENROLLMENTS);
 // dateEnrollments: { studentId: ['YYYY-MM-DD', ...] }
@@ -3637,14 +3657,46 @@ let achievements = lsLoad('achievements', [
 let nextAchId = lsLoad('nextAchId', 5);
 let requests  = lsLoad('requests', []);
 let nextReqId = lsLoad('nextReqId', 1);
+const DEFAULT_PRICE_LIST = {
+  trialPrice: 300,
+  trialNote: 'кроме индивидуальных занятий',
+  subNote: 'срок абонемента: 30 дней (4 зан.) / 60 дней (8 зан.)',
+  renewNote: 'при оплате нового абонемента на крайнем занятии текущего',
+  categories: [
+    { id:'drawing', name:'Рисование', emoji:'🎨', color:'lav', note:'от 3 до 15 лет',
+      rows:[{ name:'Живопись и рисунок', single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }] },
+    { id:'sketch', name:'Скетчинг маркерами', emoji:'✏️', color:'mint', note:'от 5 до 15 лет',
+      rows:[{ name:'Скетчинг маркерами', single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }] },
+    { id:'lepka', name:'Лепка', emoji:'🏺', color:'peach', note:'',
+      rows:[
+        { name:'3–5 лет + развитие речи', single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 },
+        { name:'Воздушный пластилин 5+',  single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }
+      ] },
+    { id:'other', name:'Иные курсы', emoji:'🌟', color:'yel', note:'',
+      rows:[
+        { name:'Креативити 5+',            single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 },
+        { name:'Раннее развитие 1–3 года', single:700, sub4:2600, sub8:null, renew4:2500, renew8:null },
+        { name:'Подготовка к школе',       single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }
+      ] },
+    { id:'individual', name:'Индивидуальные занятия', emoji:'👤', color:'rose', note:'',
+      rows:[
+        { name:'Творческое развитие',      single:1250, sub4:4400, sub8:8000, renew4:4200, renew8:7800 },
+        { name:'Музыкальное развитие',     single:1350, sub4:5000, sub8:8500, renew4:null,  renew8:null },
+        { name:'Раннее развитие 1–3 года', single:850,  sub4:3200, sub8:6000, renew4:null,  renew8:null },
+        { name:'Подготовка к школе',       single:1100, sub4:4200, sub8:7600, renew4:null,  renew8:null },
+        { name:'Нейро кружок 4+',          single:1100, sub4:4200, sub8:7600, renew4:null,  renew8:null },
+        { name:'Логопед',                  single:1350, sub4:5000, sub8:8500, renew4:null,  renew8:null }
+      ] }
+  ]
+};
+
 // subscriptions: { studentId: [{id, groupName, total, used, price, createdAt}, ...] }
 let subscriptions = lsLoad('subscriptions', {});
-// sharedSubs: { id: {id, groupName, total, used, price, createdAt, members:[sid,...]} }
-let sharedSubs = lsLoad('sharedSubs', {});
 // lessonCosts: { 'YYYY-MM-DD': { studentId: cost } }
 let lessonCosts   = lsLoad('lessonCosts', {});
 // globalLessonPrice: default price per single visit (₽), overridable per student
 let globalLessonPrice = lsLoad('globalLessonPrice', 500);
+let priceList = lsLoad('priceList', DEFAULT_PRICE_LIST);
 // promo: { type: 'pct'|'fixed'|'free'|'', value: number, name: string }
 let activePromo = lsLoad('activePromo', {type:'', value:0, name:''});
 // teacherReviews: { teacherId: [{stars, comment, role, date}, ...] }
@@ -3853,7 +3905,7 @@ function _buildActiveIds(){
   });
   _activeIds=new Set();
   students.forEach(s=>{
-    if(recentSids.has(s.id)||(dateEnrollments[s.id]||[]).some(d=>d>=cutoffStr))
+    if(recentSids.has(s.id)||getDateEnrolls(s.id).some(d=>d>=cutoffStr))
       _activeIds.add(s.id);
   });
 }
@@ -3862,8 +3914,8 @@ function isStudentActive(sid){
   return _activeIds.has(sid);
 }
 
-const guestPages=['dashboard','schedule','teachers','gallery'];
-const parentPages=['dashboard','schedule','teachers','gallery','attendance'];
+const guestPages=['dashboard','schedule','teachers','gallery','pricelist'];
+const parentPages=['dashboard','schedule','teachers','gallery','attendance','pricelist'];
 
 function nav(page, btn){
   const allowed = currentRole==='admin'
@@ -3885,6 +3937,7 @@ function nav(page, btn){
     else { showAdminAttPanel(); attTab(_attTab||'mark'); renderAttendance(); }
   }
   if(page==='payments') renderPayments();
+  if(page==='pricelist') renderPriceList();
   if(page==='students') renderStudents();
   if(page==='schedule') renderSchedule();
   if(page==='teachers') renderTeachers();
@@ -4025,7 +4078,7 @@ function renderDashboard(){
     if(el)el.innerHTML=students.slice(0,6).map(s=>`
       <div class="stu-row" onclick="nav('students',document.querySelector('[onclick*=students]'))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
-        <div><div class="stu-name">${s.name}</div><div class="stu-age">${s.age} лет${s.dir?' · '+s.dir:''}</div></div>
+        <div><div class="stu-name">${esc(s.name)}</div><div class="stu-age">${s.age} лет${s.dir?' · '+esc(s.dir):''}</div></div>
         <span class="badge ${payCls(s.pay)}">${s.pay==='paid'?'✓':s.pay==='debt'?'✗':'~'}</span>
       </div>`).join('');
   }
@@ -4039,7 +4092,7 @@ function renderDashboard(){
   }
 
   if(currentRole==='parent'){
-    const parentScIds = new Set(_parentStudentIds.flatMap(sid=>enrollments[sid]||[]));
+    const parentScIds = new Set(_parentStudentIds.flatMap(sid=>getEnrolls(sid)));
     const myStudents = _parentStudentIds.map(id=>students.find(s=>s.id===id)).filter(Boolean);
     const s = myStudents[0];
     if(s){
@@ -4126,8 +4179,8 @@ function renderTodayList(elId, liveElId, dateKey, filterScIds=null){
       <div class="t-badge" style="${isNow?'color:var(--coral)':''}">${startStr||'—'}</div>
       <div class="dot" style="background:${color}"></div>
       <div class="sch-info">
-        <div class="sch-name">${sc.name}</div>
-        <div class="sch-meta">🚪 ${sc.room} · ${sc.teacher}</div>
+        <div class="sch-name">${esc(sc.name)}</div>
+        <div class="sch-meta">🚪 ${esc(sc.room)} · ${esc(sc.teacher)}</div>
       </div>
       ${tagHtml}
     </div>`;
@@ -4166,8 +4219,8 @@ function renderParentUpcoming(filterScIds=null){
     return `<div style="padding:12px 14px;border-radius:12px;border:2px solid ${colors[i%colors.length]};background:white;display:flex;align-items:center;gap:12px">
       <div style="font-family:'Caveat',cursive;font-size:18px;font-weight:700;color:var(--coral);width:70px;flex-shrink:0">${startTime}</div>
       <div style="flex:1">
-        <div style="font-weight:700;font-size:13px">${u.sc.name}</div>
-        <div style="font-size:11px;color:var(--ink-l);margin-top:2px">${label} · ${u.sc.room} · ${u.sc.teacher}</div>
+        <div style="font-weight:700;font-size:13px">${esc(u.sc.name)}</div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:2px">${esc(label)} · ${esc(u.sc.room)} · ${esc(u.sc.teacher)}</div>
       </div>
     </div>`;
   }).join('')||`<div style="color:var(--ink-l);font-size:13px;padding:10px">Нет занятий в ближайшие 2 недели</div>`;
@@ -4179,10 +4232,9 @@ function renderParentSubs(){
   const RU_MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 
   const rows=[];
-  const seenShared=new Set();
   _parentStudentIds.forEach(sid=>{
     const stu=students.find(s=>s.id===sid); if(!stu)return;
-    (subscriptions[sid]||[]).forEach(sb=>{
+    (getSubs(sid)).forEach(sb=>{
       const remaining=sb.total-sb.used;
       let dateStr='—';
       if(sb.createdAt){
@@ -4197,17 +4249,6 @@ function renderParentSubs(){
       }
       rows.push({stu,sb,remaining,dateStr});
     });
-    Object.values(sharedSubs).forEach(sb=>{
-      if(!sb.members||!sb.members.some(m=>+m===+sid)||seenShared.has(sb.id)) return;
-      seenShared.add(sb.id);
-      const remaining=sb.total-sb.used;
-      let dateStr='—';
-      if(sb.createdAt){
-        const p=sb.createdAt.split('.');
-        if(p.length===3){ const d=new Date(+p[2],+p[1]-1,+p[0]); if(!isNaN(d)) dateStr=`${d.getDate()} ${RU_MON[d.getMonth()]} ${d.getFullYear()}`; }
-      }
-      rows.push({stu,sb:{...sb,_shared:true},remaining,dateStr});
-    });
   });
 
   if(!rows.length){ if(card)card.style.display='none'; return; }
@@ -4220,8 +4261,8 @@ function renderParentSubs(){
     return `<div style="padding:14px;border-radius:14px;border:2px solid var(--lav);background:white;margin-bottom:10px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
         <div>
-          ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${stu.name}</div>`:''}
-          <div style="font-weight:700;font-size:14px">${esc(sb.groupName||'Абонемент')}${sb._shared?` <span style="font-size:11px;font-weight:400;color:var(--ink-l)">👨‍👩‍👧 общий</span>`:''}</div>
+          ${multiStudent?`<div style="font-size:11px;color:var(--lav-d);font-weight:700;margin-bottom:3px">${stu.emoji} ${esc(stu.name)}</div>`:''}
+          <div style="font-weight:700;font-size:14px">${esc(sb.groupName||'Абонемент')}</div>
           <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Куплен: ${dateStr}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -4253,7 +4294,7 @@ function calSelectDate(dateKey){
   renderMiniCal();
   if(currentRole==='admin') renderTodaySchedule();
   else if(currentRole==='parent'){
-    const pScIds=new Set(_parentStudentIds.flatMap(sid=>enrollments[sid]||[]));
+    const pScIds=new Set(_parentStudentIds.flatMap(sid=>getEnrolls(sid)));
     updateTodayLabel('parent-today-label', dateKey);
     renderTodayList('parent-today-list','parent-live-badge', dateKey, pScIds);
   } else {
@@ -4311,15 +4352,16 @@ function renderMiniCal(){
 function renderSchedule(){
   const isA=document.body.classList.contains('is-admin');
   if(schedule.length === 0){
+    const isA2=document.body.classList.contains('is-admin');
     document.getElementById('schedule-tbody').innerHTML=
       `<tr><td colspan="7" style="text-align:center;padding:40px 16px;color:var(--ink-l);font-size:15px">Расписание пусто${
-        isA?'<br><button class="btn" style="margin-top:12px" onclick="openNewSchedule()">+ Добавить занятие</button>':''}</td></tr>`;
+        isA2?'<br><button class="btn" style="margin-top:12px" onclick="openNewSchedule()">+ Добавить занятие</button>':''}</td></tr>`;
   } else {
-    document.getElementById('schedule-tbody').innerHTML=schedule.map(sc=>`
+  document.getElementById('schedule-tbody').innerHTML=schedule.map(sc=>`
     <tr>
       <td><b>${esc(sc.name)}</b></td><td>${esc(sc.teacher)}</td><td>${esc(sc.room)}</td>
       <td>${esc(sc.days)}</td><td>${esc(sc.time)}</td>
-      <td><span class="badge ${sc.sc}">${esc(sc.status)}</span></td>
+      <td><span class="badge ${sc.sc}">${sc.status}</span></td>
       <td class="admin-col"><button class="edit-btn" onclick="openEditSchedule(${sc.id})">✏️</button></td>
     </tr>`).join('');
   }
@@ -4381,7 +4423,7 @@ let _dateCalMonth = new Date().getMonth();
 function renderDateCal(){
   const sid = +document.getElementById('s-id').value;
   if(!sid){ document.getElementById('date-cal-grid').innerHTML='<div style="color:var(--ink-l);font-size:13px;padding:10px">Сначала сохраните данные ученика</div>'; return; }
-  const dates = new Set(dateEnrollments[sid]||[]);
+  const dates = new Set(getDateEnrolls(sid));
   const attDates = new Set(Object.keys(attendance));
   const RU_MONTHS_FULL=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   document.getElementById('date-cal-month-label').textContent=`${RU_MONTHS_FULL[_dateCalMonth]} ${_dateCalYear}`;
@@ -4473,7 +4515,7 @@ function openRequestForm(){
   // populate directions from schedule
   const sel = document.getElementById('req-direction');
   sel.innerHTML = '<option value="">— не выбрано —</option>' +
-    schedule.filter(sc=>sc.status==='Активна').map(sc=>`<option value="${sc.name}">${sc.name} (${sc.days}, ${sc.time})</option>`).join('');
+    schedule.filter(sc=>sc.status==='Активна').map(sc=>`<option value="${esc(sc.name)}">${esc(sc.name)} (${esc(sc.days)}, ${esc(sc.time)})</option>`).join('');
   openM('m-request');
 }
 
@@ -4527,14 +4569,14 @@ function renderRequests(){
     return `<div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--coral)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:15px">${r.childName}${r.age?` · ${r.age} лет`:''}</div>
+          <div style="font-weight:700;font-size:15px">${esc(r.childName)}${r.age?` · ${r.age} лет`:''}</div>
           <div style="font-size:12px;color:var(--ink-l);margin-top:3px">
-            👨‍👩‍👧 ${r.parentName} · 📞 <a href="tel:${r.phone}" style="color:var(--lav-d)">${r.phone}</a>
+            👨‍👩‍👧 ${esc(r.parentName)} · 📞 <a href="tel:${esc(r.phone)}" style="color:var(--lav-d)">${esc(r.phone)}</a>
           </div>
-          ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${r.direction}</div>`:''}
-          ${r.callTime?`<div style="font-size:12px;color:var(--lav-d);margin-top:2px;font-weight:700">🕐 Перезвонить: ${r.callTime}</div>`:''}
-          ${r.source?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📣 Откуда: ${r.source}</div>`:''}
-          ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${r.comment}</div>`:''}
+          ${r.direction?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📚 ${esc(r.direction)}</div>`:''}
+          ${r.callTime?`<div style="font-size:12px;color:var(--lav-d);margin-top:2px;font-weight:700">🕐 Перезвонить: ${esc(r.callTime)}</div>`:''}
+          ${r.source?`<div style="font-size:12px;color:var(--ink-l);margin-top:2px">📣 Откуда: ${esc(r.source)}</div>`:''}
+          ${r.comment?`<div style="font-size:12px;color:var(--ink-l);margin-top:4px;font-style:italic">💬 ${esc(r.comment)}</div>`:''}
           <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Поступила: ${dateStr}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
@@ -4589,10 +4631,10 @@ function renderAchievements(){
       <div class="ach">
         <div class="ach-medal">${a.medal}</div>
         <div style="flex:1">
-          <div class="ach-name">${a.name}</div>
-          <div class="ach-stu">${a.student}</div>
+          <div class="ach-name">${esc(a.name)}</div>
+          <div class="ach-stu">${esc(a.student)}</div>
         </div>
-        <div class="ach-date">${a.date}</div>
+        <div class="ach-date">${esc(a.date)}</div>
         ${isAdmin?`<button class="edit-btn" style="margin-left:6px;flex-shrink:0" onclick="openEditAchievement(${a.id})">✏️</button>`:''}
       </div>`).join('')
     : '<div style="color:var(--ink-l);font-size:13px;padding:8px 0">Нет достижений</div>';
@@ -4602,8 +4644,8 @@ function renderAchievements(){
   if(pub)   pub.innerHTML   = achievements.map(a=>`
     <div class="ach">
       <div class="ach-medal">${a.medal}</div>
-      <div style="flex:1"><div class="ach-name">${a.name}</div><div class="ach-stu">${a.student}</div></div>
-      <div class="ach-date">${a.date}</div>
+      <div style="flex:1"><div class="ach-name">${esc(a.name)}</div><div class="ach-stu">${esc(a.student)}</div></div>
+      <div class="ach-date">${esc(a.date)}</div>
     </div>`).join('') || '<div style="color:var(--ink-l);font-size:13px;padding:8px 0">Нет достижений</div>';
 }
 
@@ -4667,10 +4709,10 @@ function renderAnnouncements(){
       <div class="ann-item ${a.type}">
         <div class="ann-icon">${ANN_ICONS[a.type]||'📢'}</div>
         <div class="ann-text">
-          <div class="ann-text-title">${a.title}</div>
-          ${a.body?`<div class="ann-text-body">${a.body}</div>`:''}
+          <div class="ann-text-title">${esc(a.title)}</div>
+          ${a.body?`<div class="ann-text-body">${esc(a.body)}</div>`:''}
         </div>
-        ${a.date?`<div class="ann-date">${a.date}</div>`:''}
+        ${a.date?`<div class="ann-date">${esc(a.date)}</div>`:''}
         ${isAdmin?`<button class="ann-del" onclick="deleteAnnouncement(${a.id})">✕</button>`:''}
       </div>`).join('')
     : '<div style="color:var(--ink-l);font-size:13px;padding:8px">Нет объявлений</div>';
@@ -4762,18 +4804,18 @@ function renderStudents(query){
   }
 
   document.getElementById('students-tbody').innerHTML = pageList.map(s=>{
-    const enrolled = (enrollments[s.id]||[]).length;
-    const subs = getActiveSubsForStudent(s.id).length;
+    const enrolled = (getEnrolls(s.id)).length;
+    const subs = (getSubs(s.id)).filter(sb=>sb.total-sb.used>0).length;
     const subsHtml = subs ? `<span class="badge purple" style="margin-left:4px" title="${subs} абонемент(а)">🎫${subs}</span>` : '';
     const trialHtml = s.trialDate ? `<span class="badge" style="margin-left:4px;background:var(--lav);color:var(--lav-d);border-color:var(--lav-d)" title="Пробное: ${s.trialDate}${s.trialAmount?' · '+s.trialAmount+' ₽':''}">🎯</span>` : '';
-    const futureDates = (dateEnrollments[s.id]||[]).filter(d=>d>=today);
+    const futureDates = (getDateEnrolls(s.id)).filter(d=>d>=today);
     const datesHtml = futureDates.length
       ? futureDates.slice(0,3).map(d=>{ const dt=new Date(d); return `<span class="badge blue" style="margin:1px">${dt.getDate()} ${RU_M[dt.getMonth()]}</span>`; }).join('')
         +(futureDates.length>3?`<span style="font-size:11px;color:var(--ink-l)"> +${futureDates.length-3}</span>`:'')
       : `<span style="font-size:11px;color:var(--ink-l)">—</span>`;
     return `<tr>
       <td style="padding:8px 6px"><div style="background:${s.color};width:28px;height:28px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div></td>
-      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${s.name.split(' ').join('<br>')}</b>${subsHtml}${trialHtml}</td>
+      <td style="min-width:90px;max-width:130px;white-space:normal;word-break:break-word;line-height:1.3"><b>${esc(s.name).split(' ').join('<br>')}</b>${subsHtml}${trialHtml}</td>
       <td style="white-space:nowrap">${s.age}</td>
       <td><span class="badge blue">${enrolled}</span></td>
       <td><span class="badge blue">${_attCache[s.id]||'—'}</span></td>
@@ -4804,7 +4846,7 @@ function filterStudents(q){ clearTimeout(_stuSearchTimer); _stuSearchTimer=setTi
 
 // ── Student modal tabs ──
 function stuTab(tab){
-  ['info','enroll','dates','sub','att'].forEach(t=>{
+  ['info','enroll','dates','sub'].forEach(t=>{
     document.getElementById('stab-'+t+'-body').style.display = t===tab?'block':'none';
     const btn = document.getElementById('stab-'+t);
     btn.style.background = t===tab?'white':'var(--cream)';
@@ -4814,7 +4856,6 @@ function stuTab(tab){
   if(tab==='enroll') renderEnrollList();
   if(tab==='dates') renderDateCal();
   if(tab==='sub') renderSubList();
-  if(tab==='att') renderStudentAttHistory(+document.getElementById('s-id').value);
 }
 
 function renderEnrollList(){
@@ -4823,15 +4864,15 @@ function renderEnrollList(){
   const el = document.getElementById('enroll-list');
   // update sub-group select too
   const sgSel = document.getElementById('sub-group-sel');
-  if(sgSel) sgSel.innerHTML = schedule.map(sc=>`<option value="${sc.id}">${sc.name} · ${sc.days} · ${sc.time}</option>`).join('');
+  if(sgSel) sgSel.innerHTML = schedule.map(sc=>`<option value="${sc.id}">${esc(sc.name)} · ${esc(sc.days)} · ${esc(sc.time)}</option>`).join('');
 
   el.innerHTML = schedule.map(sc=>{
     const isChecked = enrolled.includes(sc.id);
     return `<label class="enroll-item${isChecked?' checked':''}" id="ei-${sc.id}">
       <input type="checkbox" id="enroll-${sc.id}" name="enroll-${sc.id}" ${isChecked?'checked':''} onchange="toggleEnroll(${sc.id},this)" />
       <div style="flex:1">
-        <div class="enroll-item-name">${sc.name}</div>
-        <div class="enroll-item-meta">${sc.days} · ${sc.time} · ${sc.teacher} · ${sc.room}</div>
+        <div class="enroll-item-name">${esc(sc.name)}</div>
+        <div class="enroll-item-meta">${esc(sc.days)} · ${esc(sc.time)} · ${esc(sc.teacher)} · ${esc(sc.room)}</div>
       </div>
       <span class="badge ${sc.sc}" style="flex-shrink:0">${sc.status}</span>
     </label>`;
@@ -4923,166 +4964,48 @@ function saveEnrollment(){
     if(sc) s.group = sc.name+' · '+sc.days;
   }
   persist(); renderStudents();
-  const dateCount = (dateEnrollments[sid]||[]).filter(d=>d>=fmtDate(new Date())).length;
+  const dateCount = (getDateEnrolls(sid)).filter(d=>d>=fmtDate(new Date())).length;
   toast(`✅ Запись сохранена! Занятий: ${checked.length} · Дат в календаре: ${dateCount}`);
-}
-
-function _subCardHTML(sub, deductFn, restoreFn, delFn, extraStyle=''){
-  const pct=Math.round(sub.used/sub.total*100);
-  const left=sub.total-sub.used;
-  const exhausted=left<=0;
-  const perLesson=sub.price&&sub.total?Math.round(sub.price/sub.total):0;
-  const remaining=perLesson?perLesson*left:0;
-  const priceInfo=sub.price?`<span style="color:var(--ink-l)">${sub.price.toLocaleString('ru')} ₽ · ${perLesson.toLocaleString('ru')} ₽/зан.</span>`:'';
-  const remainInfo=remaining?`<span style="font-weight:700;color:${exhausted?'var(--coral)':'var(--mint-d)'}"> · Остаток: ${remaining.toLocaleString('ru')} ₽</span>`:'';
-  return `<div class="sub-card" style="${extraStyle}">
-    <div class="sub-icon">${sub.members?'👨‍👩‍👧':'🎫'}</div>
-    <div class="sub-info">
-      <div class="sub-name">${esc(sub.groupName||'Абонемент')}${sub.members?`<span style="font-size:11px;font-weight:400;color:var(--ink-l);margin-left:6px">общий</span>`:''}</div>
-      ${sub.members?`<div style="font-size:11px;color:var(--ink-l);margin-top:1px">Участники: ${sub.members.map(id=>{const s=students.find(x=>x.id===id);return s?esc(s.name.split(' ')[0]):'?';}).join(', ')}</div>`:''}
-      <div class="sub-meta">${priceInfo}${remainInfo}<br>Занятий: ${left} из ${sub.total} · Добавлен ${sub.createdAt}</div>
-      <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="btn btn-sm" style="background:var(--lav);color:var(--lav-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${exhausted?'disabled':''}  onclick="${deductFn}" title="Списать 1 занятие вручную">– Списать занятие</button>
-        <button class="btn btn-sm" style="background:var(--mint);color:var(--mint-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${sub.used<=0?'disabled':''} onclick="${restoreFn}" title="Вернуть 1 занятие">+ Вернуть</button>
-      </div>
-    </div>
-    <div class="sub-count" style="color:${exhausted?'var(--coral)':'var(--mint-d)'}">
-      ${left}${perLesson?`<div style="font-size:10px;font-weight:600;margin-top:2px">${remaining.toLocaleString('ru')} ₽</div>`:''}
-    </div>
-    <button class="sub-del" onclick="${delFn}" title="Удалить">✕</button>
-  </div>`;
 }
 
 function renderSubList(){
   const sid = +document.getElementById('s-id').value;
-  const subs = subscriptions[sid] || [];
-  const shared = Object.values(sharedSubs).filter(s=>s.members&&s.members.some(m=>+m===+sid));
+  const subs = getSubs(sid);
   const el = document.getElementById('sub-list');
-  if(!subs.length && !shared.length){
+  if(!subs.length){
     el.innerHTML='<div style="color:var(--ink-l);font-size:13px;padding:10px 0 14px">Абонементов нет</div>';
     return;
   }
-  const personalHTML = subs.map((sub,i)=>_subCardHTML(sub,`deductSub(${sid},${i})`,`restoreSub(${sid},${i})`,`deleteSubscription(${sid},${i})`)).join('');
-  const sharedHTML = shared.map(sub=>_subCardHTML(sub,`deductSharedSub('${sub.id}')`,`restoreSharedSub('${sub.id}')`,`deleteSharedSub('${sub.id}')`,`border:2px solid var(--sky)`)).join('');
-  const sep = shared.length ? `<div style="font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;padding-top:10px;border-top:1px solid var(--cream-d)">Общие абонементы</div>` : '';
-  el.innerHTML = personalHTML + sep + sharedHTML;
-}
-
-let _subMembersSelected = new Set();
-
-function _renderSubMembersList(q){
-  const sid = +document.getElementById('s-id').value;
-  const list = document.getElementById('sub-members-list');
-  const lower = (q||'').toLowerCase();
-  const filtered = students.filter(s=>s.id!==sid && (!lower || s.name.toLowerCase().includes(lower)));
-  if(!filtered.length){
-    list.innerHTML=`<div style="text-align:center;padding:16px;font-size:13px;color:var(--ink-l)">Ничего не найдено</div>`;
-    _updateSubMembersHint(); return;
-  }
-  list.innerHTML = filtered.map(s=>`
-    <label style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-      <input type="checkbox" value="${s.id}" ${_subMembersSelected.has(s.id)?'checked':''} style="width:15px;height:15px;accent-color:var(--lav-d);cursor:pointer;flex-shrink:0" onchange="_toggleSubMember(${s.id},this.checked)">
-      <span style="font-size:16px;flex-shrink:0">${s.emoji}</span>
-      <span style="font-size:13px;font-weight:600">${esc(s.name)}</span>
-    </label>`).join('');
-  _updateSubMembersHint();
-}
-
-function _toggleSubMember(id, isChecked){
-  if(isChecked) _subMembersSelected.add(+id);
-  else _subMembersSelected.delete(+id);
-  _updateSubMembersHint();
-}
-
-function _updateSubMembersHint(){
-  const hint = document.getElementById('sub-members-hint');
-  if(hint) hint.textContent = _subMembersSelected.size ? `Выбрано: ${_subMembersSelected.size} чел.` : '';
-}
-
-function filterSubMembers(){
-  _renderSubMembersList(document.getElementById('sub-members-search').value);
-}
-
-function toggleSharedSub(){
-  const checked = document.getElementById('sub-shared').checked;
-  document.getElementById('sub-shared-members').style.display = checked ? '' : 'none';
-  if(checked){
-    _subMembersSelected = new Set();
-    document.getElementById('sub-members-search').value = '';
-    _renderSubMembersList('');
-    requestAnimationFrame(()=>document.getElementById('sub-members-search').focus());
-  }
-}
-
-function renderStudentAttHistory(sid){
-  const el=document.getElementById('stab-att-body-inner');
-  if(!el||!sid)return;
-  const DOW=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-  const MON=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-  const MON_TITLE=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-  // Собрать все записи — та же логика что в buildAttCache
-  const records=[];
-  Object.entries(attendance).forEach(([dateKey,dayAtt])=>{
-    if(!dayAtt||typeof dayAtt!=='object')return;
-    let status=null, attKey=null;
-    Object.entries(dayAtt).forEach(([k,v])=>{
-      if(String(k).includes('_'))return;
-      if(sidFromAttKey(k)!==sid)return;
-      if(v==='p'||v==='a'||v==='trial'){status=v;attKey=k;}
-    });
-    if(!status)return;
-    const costs=lessonCosts[dateKey]||{};
-    const viaSub=!!(costs[(attKey||sid)+'_via_sub']||costs[sid+'_via_sub']);
-    const costRaw=attKey&&costs[attKey]!==undefined?costs[attKey]:(costs[sid]!==undefined?costs[sid]:null);
-    const cost=costRaw!==null?+costRaw:null;
-    records.push({dateKey,status,viaSub,cost});
-  });
-
-  if(!records.length){
-    el.innerHTML='<div style="text-align:center;padding:32px 16px;color:var(--ink-l);font-size:13px">Нет записей посещений</div>';
-    return;
-  }
-
-  records.sort((a,b)=>b.dateKey.localeCompare(a.dateKey));
-
-  let html='', curMonth='';
-  let totalP=0, totalA=0;
-  records.forEach(r=>{
-    if(r.status==='p') totalP++;
-    else if(r.status==='a') totalA++;
-    const month=r.dateKey.slice(0,7);
-    if(month!==curMonth){
-      curMonth=month;
-      const [y,m]=month.split('-');
-      html+=`<div style="font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:.7px;margin:${html?'12px':'0'} 0 5px">${MON_TITLE[+m-1]} ${y}</div>`;
-    }
-    const d=new Date(r.dateKey+'T12:00:00');
-    const day=d.getDate(), dow=DOW[d.getDay()], mon=MON[d.getMonth()];
-    let icon,color,bg;
-    if(r.status==='p'){     icon='✓'; color='var(--grn)';   bg='var(--mint)';}
-    else if(r.status==='trial'){icon='🎯';color='var(--lav-d)';bg='var(--lav)';}
-    else{                   icon='✗'; color='var(--coral)'; bg='var(--cream)';}
-    const costBadge=r.status==='p'&&r.cost!==null
-      ?(r.viaSub?'<span style="font-size:10px;background:var(--lav);color:var(--lav-d);padding:1px 6px;border-radius:5px;font-weight:700">🎫 аб.</span>'
-                :`<span style="font-size:11px;color:var(--ink-l)">${r.cost} ₽</span>`)
-      :'';
-    html+=`<div style="display:flex;align-items:center;gap:9px;padding:5px 8px;background:${bg};border-radius:8px;margin-bottom:3px">
-      <div style="font-size:13px;font-weight:700;color:${color};width:18px;text-align:center;flex-shrink:0">${icon}</div>
-      <div style="flex:1;font-size:13px;font-weight:600">${day} ${mon}<span style="font-size:11px;color:var(--ink-l);font-weight:400"> (${dow})</span></div>
-      ${costBadge}
+  el.innerHTML = subs.map((sub,i)=>{
+    const pct = Math.round(sub.used/sub.total*100);
+    const left = sub.total - sub.used;
+    const exhausted = left <= 0;
+    const perLesson = sub.price && sub.total ? Math.round(sub.price / sub.total) : 0;
+    const remaining = perLesson ? perLesson * left : 0;
+    const priceInfo = sub.price
+      ? `<span style="color:var(--ink-l)">${sub.price.toLocaleString('ru')} ₽ · ${perLesson.toLocaleString('ru')} ₽/зан.</span>`
+      : '';
+    const remainInfo = remaining
+      ? `<span style="font-weight:700;color:${exhausted?'var(--coral)':'var(--mint-d)'}"> · Остаток: ${remaining.toLocaleString('ru')} ₽</span>`
+      : '';
+    return `<div class="sub-card">
+      <div class="sub-icon">🎫</div>
+      <div class="sub-info">
+        <div class="sub-name">${esc(sub.groupName)}</div>
+        <div class="sub-meta">${priceInfo}${remainInfo}<br>Занятий: ${left} из ${sub.total} · Добавлен ${esc(sub.createdAt)}</div>
+        <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="background:var(--lav);color:var(--lav-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${exhausted?'disabled':''} onclick="deductSub(${sid},${i})" title="Списать 1 занятие вручную">– Списать занятие</button>
+          <button class="btn btn-sm" style="background:var(--mint);color:var(--mint-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${sub.used<=0?'disabled':''} onclick="restoreSub(${sid},${i})" title="Вернуть 1 занятие">+ Вернуть</button>
+        </div>
+      </div>
+      <div class="sub-count" style="color:${exhausted?'var(--coral)':'var(--mint-d)'}">
+        ${left}
+        ${perLesson?`<div style="font-size:10px;font-weight:600;margin-top:2px">${remaining.toLocaleString('ru')} ₽</div>`:''}
+      </div>
+      <button class="sub-del" onclick="deleteSubscription(${sid},${i})" title="Удалить">✕</button>
     </div>`;
-  });
-
-  // Summary header
-  const pct=records.length>0?Math.round(totalP/records.length*100):0;
-  const summary=`<div style="display:flex;gap:10px;margin-bottom:10px;padding:8px 10px;background:var(--cream);border-radius:10px">
-    <div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--grn)">${totalP}</div><div style="font-size:11px;color:var(--ink-l)">присутствовал</div></div>
-    <div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--coral)">${totalA}</div><div style="font-size:11px;color:var(--ink-l)">пропустил</div></div>
-    <div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--lav-d)">${pct}%</div><div style="font-size:11px;color:var(--ink-l)">посещаемость</div></div>
-  </div>`;
-  el.innerHTML=summary+html;
+  }).join('');
 }
 
 function addSubscription(){
@@ -5092,47 +5015,15 @@ function addSubscription(){
   const sc = schedule.find(x=>x.id===scId);
   const total = +document.getElementById('sub-count').value || 8;
   const price = +document.getElementById('sub-price').value || 0;
-  const isShared = document.getElementById('sub-shared').checked;
   const now = new Date();
   const sub = {
     groupName: sc ? sc.name : 'Занятие',
     total, used: 0, price,
     createdAt: `${now.getDate()}.${now.getMonth()+1}.${now.getFullYear()}`
   };
-  if(isShared){
-    const extra = Array.from(_subMembersSelected);
-    if(!extra.length){ toast('⚠️ Выберите хотя бы одного участника'); return; }
-    const id = 'ss' + Date.now();
-    sharedSubs[id] = {...sub, id, members:[sid,...extra]};
-    _subMembersSelected = new Set();
-    document.getElementById('sub-shared').checked=false;
-    document.getElementById('sub-shared-members').style.display='none';
-    document.getElementById('sub-members-search').value='';
-  } else {
-    if(!subscriptions[sid]) subscriptions[sid]=[];
-    subscriptions[sid].push(sub);
-  }
+  if(!subscriptions[sid]) subscriptions[sid]=[];
+  subscriptions[sid].push(sub);
   persist(); renderSubList(); toast('🎫 Абонемент добавлен!');
-}
-
-function deductSharedSub(id){
-  const sub=sharedSubs[id];
-  if(!sub||sub.used>=sub.total){ toast('⚠️ Занятия в абонементе закончились'); return; }
-  sub.used++;
-  persist(); renderSubList();
-  toast(`🎫 Занятие списано · осталось ${sub.total-sub.used}`);
-}
-function restoreSharedSub(id){
-  const sub=sharedSubs[id];
-  if(!sub||sub.used<=0) return;
-  sub.used--;
-  persist(); renderSubList();
-  toast(`↩️ Занятие возвращено · осталось ${sub.total-sub.used}`);
-}
-function deleteSharedSub(id){
-  if(!confirm('Удалить общий абонемент?\nОн будет удалён для всех участников.')) return;
-  delete sharedSubs[id];
-  persist(); renderSubList(); toast('🗑️ Абонемент удалён');
 }
 
 function deleteSubscription(sid, idx){
@@ -5141,14 +5032,14 @@ function deleteSubscription(sid, idx){
   persist(); renderSubList(); toast('🗑️ Абонемент удалён');
 }
 function deductSub(sid, idx){
-  const sub = (subscriptions[sid]||[])[idx];
+  const sub = (getSubs(sid))[idx];
   if(!sub || sub.used >= sub.total){ toast('⚠️ Занятия в абонементе закончились'); return; }
   sub.used++;
   persist(); renderSubList();
   toast(`🎫 Занятие списано · осталось ${sub.total-sub.used}`);
 }
 function restoreSub(sid, idx){
-  const sub = (subscriptions[sid]||[])[idx];
+  const sub = (getSubs(sid))[idx];
   if(!sub || sub.used <= 0) return;
   sub.used--;
   persist(); renderSubList();
@@ -5302,8 +5193,8 @@ function renderTeachers(){
     return `
     <div class="tc">
       <div class="tc-ava" style="background:${t.color}">${t.avatar}</div>
-      <div class="tc-name">${t.name}</div>
-      <div class="tc-role">${t.role}</div>
+      <div class="tc-name">${esc(t.name)}</div>
+      <div class="tc-role">${esc(t.role)}</div>
       <div class="tc-rating-row">
         <span class="tc-stars-display">${'⭐'.repeat(Math.floor(avgRating))}</span>
         <span style="font-family:'Caveat',cursive;font-size:17px;font-weight:700;color:var(--yel-d)">${avgRating}</span>
@@ -5464,9 +5355,9 @@ function renderReviewsInModal(tid){
     <div class="review-item">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <span class="review-stars">${'⭐'.repeat(r.stars)}</span>
-        <span style="font-size:11px;background:var(--lav);color:var(--lav-d);padding:2px 7px;border-radius:20px;font-weight:700">${r.role}</span>
+        <span style="font-size:11px;background:var(--lav);color:var(--lav-d);padding:2px 7px;border-radius:20px;font-weight:700">${esc(r.role)}</span>
       </div>
-      ${r.comment?`<div class="review-text">${r.comment}</div>`:''}
+      ${r.comment?`<div class="review-text">${esc(r.comment)}</div>`:''}
       <div class="review-meta">${r.date}</div>
     </div>`).join('');
 }
@@ -5507,9 +5398,9 @@ function renderParentAttendance(){
       if(Object.entries(dayAtt).some(([k])=>!String(k).includes('_')&&sidFromAttKey(k)===sid))
         dateSet.add(d);
     });
-    (dateEnrollments[sid]||[]).forEach(d=>dateSet.add(d));
+    (getDateEnrolls(sid)).forEach(d=>dateSet.add(d));
     // upcoming 14 days from schedule
-    const myScIds=enrollments[sid]||[];
+    const myScIds=getEnrolls(sid);
     for(let i=0;i<=14;i++){
       const dt=new Date(); dt.setDate(dt.getDate()+i);
       const d=fmtDate(dt);
@@ -5547,17 +5438,17 @@ function renderParentAttendance(){
             const sc=schedule.find(sc=>sc.id===+String(attKey).split(':')[1]);
             scName=sc?sc.name:'';
           } else {
-            const myScIds=enrollments[sid]||[];
+            const myScIds=getEnrolls(sid);
             const sc=schedule.find(sc=>myScIds.includes(sc.id)&&sc.days&&
               sc.days.split(',').some(day=>DAY_MAP[day.trim()]===d.getDay()));
             scName=sc?sc.name:'';
           }
           rows.push({stu,scName,status});
         });
-      } else if((dateEnrollments[sid]||[]).includes(dateKey)){
+      } else if((getDateEnrolls(sid)).includes(dateKey)){
         rows.push({stu,scName:'',status:isFuture?'upcoming':'absent'});
       } else if(isFuture){
-        const myScIds=enrollments[sid]||[];
+        const myScIds=getEnrolls(sid);
         const sc=schedule.find(sc=>myScIds.includes(sc.id)&&sc.status==='Активна'&&sc.days&&
           sc.days.split(',').some(day=>DAY_MAP[day.trim()]===d.getDay()));
         if(sc) rows.push({stu,scName:sc.name,status:'upcoming'});
@@ -5614,7 +5505,7 @@ function renderAttHistory(){
 
   // Also include dateEnrollment dates that have no attendance yet (future)
   const enrolledDateSet = new Set();
-  students.forEach(s=>{ (dateEnrollments[s.id]||[]).forEach(d=>enrolledDateSet.add(d)); });
+  students.forEach(s=>{ (getDateEnrolls(s.id)).forEach(d=>enrolledDateSet.add(d)); });
   const today = fmtDate(new Date());
   const futureDates = [...enrolledDateSet].filter(d=>d>today && !allDates.includes(d));
   const allKeys = [...new Set([...allDates,...futureDates])].sort().reverse();
@@ -5637,7 +5528,7 @@ function renderAttHistory(){
     const dayLabel = `${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 
     // Find enrolled students for this date
-    const enrolledStudents = students.filter(s=>(dateEnrollments[s.id]||[]).includes(dateKey));
+    const enrolledStudents = students.filter(s=>(getDateEnrolls(s.id)).includes(dateKey));
     // Find attended students (from attendance records)
     const attendedEntries=[];
     Object.entries(dayAtt).forEach(([attKey,status])=>{
@@ -5645,15 +5536,16 @@ function renderAttHistory(){
       if(String(attKey).includes('_'))return;
       const sid=sidFromAttKey(attKey);
       const stu=students.find(x=>x.id===sid); if(!stu)return;
-      const viaSub=costs[attKey+'_via_sub'];
+      const viaSub=costs[attKey+K_VIA_SUB];
       let cost;
       if(viaSub){
         cost=costs[attKey]!==undefined?+costs[attKey]:0;
-        if(!cost&&costs[attKey+'_sub_price']&&costs[attKey+'_sub_total'])
-          cost=+costs[attKey+'_sub_price']/+costs[attKey+'_sub_total'];
+        if(!cost&&costs[attKey+K_SUB_PRICE]&&costs[attKey+K_SUB_TOTAL])
+          cost=+costs[attKey+K_SUB_PRICE]/+costs[attKey+K_SUB_TOTAL];
         if(!cost){
-          const subIdx=costs[attKey+'_subIdx'];
-          const sub=getSubByRef(sid,subIdx);
+          const subIdx=costs[attKey+K_SUB_IDX];
+          const subs=getSubs(sid);
+          const sub=subIdx!==undefined?subs[subIdx]:null;
           cost=sub&&sub.total>0?sub.price/sub.total:0;
         }
       } else {
@@ -5687,14 +5579,15 @@ function renderAttHistory(){
           <div class="att-hist-cost">
             ${r.viaSub
               ? (()=>{
-                  const subIdx=costs[r.attKey+'_subIdx'];
-                  const sub=getSubByRef(r.sid,subIdx);
+                  const subIdx=costs[r.attKey+K_SUB_IDX];
+                  const subs=getSubs(r.sid);
+                  const sub=subIdx!==undefined?subs[subIdx]:null;
                   const perLesson=sub&&sub.total>0?Math.round(sub.price/sub.total):0;
                   return `<span style="font-family:'Caveat',cursive;font-size:16px;font-weight:700;color:var(--lav-d)">🎫 ${perLesson?perLesson.toLocaleString('ru')+' ₽':''}</span>`;
                 })()
               : (()=>{
-                  const promoName=costs[r.attKey+'_promo'];
-                  const basePrice=costs[r.attKey+'_base_price'];
+                  const promoName=costs[r.attKey+K_PROMO];
+                  const basePrice=costs[r.attKey+K_BASE_PRICE];
                   const promoTag=promoName
                     ?`<span class="promo-tag active-promo" style="font-size:10px;padding:2px 6px" title="Базовая цена: ${basePrice?basePrice.toLocaleString('ru')+' ₽':''}">🏷️ ${promoName}</span>`
                     :'';
@@ -5744,14 +5637,14 @@ function saveLessonCost(dateKey, attKey, val){
   const n=parseFloat(val);
   if(!isNaN(n)&&n>=0)lessonCosts[dateKey][attKey]=n;
   else delete lessonCosts[dateKey][attKey];
-  delete lessonCosts[dateKey][attKey+'_auto'];
+  delete lessonCosts[dateKey][attKey+K_AUTO];
   persist();
 }
 
 // ══════════════════════════════════════════════════════════════
 //  ATTENDANCE (mark tab)
 // ══════════════════════════════════════════════════════════════
-function fmtDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function fmtDate(d){ return d.toISOString().split('T')[0]; }
 function setAttDate(delta){ attDate.setDate(attDate.getDate()+delta); renderAttendance(); }
 
 // Attendance key format: 'sid' (single group) or 'sid:scId' (multi-group)
@@ -5770,7 +5663,7 @@ function renderAttendance(){
   const todayDow=attDate.getDay();
 
   // Students enrolled for this specific date
-  const dateEnrolledStudents=students.filter(s=>(dateEnrollments[s.id]||[]).includes(key));
+  const dateEnrolledStudents=students.filter(s=>(getDateEnrolls(s.id)).includes(key));
   // Students with any existing marks not in dateEnrollments
   const markedSids=new Set(Object.keys(dayAtt).filter(k=>!String(k).includes('_')).map(sidFromAttKey));
   const alreadyMarked=students.filter(s=>markedSids.has(s.id)&&!dateEnrolledStudents.find(x=>x.id===s.id));
@@ -5783,7 +5676,7 @@ function renderAttendance(){
   // Build (student, schedule, attKey) pairs — one row per class the student attends today
   const pairs=[];
   const addPairs=(s,isExtra)=>{
-    const enrolled=enrollments[s.id]||[];
+    const enrolled=getEnrolls(s.id);
     const todayScheds=schedule.filter(sc=>
       enrolled.includes(sc.id)&&sc.days&&
       sc.days.split(',').some(d=>DAY_MAP[d.trim()]===todayDow)
@@ -5798,27 +5691,7 @@ function renderAttendance(){
       // Check for a day-specific manual assignment
       const assignedScId=(dayAssignments[key]||{})[String(s.id)];
       const assignedSc=assignedScId!=null?schedule.find(sc=>sc.id===assignedScId):null;
-      let attKey=String(s.id);
-      if(assignedSc){
-        const compositeKey=`${s.id}:${assignedScId}`;
-        // Migrate old plain-key mark → composite so metrics and display stay in sync
-        const dayAtt2=attendance[key]||(attendance[key]={});
-        if(dayAtt2[String(s.id)]!==undefined&&dayAtt2[compositeKey]===undefined){
-          dayAtt2[compositeKey]=dayAtt2[String(s.id)];
-          delete dayAtt2[String(s.id)];
-          if(lessonCosts[key]){
-            const p=String(s.id);
-            Object.keys(lessonCosts[key]).forEach(k=>{
-              if(k===p||k.startsWith(p+'_')){
-                lessonCosts[key][compositeKey+k.slice(p.length)]=lessonCosts[key][k];
-                delete lessonCosts[key][k];
-              }
-            });
-          }
-        }
-        attKey=compositeKey;
-      }
-      pairs.push({s,sc:assignedSc||null,attKey,isExtra,dayAssigned:!!assignedSc});
+      pairs.push({s,sc:assignedSc||null,attKey:String(s.id),isExtra,dayAssigned:!!assignedSc});
     }
   };
   dateEnrolledStudents.forEach(s=>addPairs(s,false));
@@ -5857,14 +5730,14 @@ function renderAttendance(){
         :hasPromo&&!sub
         ?`<span style="font-size:11px;color:var(--ink-l)"><s style="opacity:.5">${basePrice.toLocaleString('ru')}</s> <b style="color:#E07800">${promoPrice.toLocaleString('ru')} ₽</b> 🏷️</span>`
         :`<span style="font-size:11px;color:var(--ink-l)">${(sub?subPerLesson:basePrice).toLocaleString('ru')} ₽/зан.</span>`;
-      const isViaSub=!!(lessonCosts[key]||{})[attKey+'_via_sub'];
-      const activeSubs=getActiveSubsForStudent(sid);
+      const isViaSub=!!(lessonCosts[key]||{})[attKey+K_VIA_SUB];
+      const activeSubs=(getSubs(sid)).filter(s=>s.total-s.used>0);
 
       // Group assignment control (admin only)
       let groupCtrl='';
       if(currentRole==='admin'){
         if(!sc&&dayActiveScheds.length){
-          const opts=dayActiveScheds.map(tsc=>`<option value="${tsc.id}">${tsc.name}${tsc.time?' · '+tsc.time:''}</option>`).join('');
+          const opts=dayActiveScheds.map(tsc=>`<option value="${tsc.id}">${esc(tsc.name)}${tsc.time?' · '+esc(tsc.time):''}</option>`).join('');
           groupCtrl=`<select onchange="assignToGroup(${sid},this.value)" style="margin-top:4px;font-size:11px;padding:2px 6px;border:1px solid var(--cream-d);border-radius:6px;background:white;color:var(--ink);cursor:pointer;max-width:200px">
             <option value="">→ Перенести в группу</option>${opts}</select>`;
         } else if(dayAssigned){
@@ -5875,7 +5748,7 @@ function renderAttendance(){
       return `<div class="att-student-row" style="border-left:3px solid ${isExtra?'var(--yel-d)':'var(--mint-d)'};padding-left:11px;background:linear-gradient(90deg,${isExtra?'#FFFDF0':'#F0FFF8'},var(--cream))">
         <div class="stu-ava" style="background:${s.color}">${s.emoji}</div>
         <div class="att-student-name" style="flex:1">
-          <div style="display:flex;align-items:center;gap:7px">${s.name} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:7px">${esc(s.name)} ${subBadge}${isExtra?'<span style="font-size:10px;color:var(--yel-d);font-weight:700">ранее отмечен</span>':''}</div>
           ${groupCtrl?`<div>${groupCtrl}</div>`:''}
         </div>
         ${currentRole==='admin'?`<div style="margin-right:10px;text-align:right">${priceHint}</div>`:''}
@@ -5894,7 +5767,7 @@ function renderAttendance(){
       return t(a.sc).localeCompare(t(b.sc));
     });
     for(const {sc,rows} of sortedGroups){
-      html+=`<div class="att-group-hdr">${sc.name}<span>${[sc.time,sc.teacher].filter(Boolean).join(' · ')}</span></div>`;
+      html+=`<div class="att-group-hdr">${esc(sc.name)}<span>${[sc.time,sc.teacher].filter(Boolean).map(esc).join(' · ')}</span></div>`;
       html+=rows.map(studentRow).join('');
     }
     document.getElementById('att-list').innerHTML=html;
@@ -5903,18 +5776,18 @@ function renderAttendance(){
   const dayAttObj=attendance[key]||{};
   const p=Object.entries(dayAttObj).filter(([k,v])=>v==='p'&&!String(k).includes('_')).length;
   const a=Object.entries(dayAttObj).filter(([k,v])=>v==='a'&&!String(k).includes('_')).length;
-  const enrolledToday=students.filter(s=>(dateEnrollments[s.id]||[]).includes(key)).length;
+  const enrolledToday=students.filter(s=>(getDateEnrolls(s.id)).includes(key)).length;
   let totalIncome=0,subIncome=0,singleIncome=0,subCount=0;
   Object.entries(dayAttObj).forEach(([k,v])=>{
     if(String(k).includes('_')||v!=='p')return;
     const sid=sidFromAttKey(k);
     const costs=lessonCosts[key]||{};
     const storedCost=costs[k]!==undefined?+costs[k]:effectivePrice(sid);
-    if(costs[k+'_via_sub']){
+    if(costs[k+K_VIA_SUB]){
       subCount++;
       let lessonCost=costs[k]!==undefined?+costs[k]:0;
-      if(!lessonCost&&costs[k+'_sub_price']&&costs[k+'_sub_total'])
-        lessonCost=+costs[k+'_sub_price']/+costs[k+'_sub_total'];
+      if(!lessonCost&&costs[k+K_SUB_PRICE]&&costs[k+K_SUB_TOTAL])
+        lessonCost=+costs[k+K_SUB_PRICE]/+costs[k+K_SUB_TOTAL];
       if(!lessonCost){const sub=getActiveSub(sid);lessonCost=sub&&sub.total>0?sub.price/sub.total:0;}
       subIncome+=lessonCost;
     } else { singleIncome+=storedCost; }
@@ -5938,29 +5811,8 @@ function renderAttendance(){
 
 // Helper: get active subscription for student (first with remaining sessions)
 function getActiveSub(sid){
-  const personal = (subscriptions[sid]||[]).find(s=>s.total-s.used>0);
-  if(personal) return personal;
-  return Object.values(sharedSubs).find(s=>s.members&&s.members.some(m=>+m===+sid)&&s.total-s.used>0)||null;
-}
-
-// Returns [{sub, ref}] — ref is numeric index (personal) or 'ss:id' (shared)
-function getActiveSubsForStudent(sid){
-  const personal=(subscriptions[sid]||[]).map((s,i)=>({sub:s,ref:i})).filter(x=>x.sub.total-x.sub.used>0);
-  const shared=Object.values(sharedSubs).filter(s=>s.members&&s.members.some(m=>+m===+sid)&&s.total-s.used>0).map(s=>({sub:s,ref:'ss:'+s.id}));
-  return [...personal,...shared];
-}
-
-// Look up sub object by ref (number → personal, 'ss:id' → shared)
-function getSubByRef(sid, ref){
-  if(ref===undefined||ref===null) return null;
-  const r=String(ref);
-  if(r.startsWith('ss:')) return sharedSubs[r.slice(3)]||null;
-  return (subscriptions[sid]||[])[+r]||null;
-}
-
-function hasAnySub(sid){
-  if((subscriptions[sid]||[]).length>0) return true;
-  return Object.values(sharedSubs).some(x=>x.members&&x.members.some(m=>+m===+sid));
+  const subs = getSubs(sid);
+  return subs.find(s=>s.total-s.used>0) || null;
 }
 
 // Helper: effective lesson price for a student (учитывает акцию если нет абонемента)
@@ -6054,48 +5906,16 @@ function lsSave_unused_remove(){}
 function assignToGroup(sid, scId){
   if(!scId)return;
   const key=fmtDate(attDate);
-  const scIdInt=parseInt(scId);
-  const plainKey=String(sid);
-  const compositeKey=`${sid}:${scIdInt}`;
-  // Migrate existing plain-key attendance → composite so reports attribute correctly
-  if(attendance[key]&&attendance[key][plainKey]!==undefined){
-    attendance[key][compositeKey]=attendance[key][plainKey];
-    delete attendance[key][plainKey];
-  }
-  if(lessonCosts[key]){
-    Object.keys(lessonCosts[key]).forEach(k=>{
-      if(k===plainKey||k.startsWith(plainKey+'_')){
-        lessonCosts[key][compositeKey+k.slice(plainKey.length)]=lessonCosts[key][k];
-        delete lessonCosts[key][k];
-      }
-    });
-  }
   if(!dayAssignments[key])dayAssignments[key]={};
-  dayAssignments[key][plainKey]=scIdInt;
+  dayAssignments[key][String(sid)]=parseInt(scId);
   persist();
   renderAttendance();
 }
 
 function removeGroupAssignment(sid){
   const key=fmtDate(attDate);
-  const scIdInt=(dayAssignments[key]||{})[String(sid)];
-  if(scIdInt===undefined)return;
-  const compositeKey=`${sid}:${scIdInt}`;
-  const plainKey=String(sid);
-  // Migrate composite → plain on removal
-  if(attendance[key]&&attendance[key][compositeKey]!==undefined){
-    attendance[key][plainKey]=attendance[key][compositeKey];
-    delete attendance[key][compositeKey];
-  }
-  if(lessonCosts[key]){
-    Object.keys(lessonCosts[key]).forEach(k=>{
-      if(k===compositeKey||k.startsWith(compositeKey+'_')){
-        lessonCosts[key][plainKey+k.slice(compositeKey.length)]=lessonCosts[key][k];
-        delete lessonCosts[key][k];
-      }
-    });
-  }
-  delete dayAssignments[key][plainKey];
+  if(!dayAssignments[key])return;
+  delete dayAssignments[key][String(sid)];
   if(!Object.keys(dayAssignments[key]).length)delete dayAssignments[key];
   persist();
   renderAttendance();
@@ -6104,17 +5924,16 @@ function removeGroupAssignment(sid){
 let _subSelectCb=null;
 
 function openSubSelectModal(sid, callback){
-  const active=getActiveSubsForStudent(sid);
+  const subs=getSubs(sid);
+  const active=subs.map((s,i)=>({...s,idx:i})).filter(s=>s.total-s.used>0);
   if(!active.length){toast('⚠️ Нет активного абонемента');return;}
-  if(active.length===1){callback(active[0].ref);return;}
+  if(active.length===1){callback(active[0].idx);return;}
   _subSelectCb=callback;
-  document.getElementById('m-sub-select-list').innerHTML=active.map(x=>{
-    const s=x.sub, ref=x.ref;
+  document.getElementById('m-sub-select-list').innerHTML=active.map(s=>{
     const left=s.total-s.used;
     const per=s.total>0?Math.round(s.price/s.total):0;
-    const sharedLabel=String(ref).startsWith('ss:')?` <span style="font-size:11px;font-weight:400;color:var(--ink-l)">👨‍👩‍👧 общий</span>`:'';
-    return `<button onclick="selectSub(${JSON.stringify(ref)})" style="width:100%;text-align:left;padding:12px 14px;background:var(--cream);border:2px solid transparent;border-radius:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--lav-d)'" onmouseout="this.style.borderColor='transparent'">
-      <div style="font-weight:700;font-size:14px">${esc(s.groupName||'Абонемент')}${sharedLabel}</div>
+    return `<button onclick="selectSub(${s.idx})" style="width:100%;text-align:left;padding:12px 14px;background:var(--cream);border:2px solid transparent;border-radius:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--lav-d)'" onmouseout="this.style.borderColor='transparent'">
+      <div style="font-weight:700;font-size:14px">${esc(s.groupName||'Абонемент')}</div>
       <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Осталось: <b>${left}</b> из ${s.total} · ${per.toLocaleString('ru')} ₽/зан.</div>
     </button>`;
   }).join('');
@@ -6130,19 +5949,19 @@ function doSwitchToSub(sid, attKey, newSubIdx){
   const key=fmtDate(attDate);
   if(!lessonCosts[key])lessonCosts[key]={};
   const costs=lessonCosts[key];
+  const subs=getSubs(sid);
   // Return lesson to previous sub if any
-  const oldIdx=costs[attKey+'_subIdx'];
-  const oldSub=getSubByRef(sid,oldIdx);
-  if(oldSub&&oldSub.used>0)oldSub.used--;
+  const oldIdx=costs[attKey+K_SUB_IDX];
+  if(oldIdx!==undefined&&subs[oldIdx]&&subs[oldIdx].used>0)subs[oldIdx].used--;
   // Apply to new sub
-  const sub=getSubByRef(sid,newSubIdx);
+  const sub=subs[newSubIdx];
   if(!sub||sub.total-sub.used<=0){toast('⚠️ В абонементе нет занятий');return;}
   sub.used++;
   const perLesson=sub.total>0?sub.price/sub.total:0;
-  costs[attKey+'_subIdx']=newSubIdx;
-  costs[attKey+'_via_sub']=true;
-  costs[attKey+'_sub_price']=sub.price;
-  costs[attKey+'_sub_total']=sub.total;
+  costs[attKey+K_SUB_IDX]=newSubIdx;
+  costs[attKey+K_VIA_SUB]=true;
+  costs[attKey+K_SUB_PRICE]=sub.price;
+  costs[attKey+K_SUB_TOTAL]=sub.total;
   costs[attKey]=perLesson;
   persist();
   renderAttendance();
@@ -6162,17 +5981,17 @@ function markAtt(sid, mark, btn, attKey){
   if(prev===mark){
     delete attendance[actualKey][attKey];
     if(mark==='p'){
-      const subMeta=(lessonCosts[actualKey]||{})[attKey+'_subIdx'];
+      const subMeta=(lessonCosts[actualKey]||{})[attKey+K_SUB_IDX];
       if(subMeta!==undefined){
-        const sub=getSubByRef(sid,subMeta);
-        if(sub&&sub.used>0)sub.used--;
+        const subs=getSubs(sid);
+        if(subs[subMeta]&&subs[subMeta].used>0)subs[subMeta].used--;
         if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
-        delete lessonCosts[actualKey][attKey+'_subIdx'];
-        delete lessonCosts[actualKey][attKey+'_via_sub'];
+        delete lessonCosts[actualKey][attKey+K_SUB_IDX];
+        delete lessonCosts[actualKey][attKey+K_VIA_SUB];
       }
-      if((lessonCosts[actualKey]||{})[attKey+'_auto']){
+      if((lessonCosts[actualKey]||{})[attKey+K_AUTO]){
         delete lessonCosts[actualKey][attKey];
-        delete lessonCosts[actualKey][attKey+'_auto'];
+        delete lessonCosts[actualKey][attKey+K_AUTO];
       }
     }
   } else {
@@ -6180,24 +5999,25 @@ function markAtt(sid, mark, btn, attKey){
       if(isTrialStudent){
         if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
         lessonCosts[actualKey][attKey]=student.trialAmount||0;
-        lessonCosts[actualKey][attKey+'_auto']=true;
-        lessonCosts[actualKey][attKey+'_trial']=true;
+        lessonCosts[actualKey][attKey+K_AUTO]=true;
+        lessonCosts[actualKey][attKey+K_TRIAL]=true;
       } else {
-        const activeSubs=getActiveSubsForStudent(sid);
+        const allSubs=getSubs(sid);
+        const activeSubs=allSubs.filter(s=>s.total-s.used>0);
         if(activeSubs.length>=2){
           // Multiple active subs — ask which one to use
-          openSubSelectModal(sid,(subRef)=>{
-            const sub=getSubByRef(sid,subRef);
+          openSubSelectModal(sid,(subIdx)=>{
+            const sub=allSubs[subIdx];
             if(!sub)return;
             sub.used++;
             const perLesson=sub.total>0?sub.price/sub.total:0;
             if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
-            lessonCosts[actualKey][attKey+'_subIdx']=subRef;
-            lessonCosts[actualKey][attKey+'_via_sub']=true;
-            lessonCosts[actualKey][attKey+'_sub_price']=sub.price;
-            lessonCosts[actualKey][attKey+'_sub_total']=sub.total;
+            lessonCosts[actualKey][attKey+K_SUB_IDX]=subIdx;
+            lessonCosts[actualKey][attKey+K_VIA_SUB]=true;
+            lessonCosts[actualKey][attKey+K_SUB_PRICE]=sub.price;
+            lessonCosts[actualKey][attKey+K_SUB_TOTAL]=sub.total;
             lessonCosts[actualKey][attKey]=perLesson;
-            lessonCosts[actualKey][attKey+'_auto']=true;
+            lessonCosts[actualKey][attKey+K_AUTO]=true;
             if(!attendance[actualKey])attendance[actualKey]={};
             attendance[actualKey][attKey]='p';
             persist();renderAttendance();
@@ -6205,41 +6025,42 @@ function markAtt(sid, mark, btn, attKey){
           });
           return; // attendance will be set inside callback
         }
-        const subEntry=activeSubs[0]||null;
-        if(subEntry){
-          subEntry.sub.used++;
-          const perLesson=subEntry.sub.total>0?subEntry.sub.price/subEntry.sub.total:0;
+        const sub=activeSubs[0]||null;
+        if(sub){
+          sub.used++;
+          const subIdx=allSubs.indexOf(sub);
+          const perLesson=sub.total>0?sub.price/sub.total:0;
           if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
-          lessonCosts[actualKey][attKey+'_subIdx']=subEntry.ref;
-          lessonCosts[actualKey][attKey+'_via_sub']=true;
-          lessonCosts[actualKey][attKey+'_sub_price']=subEntry.sub.price;
-          lessonCosts[actualKey][attKey+'_sub_total']=subEntry.sub.total;
+          lessonCosts[actualKey][attKey+K_SUB_IDX]=subIdx;
+          lessonCosts[actualKey][attKey+K_VIA_SUB]=true;
+          lessonCosts[actualKey][attKey+K_SUB_PRICE]=sub.price;
+          lessonCosts[actualKey][attKey+K_SUB_TOTAL]=sub.total;
           lessonCosts[actualKey][attKey]=perLesson;
-          lessonCosts[actualKey][attKey+'_auto']=true;
+          lessonCosts[actualKey][attKey+K_AUTO]=true;
         } else {
           if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
           if(!lessonCosts[actualKey][attKey]){
             const baseP=effectivePrice(sid,true);
             const promoP=effectivePrice(sid);
             lessonCosts[actualKey][attKey]=promoP;
-            lessonCosts[actualKey][attKey+'_auto']=true;
+            lessonCosts[actualKey][attKey+K_AUTO]=true;
             if(activePromo&&activePromo.type&&promoP!==baseP){
-              lessonCosts[actualKey][attKey+'_promo']=activePromo.name||'Акция';
-              lessonCosts[actualKey][attKey+'_base_price']=baseP;
+              lessonCosts[actualKey][attKey+K_PROMO]=activePromo.name||'Акция';
+              lessonCosts[actualKey][attKey+K_BASE_PRICE]=baseP;
             }
           }
         }
       }
     }
     if(mark==='a'&&prev==='p'){
-      const subMeta=(lessonCosts[actualKey]||{})[attKey+'_subIdx'];
+      const subMeta=(lessonCosts[actualKey]||{})[attKey+K_SUB_IDX];
       if(subMeta!==undefined){
-        const sub=getSubByRef(sid,subMeta);
-        if(sub&&sub.used>0)sub.used--;
-        delete lessonCosts[actualKey][attKey+'_subIdx'];
-        delete lessonCosts[actualKey][attKey+'_via_sub'];
+        const subs=getSubs(sid);
+        if(subs[subMeta]&&subs[subMeta].used>0)subs[subMeta].used--;
+        delete lessonCosts[actualKey][attKey+K_SUB_IDX];
+        delete lessonCosts[actualKey][attKey+K_VIA_SUB];
         delete lessonCosts[actualKey][attKey];
-        delete lessonCosts[actualKey][attKey+'_auto'];
+        delete lessonCosts[actualKey][attKey+K_AUTO];
       }
     }
     attendance[actualKey][attKey]=mark;
@@ -6256,30 +6077,30 @@ function toggleSubMark(sid, attKey){
   const key=fmtDate(attDate);
   if(!lessonCosts[key])lessonCosts[key]={};
   const costs=lessonCosts[key];
-  const isViaSub=costs[attKey+'_via_sub'];
+  const isViaSub=costs[attKey+K_VIA_SUB];
   if(isViaSub){
-    const subIdx=costs[attKey+'_subIdx'];
-    const sub=getSubByRef(sid,subIdx);
-    if(sub&&sub.used>0)sub.used--;
-    delete costs[attKey+'_subIdx']; delete costs[attKey+'_via_sub'];
-    delete costs[attKey+'_sub_price']; delete costs[attKey+'_sub_total'];
+    const subIdx=costs[attKey+K_SUB_IDX];
+    const subs=getSubs(sid);
+    if(subIdx!==undefined&&subs[subIdx]&&subs[subIdx].used>0)subs[subIdx].used--;
+    delete costs[attKey+K_SUB_IDX]; delete costs[attKey+K_VIA_SUB];
+    delete costs[attKey+K_SUB_PRICE]; delete costs[attKey+K_SUB_TOTAL];
     const baseP=effectivePrice(sid,true);
     const promoP=effectivePrice(sid);
-    costs[attKey]=promoP; costs[attKey+'_auto']=true;
+    costs[attKey]=promoP; costs[attKey+K_AUTO]=true;
     if(activePromo&&activePromo.type&&promoP!==baseP){
-      costs[attKey+'_promo']=activePromo.name||'Акция';
-      costs[attKey+'_base_price']=baseP;
+      costs[attKey+K_PROMO]=activePromo.name||'Акция';
+      costs[attKey+K_BASE_PRICE]=baseP;
     }
     toast('💵 Переключено на разовое');
   } else {
-    const applyToggleSub=(subRef)=>{
-      const sub=getSubByRef(sid,subRef);
+    const applyToggleSub=(subIdx)=>{
+      const sub=(getSubs(sid))[subIdx];
       if(!sub||sub.total-sub.used<=0){toast('⚠️ В абонементе нет занятий');return;}
-      delete costs[attKey+'_promo']; delete costs[attKey+'_base_price']; delete costs[attKey+'_auto'];
+      delete costs[attKey+K_PROMO]; delete costs[attKey+K_BASE_PRICE]; delete costs[attKey+K_AUTO];
       sub.used++;
       const perLesson=sub.total>0?sub.price/sub.total:0;
-      costs[attKey+'_subIdx']=subRef; costs[attKey+'_via_sub']=true;
-      costs[attKey+'_sub_price']=sub.price; costs[attKey+'_sub_total']=sub.total;
+      costs[attKey+K_SUB_IDX]=subIdx; costs[attKey+K_VIA_SUB]=true;
+      costs[attKey+K_SUB_PRICE]=sub.price; costs[attKey+K_SUB_TOTAL]=sub.total;
       costs[attKey]=perLesson;
       persist();renderAttendance();
       toast(`🎫 Переключено на абонемент · осталось ${sub.total-sub.used}`);
@@ -6311,14 +6132,15 @@ function countLessons(sid){
     myKeys.forEach(attKey=>{
       total++;
       const costs=lessonCosts[dateKey]||{};
-      if(costs[attKey+'_via_sub']){
+      if(costs[attKey+K_VIA_SUB]){
         viaSub++;
         let perLesson=costs[attKey]!==undefined?+costs[attKey]:0;
-        if(!perLesson&&costs[attKey+'_sub_price']&&costs[attKey+'_sub_total'])
-          perLesson=+costs[attKey+'_sub_price']/+costs[attKey+'_sub_total'];
+        if(!perLesson&&costs[attKey+K_SUB_PRICE]&&costs[attKey+K_SUB_TOTAL])
+          perLesson=+costs[attKey+K_SUB_PRICE]/+costs[attKey+K_SUB_TOTAL];
         if(!perLesson){
-          const subIdx=costs[attKey+'_subIdx'];
-          const sub=getSubByRef(sid,subIdx);
+          const subIdx=costs[attKey+K_SUB_IDX];
+          const subs=getSubs(sid);
+          const sub=subIdx!==undefined?subs[subIdx]:null;
           perLesson=sub&&sub.total>0?sub.price/sub.total:0;
         }
         subRevProrataTotal+=perLesson;
@@ -6341,17 +6163,17 @@ function fixLegacySubCosts(){
   let fixed=0;
   Object.entries(lessonCosts).forEach(([dateKey,dayCosts])=>{
     Object.keys(dayCosts).forEach(k=>{
-      if(!k.endsWith('_via_sub'))return;
-      const attKey=k.slice(0,-'_via_sub'.length); // 'sid' or 'sid:scId'
+      if(!k.endsWith(K_VIA_SUB))return;
+      const attKey=k.slice(0,-K_VIA_SUB.length); // 'sid' or 'sid:scId'
       const sid=sidFromAttKey(attKey);
       const cur=dayCosts[attKey];
       if(cur!==undefined&&cur>0)return;
-      if(dayCosts[attKey+'_sub_price']&&dayCosts[attKey+'_sub_total']){
-        dayCosts[attKey]=+dayCosts[attKey+'_sub_price']/+dayCosts[attKey+'_sub_total'];
+      if(dayCosts[attKey+K_SUB_PRICE]&&dayCosts[attKey+K_SUB_TOTAL]){
+        dayCosts[attKey]=+dayCosts[attKey+K_SUB_PRICE]/+dayCosts[attKey+K_SUB_TOTAL];
         fixed++;
       } else {
-        const subIdx=dayCosts[attKey+'_subIdx'];
-        const subs=subscriptions[sid]||[];
+        const subIdx=dayCosts[attKey+K_SUB_IDX];
+        const subs=getSubs(sid);
         const sub=subIdx!==undefined?subs[subIdx]:null;
         if(sub&&sub.total>0){dayCosts[attKey]=sub.price/sub.total;fixed++;}
       }
@@ -6359,6 +6181,122 @@ function fixLegacySubCosts(){
   });
   if(fixed>0){persist();toast(`✅ Исправлено ${fixed} записей по абонементу`);renderPayments();}
   else toast('ℹ️ Старых нулевых записей не найдено');
+}
+
+// ══ PRICE LIST ══════════════════════════════════════════════
+function renderPriceList(){
+  const pl = priceList;
+  const isAdm = isAdmin();
+  const colHeaders = ['Разовое','Аб. 4','Аб. 8','Прод. 4','Прод. 8'];
+  const fields = ['single','sub4','sub8','renew4','renew8'];
+
+  const valCell = (ci, ri, field, val) => {
+    const display = val != null ? val.toLocaleString('ru') + ' ₽' : '—';
+    if(!isAdm) return `<td><span class="price-val">${display}</span></td>`;
+    return `<td><span class="price-val editable" onclick="startEditPrice(this,${ci},${ri},'${field}')">${display}</span></td>`;
+  };
+
+  const cats = pl.categories.map((cat, ci) => `
+    <div class="price-category">
+      <div class="price-cat-header ${cat.color}">
+        <span style="font-size:22px">${cat.emoji}</span>
+        <span>${cat.name}</span>
+        ${cat.note ? `<span style="font-weight:400;font-size:13px;opacity:.85">${cat.note}</span>` : ''}
+      </div>
+      <table class="price-table">
+        <thead><tr>
+          <th>Направление</th>
+          ${colHeaders.map(h=>`<th>${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${cat.rows.map((row, ri) => `<tr>
+            <td>${isAdm
+              ? `<span class="price-val editable" onclick="startEditName(this,${ci},${ri})">${row.name}</span>`
+              : row.name}</td>
+            ${fields.map(f => valCell(ci, ri, f, row[f])).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+
+  const trialDisplay = isAdm
+    ? `<span class="price-val editable" onclick="startEditTrial(this)"
+        style="font-family:'Caveat',cursive;font-size:22px;font-weight:700;color:var(--peach-d)">${pl.trialPrice} ₽</span>`
+    : `${pl.trialPrice} ₽`;
+
+  document.getElementById('pricelist-content').innerHTML = `
+    <div class="price-header-banner">
+      <div style="color:white">
+        <div style="font-family:'Caveat',cursive;font-size:28px;font-weight:700">ПЕРВОЕ ПОСЕЩЕНИЕ</div>
+        <div style="font-size:13px;opacity:.85">любого направления · ${pl.trialNote}</div>
+      </div>
+      <div class="price-trial-badge">${trialDisplay}</div>
+    </div>
+    ${cats}
+    <div class="price-notes">
+      <span>* Первое посещение за ${pl.trialPrice} ₽ не распространяется на индивидуальные занятия</span>
+      <span>** ${pl.subNote}</span>
+      <span>*** ${pl.renewNote}</span>
+    </div>`;
+}
+
+function startEditPrice(span, ci, ri, field){
+  if(!isAdmin()) return;
+  const cur = priceList.categories[ci].rows[ri][field];
+  const input = document.createElement('input');
+  input.type='number'; input.min='0';
+  input.value = cur != null ? cur : '';
+  input.placeholder='—';
+  input.style.cssText='width:72px;text-align:center;padding:3px 6px;border:2px solid var(--lav-d);border-radius:6px;font-weight:700;font-family:Nunito,sans-serif;font-size:14px';
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    priceList.categories[ci].rows[ri][field] = input.value.trim()==='' ? null : +input.value;
+    lsSave('priceList', priceList);
+    renderPriceList();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); if(e.key==='Escape') renderPriceList(); });
+}
+
+function startEditName(span, ci, ri){
+  if(!isAdmin()) return;
+  const input = document.createElement('input');
+  input.type='text'; input.value=priceList.categories[ci].rows[ri].name;
+  input.style.cssText='width:200px;padding:3px 6px;border:2px solid var(--lav-d);border-radius:6px;font-family:Nunito,sans-serif;font-size:14px';
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    if(input.value.trim()) priceList.categories[ci].rows[ri].name = input.value.trim();
+    lsSave('priceList', priceList);
+    renderPriceList();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); if(e.key==='Escape') renderPriceList(); });
+}
+
+function startEditTrial(span){
+  if(!isAdmin()) return;
+  const input = document.createElement('input');
+  input.type='number'; input.min='0'; input.value=priceList.trialPrice;
+  input.style.cssText='width:80px;text-align:center;padding:3px 8px;border:2px solid var(--peach-d);border-radius:8px;font-family:Caveat,cursive;font-size:20px;font-weight:700';
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    priceList.trialPrice = +input.value || 0;
+    lsSave('priceList', priceList);
+    renderPriceList();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); });
+}
+
+function resetPriceList(){
+  if(!confirm('Сбросить прайс к значениям по умолчанию?')) return;
+  priceList = JSON.parse(JSON.stringify(DEFAULT_PRICE_LIST));
+  lsSave('priceList', priceList);
+  renderPriceList();
+  toast('✅ Прайс сброшен');
 }
 
 function renderPayments(){
@@ -6380,9 +6318,11 @@ function renderPayments(){
   const paySortSel=document.getElementById('pay-sort-sel');
   if(paySortSel) paySortSel.value=_paySort;
 
+  // Pre-compute once to avoid O(N²) countLessons() calls in sort + map
+  const lessonsMap = new Map(students.map(s=>[s.id, countLessons(s.id)]));
+
   // Sort students
   let sortedStudents=[...students];
-  const lessonsMap=new Map(students.map(s=>[s.id,countLessons(s.id)]));
   if(_paySort==='att_desc') sortedStudents.sort((a,b)=>lessonsMap.get(b.id).total-lessonsMap.get(a.id).total);
   else if(_paySort==='att_asc') sortedStudents.sort((a,b)=>lessonsMap.get(a.id).total-lessonsMap.get(b.id).total);
   else sortedStudents.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
@@ -6390,14 +6330,13 @@ function renderPayments(){
   // ── Per-student rows ──
   document.getElementById('payments-tbody').innerHTML=sortedStudents.map(s=>{
     const {total, viaSub, single, revenue, subRevProrata} = lessonsMap.get(s.id);
-    const hasSubs = hasAnySub(s.id);
+    const hasSubs = (getSubs(s.id)).length > 0;
     if(total === 0 && !hasSubs) return '';
-    const activeSubs = getActiveSubsForStudent(s.id).map(x=>x.sub);
+    const activeSubs = (getSubs(s.id)).filter(sb=>sb.total-sb.used>0);
     const subBadge = activeSubs.length
       ? activeSubs.map(sb=>{
           const perLesson = sb.total>0 ? Math.round(sb.price/sb.total) : 0;
-          const sharedMark = sb.members ? ' 👨‍👩‍👧' : '';
-          return `<span class="badge purple" title="${sb.groupName}${sharedMark}: ${sb.total-sb.used} ост. · ${perLesson} ₽/зан.">🎫${sb.total-sb.used}</span>`;
+          return `<span class="badge purple" title="${sb.groupName}: ${sb.total-sb.used} ост. · ${perLesson} ₽/зан.">🎫${sb.total-sb.used}</span>`;
         }).join(' ')
       : '<span style="color:var(--ink-l);font-size:12px">—</span>';
 
@@ -6414,7 +6353,7 @@ function renderPayments(){
       <td><div style="display:flex;align-items:center;gap:8px">
         <div style="background:${s.color};width:26px;height:26px;font-size:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;">${s.emoji}</div>
         <div>
-          <div style="font-weight:700">${s.name}</div>
+          <div style="font-weight:700">${esc(s.name)}</div>
           <div style="font-size:11px;color:var(--ink-l)">${s.pricePerLesson>0?s.pricePerLesson.toLocaleString('ru')+' ₽/зан.':'по умолч.'}</div>
         </div>
       </div></td>
@@ -6449,16 +6388,16 @@ function renderPayments(){
   if(mobStudCards){
     let mobTotalRev=0;
     mobStudCards.innerHTML = sortedStudents.map(s=>{
-      const {total,viaSub,single,revenue,subRevProrata} = countLessons(s.id);
-      if(total === 0 && !hasAnySub(s.id)) return '';
+      const {total,viaSub,single,revenue,subRevProrata} = lessonsMap.get(s.id);
+      if(total === 0 && !(getSubs(s.id)).length) return '';
       const totalRev = Math.round(revenue+subRevProrata);
       mobTotalRev += totalRev;
-      const activeSubs = getActiveSubsForStudent(s.id).map(x=>x.sub);
+      const activeSubs = (getSubs(s.id)).filter(sb=>sb.total-sb.used>0);
       const subText = activeSubs.length ? activeSubs.map(sb=>`🎫${sb.total-sb.used}`).join(' ') : '—';
       return `<div class="pay-card">
         <div class="pay-card-header">
           <div style="background:${s.color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${s.emoji}</div>
-          <div class="pay-card-name">${s.name}<br><span style="font-size:11px;color:var(--ink-l);font-weight:400">${s.pricePerLesson>0?s.pricePerLesson.toLocaleString('ru')+' ₽/зан.':'по умолч.'}</span></div>
+          <div class="pay-card-name">${esc(s.name)}<br><span style="font-size:11px;color:var(--ink-l);font-weight:400">${s.pricePerLesson>0?s.pricePerLesson.toLocaleString('ru')+' ₽/зан.':'по умолч.'}</span></div>
           <div class="pay-card-total">${totalRev.toLocaleString('ru')} ₽</div>
         </div>
         <div class="pay-card-row"><span class="pay-card-label">Всего занятий</span><span class="pay-card-val"><span class="badge blue">${total}</span></span></div>
@@ -6515,13 +6454,15 @@ function renderPayments(){
           if(String(k).includes('_')||v!=='p')return;
           dayPresent++;
           const sid=+k;
-          if(costs[sid+'_via_sub']){
+          if(costs[sid+K_VIA_SUB]){
             dayViaSub++;
             let perL = costs[sid]!==undefined?+costs[sid]:0;
-            if(!perL && costs[sid+'_sub_price'] && costs[sid+'_sub_total'])
-              perL = +costs[sid+'_sub_price']/+costs[sid+'_sub_total'];
+            if(!perL && costs[sid+K_SUB_PRICE] && costs[sid+K_SUB_TOTAL])
+              perL = +costs[sid+K_SUB_PRICE]/+costs[sid+K_SUB_TOTAL];
             if(!perL){
-              const sub=getSubByRef(sid,costs[sid+'_subIdx']);
+              const subIdx=costs[sid+K_SUB_IDX];
+              const subs=getSubs(sid);
+              const sub=subIdx!==undefined?subs[subIdx]:null;
               perL=sub&&sub.total>0?sub.price/sub.total:0;
             }
             daySubInc += perL;
@@ -6585,11 +6526,11 @@ function renderPayments(){
               if(String(k).includes('_')||v!=='p')return;
               dp++;
               const sid=+k;
-              if(costs2[sid+'_via_sub']){
+              if(costs2[sid+K_VIA_SUB]){
                 dVS++;
                 let perL=costs2[sid]!==undefined?+costs2[sid]:0;
-                if(!perL&&costs2[sid+'_sub_price']&&costs2[sid+'_sub_total'])perL=+costs2[sid+'_sub_price']/+costs2[sid+'_sub_total'];
-                if(!perL){const sub=getSubByRef(sid,costs2[sid+'_subIdx']);perL=sub&&sub.total>0?sub.price/sub.total:0;}
+                if(!perL&&costs2[sid+K_SUB_PRICE]&&costs2[sid+K_SUB_TOTAL])perL=+costs2[sid+K_SUB_PRICE]/+costs2[sid+K_SUB_TOTAL];
+                if(!perL){const subIdx=costs2[sid+K_SUB_IDX];const subs=getSubs(sid);const sub=subIdx!==undefined?subs[subIdx]:null;perL=sub&&sub.total>0?sub.price/sub.total:0;}
                 dSubI+=perL;
               } else {
                 dSi++;
@@ -6662,34 +6603,18 @@ function renderPayments(){
   if(subsEl){
     const rows=[];
     students.forEach(s=>{
-      (subscriptions[s.id]||[]).forEach(sub=>{
+      (getSubs(s.id)).forEach((sub,i)=>{
         if(sub.total-sub.used<=0) return;
         const pct=Math.round(sub.used/sub.total*100);
         rows.push(`<div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-weight:700;font-size:12px">${esc(s.name)}</span>
+            <span style="font-weight:700;font-size:12px">${s.name}</span>
             <span style="font-family:'Caveat',cursive;font-size:16px;font-weight:700;color:var(--lav-d)">${sub.total-sub.used} ост.</span>
           </div>
-          <div style="font-size:11px;color:var(--ink-l);margin-bottom:4px">${esc(sub.groupName)}</div>
+          <div style="font-size:11px;color:var(--ink-l);margin-bottom:4px">${sub.groupName}</div>
           <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
         </div>`);
       });
-    });
-    // Shared subs (show once, listing all members)
-    const shownShared = new Set();
-    Object.values(sharedSubs).forEach(sub=>{
-      if(sub.total-sub.used<=0||shownShared.has(sub.id)) return;
-      shownShared.add(sub.id);
-      const pct=Math.round(sub.used/sub.total*100);
-      const memberNames=sub.members.map(mid=>{const st=students.find(x=>x.id===mid);return st?esc(st.name.split(' ')[0]):'?';}).join(', ');
-      rows.push(`<div style="margin-bottom:10px;border-left:3px solid var(--sky);padding-left:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-weight:700;font-size:12px">👨‍👩‍👧 ${memberNames}</span>
-          <span style="font-family:'Caveat',cursive;font-size:16px;font-weight:700;color:var(--lav-d)">${sub.total-sub.used} ост.</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink-l);margin-bottom:4px">${esc(sub.groupName)}</div>
-        <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
-      </div>`);
     });
     subsEl.innerHTML = rows.length ? rows.join('') : '<div style="color:var(--ink-l);font-size:12px;padding:6px 0">Нет активных абонементов</div>';
   }
@@ -6749,7 +6674,7 @@ function getRevenueInPeriod(from,to){
       if(cost==null)return;
       total+=cost;
       lessonCount++;
-      if(costs[key+'_via_sub'])subRev+=cost;
+      if(costs[key+K_VIA_SUB])subRev+=cost;
     });
   });
   // пробные занятия из карточек учеников
@@ -6818,7 +6743,7 @@ function getStudioLoad(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
       const entry=perSchedule.get(scId)||{present:0};
       if(status==='p')entry.present++;
@@ -6921,8 +6846,8 @@ function getRevenuePerTeacher(from,to){
   teachers.forEach(t=>teacherByName[t.name]=t.id);
 
   const result={};
-  teachers.forEach(t=>result[t.id]={id:t.id,name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
-  if(!result[0])result[0]={id:0,name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+  teachers.forEach(t=>result[t.id]={name:t.name,revenue:0,lessons:0,studentsTotal:0,salary:0});
+  if(!result[0])result[0]={name:'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
 
   // Build schedule lookup by id
   const scheduleMap={};
@@ -6951,7 +6876,7 @@ function getRevenuePerTeacher(from,to){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
 
       const entry=perSchedule.get(scId)||{revenue:0,count:0};
@@ -6966,7 +6891,7 @@ function getRevenuePerTeacher(from,to){
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
       const tid=teacherByName[tName]??0;
-      if(!result[tid])result[tid]={id:tid,name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
+      if(!result[tid])result[tid]={name:tName||'Без педагога',revenue:0,lessons:0,studentsTotal:0,salary:0};
       result[tid].revenue+=revenue;
       result[tid].lessons++;
       result[tid].studentsTotal+=count;
@@ -6981,7 +6906,7 @@ function openTeacherSalaryDetail(tid){
   const t=teachers.find(x=>x.id===tid); if(!t)return;
   const {from,to}=getRpDates();
   const DAY_MAP={'Пн':1,'Вт':2,'Ср':3,'Чт':4,'Пт':5,'Сб':6,'Вс':0};
-  const RU_DAYS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const RU_DAYS_SHORT=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
   const RU_MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 
   const scheduleMap={};
@@ -6989,16 +6914,18 @@ function openTeacherSalaryDetail(tid){
   const teacherByName={};
   teachers.forEach(x=>teacherByName[x.name]=x.id);
 
+  // Collect per-date entries for this teacher
   const dateBreakdown=[];
-  const groupStats={};
+  const groupStats={}; // scId -> {name, sessions, students, revenue, salary}
   let totalRevenue=0, totalSalary=0, totalSessions=0;
 
   Object.entries(attendance).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateStr,att])=>{
     if(!inPeriod(dateStr,from,to))return;
     const costs=lessonCosts[dateStr]||{};
     const dow=new Date(dateStr+'T12:00:00').getDay();
-    const perSchedule=new Map();
 
+    // Group present students by schedule -> same logic as getRevenuePerTeacher
+    const perSchedule=new Map();
     Object.entries(att).forEach(([key,status])=>{
       if(status!=='p'||String(key).includes('_'))return;
       let scId=null;
@@ -7009,46 +6936,51 @@ function openTeacherSalaryDetail(tid){
           const sc=scheduleMap[scid];
           return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
         });
-        scId=matched??(dayAssignments[dateStr]||{})[String(key)]??null;
+        scId=matched??null;
       }
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
-      if((teacherByName[tName]??0)!==tid)return;
+      if((teacherByName[tName]??0)!==tid)return; // only this teacher
       const entry=perSchedule.get(scId)||{revenue:0,count:0,students:[]};
       const cost=costs[key]??effectivePrice(sidFromAttKey(key));
-      entry.revenue+=cost; entry.count++;
+      entry.revenue+=cost;
+      entry.count++;
       const stu=students.find(x=>x.id===sidFromAttKey(key));
-      if(stu)entry.students.push({name:stu.name,cost,viaSub:!!(costs[key+'_via_sub'])});
+      if(stu)entry.students.push({name:stu.name,cost,viaSub:!!(costs[key+K_VIA_SUB])});
       perSchedule.set(scId,entry);
     });
 
     if(perSchedule.size===0)return;
     const d=new Date(dateStr);
-    const dateLabel=`${RU_DAYS[d.getDay()]}, ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
+    const dateLabel=`${RU_DAYS_SHORT[d.getDay()]}, ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
     const dayGroups=[];
     perSchedule.forEach(({revenue,count,students:stuList},scId)=>{
       if(count===0)return;
       const sc=scId!==null?scheduleMap[scId]:null;
       const gName=sc?sc.name:'—';
-      const sal=calculateTeacherSalary(count,sc&&/индивидуальн/i.test(sc.name));
+      const isInd=sc&&/индивидуальн/i.test(sc.name);
+      const sal=calculateTeacherSalary(count,isInd);
       totalRevenue+=revenue; totalSalary+=sal; totalSessions++;
       if(scId!==null){
         if(!groupStats[scId])groupStats[scId]={name:gName,sessions:0,students:0,revenue:0,salary:0};
-        groupStats[scId].sessions++; groupStats[scId].students+=count;
-        groupStats[scId].revenue+=revenue; groupStats[scId].salary+=sal;
+        groupStats[scId].sessions++;
+        groupStats[scId].students+=count;
+        groupStats[scId].revenue+=revenue;
+        groupStats[scId].salary+=sal;
       }
       dayGroups.push({gName,count,revenue,sal,stuList});
     });
     if(dayGroups.length)dateBreakdown.push({dateLabel,dayGroups});
   });
 
+  // Fill modal
   document.getElementById('mts-title').textContent=`💼 ${t.name}`;
   document.getElementById('mts-header').innerHTML=`
     <div style="background:${t.color};width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${t.avatar}</div>
     <div>
-      <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">${t.name}</div>
-      <div style="font-size:12px;color:var(--ink-l)">${t.role}</div>
-      <div style="font-size:12px;color:var(--ink-l);margin-top:2px">Период: ${from.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} — ${to.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</div>
+      <div style="font-family:'Caveat',cursive;font-size:20px;font-weight:700">${esc(t.name)}</div>
+      <div style="font-size:12px;color:var(--ink-l)">${esc(t.role)}</div>
+      <div style="font-size:12px;color:var(--ink-l);margin-top:2px">Период: ${getRpDates().from.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} — ${getRpDates().to.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</div>
     </div>`;
 
   const groups=Object.values(groupStats);
@@ -7057,22 +6989,22 @@ function openTeacherSalaryDetail(tid){
     <div style="display:flex;flex-direction:column;gap:5px">
     ${groups.map(g=>`
       <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--cream);border-radius:9px;font-size:13px">
-        <div style="flex:1;font-weight:600">${g.name}</div>
+        <div style="flex:1;font-weight:600">${esc(g.name)}</div>
         <span class="badge blue">${g.sessions} зан.</span>
         <span class="badge purple">${g.students} уч.</span>
         <span style="color:var(--mint-d);font-weight:700;min-width:60px;text-align:right">${Math.round(g.revenue).toLocaleString('ru')} ₽</span>
         <span style="color:var(--lav-d);font-weight:700;min-width:55px;text-align:right">${Math.round(g.salary).toLocaleString('ru')} ₽</span>
       </div>`).join('')}
-    </div>`:'<div style="font-size:13px;color:var(--ink-l)">Нет данных за период</div>';
+    </div>`:'';
 
   document.getElementById('mts-log').innerHTML=dateBreakdown.length?dateBreakdown.map(day=>`
     <div style="padding:9px 14px;border-bottom:1px solid var(--peach)">
       <div style="font-weight:700;font-size:13px;margin-bottom:6px">${day.dateLabel}</div>
       ${day.dayGroups.map(g=>`
         <div style="margin-bottom:5px">
-          <div style="font-size:12px;color:var(--ink-l);margin-bottom:3px">${g.gName} · ${g.count} уч. · выручка <b style="color:var(--mint-d)">${Math.round(g.revenue).toLocaleString('ru')} ₽</b> · зарплата <b style="color:var(--lav-d)">${Math.round(g.sal).toLocaleString('ru')} ₽</b></div>
+          <div style="font-size:12px;color:var(--ink-l);margin-bottom:3px">${esc(g.gName)} · ${g.count} уч. · выручка <b style="color:var(--mint-d)">${Math.round(g.revenue).toLocaleString('ru')} ₽</b> · зарплата <b style="color:var(--lav-d)">${Math.round(g.sal).toLocaleString('ru')} ₽</b></div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
-            ${g.stuList.map(s=>`<span style="background:var(--cream);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${s.name}${s.viaSub?' 🎫':''} · ${Math.round(s.cost).toLocaleString('ru')} ₽</span>`).join('')}
+            ${g.stuList.map(s=>`<span style="background:var(--cream);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${esc(s.name)}${s.viaSub?' 🎫':''} · ${Math.round(s.cost).toLocaleString('ru')} ₽</span>`).join('')}
           </div>
         </div>`).join('')}
     </div>`).join('')
@@ -7136,15 +7068,15 @@ function renderReports(){
   _cohortChurned=churnedSids;
 
   // ── Retention: ученики с 2+ абонементами
-  const withSubs=students.filter(s=>isStudentActive(s.id)&&hasAnySub(s.id));
-  const retained=students.filter(s=>isStudentActive(s.id)&&((subscriptions[s.id]||[]).length+(Object.values(sharedSubs).filter(x=>x.members&&x.members.some(m=>+m===+s.id)).length))>=2);
+  const withSubs=students.filter(s=>(getSubs(s.id)).length>0);
+  const retained=students.filter(s=>(getSubs(s.id)).length>=2);
   const retentionPct=withSubs.length>0?Math.round(retained.length/withSubs.length*100):0;
   const retGood=retentionPct>=75;
 
   // ── Конверсия пробного → абонемент
-  const trialStudentIds=new Set(students.filter(s=>isStudentActive(s.id)&&s.trialDate).map(s=>String(s.id)));
+  const trialStudentIds=new Set(students.filter(s=>s.trialDate).map(s=>String(s.id)));
   const trialConverted=students.filter(s=>
-    isStudentActive(s.id)&&trialStudentIds.has(String(s.id))&&hasAnySub(s.id)
+    trialStudentIds.has(String(s.id))&&(getSubs(s.id)).length>0
   ).length;
   const trialConvPct=trialStudentIds.size>0?Math.round(trialConverted/trialStudentIds.size*100):0;
   const trialConvGood=trialConvPct>=40;
@@ -7154,12 +7086,12 @@ function renderReports(){
   const singleVisitors=students.filter(s=>{
     const hasPres=Object.values(attendance).some(dayAtt=>
       Object.entries(dayAtt).some(([key,status])=>key.split(':')[0]===String(s.id)&&status==='p'));
-    const hasSub=hasAnySub(s.id);
+    const hasSub=(getSubs(s.id)).length>0;
     return hasPres&&!hasSub&&!trialStudentIds.has(String(s.id));
   });
   const singleConverted=students.filter(s=>{
     const wasSingle=singleVisitors.some(sv=>sv.id===s.id);
-    return wasSingle&&hasAnySub(s.id);
+    return wasSingle&&(getSubs(s.id)).length>0;
   }).length;
   const singleConvPct=singleVisitors.length>0?Math.round(singleConverted/Math.max(singleVisitors.length,1)*100):0;
 
@@ -7169,26 +7101,17 @@ function renderReports(){
   const subShareGood=subSharePct>=70;
   const revenuePerTeacher=teachers.length>0?Math.round(rev.total/teachers.length):0;
 
-  // LTV — на реальных данных
-  const periodMonths=Math.max((to-from)/(1000*60*60*24*30),0.5);
-  // ARPU: реальная выручка / активных учеников / месяцев периода
-  const arpu=activeNow.size>0?rev.total/activeNow.size/periodMonths:0;
-  // Lifetime через churn rate; fallback — фактический span удержания
-  const churnRate=activePrev.size>0?churned/activePrev.size:0;
-  const avgLifetime=churnRate>0?1/churnRate:(()=>{
-    const spans=students.filter(s=>isStudentActive(s.id)).map(s=>{
-      const first=getStudentFirstActivity(s.id);
-      const last=isStudentActive(s.id)?new Date():getStudentLastActivity(s.id);
-      if(!first||!last)return null;
-      return (last-first)/(1000*60*60*24*30);
-    }).filter(d=>d!==null&&d>0);
-    return spans.length>0?spans.reduce((a,b)=>a+b,0)/spans.length:12;
-  })();
-  const ltv=Math.round(arpu*avgLifetime);
-  // Для отображения в метрике (обратная совместимость)
+  // LTV
+  const durations=students.map(s=>{
+    const first=getStudentFirstActivity(s.id);
+    const last=getStudentLastActivity(s.id);
+    if(!first||!last)return null;
+    return (last-first)/(1000*60*60*24*30);
+  }).filter(d=>d!==null&&d>0);
+  const avgDuration=durations.length>0?durations.reduce((a,b)=>a+b,0)/durations.length:0;
   const allSubs=Object.values(subscriptions).flat();
   const avgSubPrice=allSubs.length>0?allSubs.reduce((a,b)=>a+(b.price||0),0)/allSubs.length:0;
-  const avgDuration=avgLifetime;
+  const ltv=Math.round(avgSubPrice*avgDuration);
 
   // CAC
   const periodKey=from.toISOString().slice(0,7);
@@ -7208,7 +7131,7 @@ function renderReports(){
 
   // ── Качество: средняя посещаемость
   let totalAttPct=0,attCount=0;
-  students.filter(s=>isStudentActive(s.id)).forEach(s=>{
+  students.forEach(s=>{
     const pct=parseFloat(getAttPct(s.id));
     if(!isNaN(pct)){totalAttPct+=pct;attCount++;}
   });
@@ -7217,7 +7140,7 @@ function renderReports(){
   // ── Рендерим блоки
 
   // KEY METRICS
-  const activeStudents=students.filter(s=>isStudentActive(s.id)).length;
+  const activeStudents=activeStudents().length;
   const archiveStudents=students.filter(s=>!isStudentActive(s.id)).length;
   document.getElementById('km-active').textContent=activeStudents;
   document.getElementById('km-active-d').textContent=(activeNow.size>=1?'↑ активны':'↓');
@@ -7281,55 +7204,10 @@ function renderReports(){
     <div id="rp-load-detail" style="display:none;padding-bottom:6px">${loadDetailHtml}</div>
   </div>`;
 
-  // ── Retention detail
-  const retainedSet=new Set(retained.map(s=>s.id));
-  const withSubsOnce=withSubs.filter(s=>!retainedSet.has(s.id));
-  const activeNoSubs=students.filter(s=>isStudentActive(s.id)&&!hasAnySub(s.id));
-
-  function _retGroup(title,color,bg,list,extra){
-    if(!list.length)return '';
-    return `<div style="font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.8px;margin:8px 0 5px">${title} (${list.length})</div>`+
-      list.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:${bg};border-radius:8px;margin-bottom:3px;cursor:pointer"
-          onclick="openEditStudent(${s.id})"
-          onmouseover="this.style.filter='brightness(.96)'" onmouseout="this.style.filter=''">
-        <span style="font-size:18px;flex-shrink:0">${esc(s.emoji||'👤')}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700">${esc(s.name)}</div>
-          ${s.group?`<div style="font-size:11px;color:var(--ink-l)">${esc(s.group)}</div>`:''}
-        </div>
-        <div style="font-size:11px;color:var(--ink-l);white-space:nowrap">${extra(s)}</div>
-      </div>`).join('');
-  }
-  const retDetailHtml=
-    _retGroup('✓ Продолжают','var(--grn)','var(--mint)',retained,s=>{
-      const n=(subscriptions[s.id]||[]).length+Object.values(sharedSubs).filter(x=>x.members&&x.members.some(m=>+m===+s.id)).length;
-      return n+' аб.';
-    })+
-    _retGroup('⚠ Первый абонемент','#C07000','#FEF3C7',withSubsOnce,s=>{
-      const sub=getActiveSub(s.id);
-      return sub?(sub.total-sub.used)+' ост.':'';
-    })+
-    _retGroup('✗ Без абонемента','var(--coral)','var(--cream)',activeNoSubs,()=>'');
-
-  const retColor=retGood?'var(--grn)':'var(--coral)';
-  const retRowHtml=`<div style="border-bottom:1px solid var(--cream)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer;user-select:none" onclick="toggleRetentionDetail()">
-      <div>
-        <div style="font-size:13px;font-weight:600">Retention rate</div>
-        <div style="font-size:11px;color:var(--ink-l)">${retained.length} продлили из ${withSubs.length} с абонементом</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="font-size:11px;color:var(--ink-l)">цель: >75%</div>
-        <div style="font-size:16px;font-weight:700;color:${retColor};min-width:60px;text-align:right">${retentionPct}%</div>
-        <div id="rp-ret-chevron" style="font-size:11px;color:var(--ink-l);transition:transform .2s">▼</div>
-      </div>
-    </div>
-    <div id="rp-ret-detail" style="display:none;padding-bottom:6px">${retDetailHtml||'<div style="font-size:12px;color:var(--ink-l);padding:8px 0">Нет активных учеников</div>'}</div>
-  </div>`;
-
   document.getElementById('rp-ops').innerHTML=[
     loadRowHtml,
-    retRowHtml,
+    metricRow('Retention rate',retentionPct+'%','>75%',retGood,
+      retained.length+' продлили из '+withSubs.length+' с абонементом'),
     metricRow('Churn rate',churnPct+'%','<10%',churnGood,
       churned+' ушли из '+activePrev.size+' активных'),
     metricRow('Конверсия пробный → аб.',trialConvPct+'%','>40%',trialConvGood,
@@ -7353,7 +7231,7 @@ function renderReports(){
     metricRow('Выручка на педагога',revenuePerTeacher>0?revenuePerTeacher.toLocaleString('ru')+' ₽':'—',null,null,
       teachers.length+' педагогов'),
     metricRow('LTV клиента',ltv>0?ltv.toLocaleString('ru')+' ₽':'—',null,null,
-      Math.round(arpu)+' ₽/мес × '+avgLifetime.toFixed(1)+' мес. удержания'),
+      'ср. чек '+Math.round(avgSubPrice)+' × '+avgDuration.toFixed(1)+' мес.'),
     metricRow('CAC (стоимость привлечения)',cac!=null?cac.toLocaleString('ru')+' ₽':'введите затраты↓',null,null,
       newStudents.length+' новых клиентов за период'),
   ].join('');
@@ -7361,41 +7239,15 @@ function renderReports(){
   // LTV CALCULATOR
   const ltvCalcEl=document.getElementById('rp-ltv-calc');
   if(ltvCalcEl){
-    const fcEntry=fixedCostsData.find(x=>x.month===periodKey)||{rent:0,utilities:0,other:0};
-    const totalFixed=(fcEntry.rent||0)+(fcEntry.utilities||0)+(fcEntry.other||0);
-    const teacherData=getRevenuePerTeacher(from,to);
-    const totalSalary=Object.values(teacherData).reduce((s,t)=>s+t.salary,0);
-    const varPerStu=activeNow.size>0&&periodMonths>0?totalSalary/activeNow.size/periodMonths:0;
-    const margin=arpu-varPerStu;
-    const beStudents=totalFixed>0&&margin>0?Math.ceil(totalFixed/margin):null;
-    const beRevenue=totalFixed>0&&arpu>0&&varPerStu<arpu?Math.ceil(totalFixed/(1-varPerStu/arpu)):null;
-    const ltvSource=churnRate>0?`churn ${Math.round(churnRate*100)}% → ${avgLifetime.toFixed(1)} мес.`:`фактич. удержание ${avgLifetime.toFixed(1)} мес.`;
+    const fixedCosts=0;
     ltvCalcEl.innerHTML=`
-      <div style="margin-bottom:10px">
-        <b>LTV</b> = ${Math.round(arpu).toLocaleString('ru')} ₽/мес × ${avgLifetime.toFixed(1)} мес = <b>${ltv>0?ltv.toLocaleString('ru')+' ₽':'нет данных'}</b><br>
-        <span style="color:var(--ink-l);font-size:11px">ARPU ${Math.round(arpu).toLocaleString('ru')} ₽ · ${ltvSource}</span>
-      </div>
-      <div style="border-top:1px dashed var(--peach);padding-top:10px;margin-bottom:8px">
-        <b>Постоянные расходы</b> <span style="color:var(--ink-l);font-size:11px">(сохраняются)</span><br>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
-          <div><div style="font-size:11px;color:var(--ink-l);margin-bottom:2px">Аренда ₽/мес</div>
-            <input type="number" id="rp-fc-rent" class="form-input" value="${fcEntry.rent||''}" placeholder="0" style="font-size:12px;padding:5px" oninput="saveFixedCosts()"></div>
-          <div><div style="font-size:11px;color:var(--ink-l);margin-bottom:2px">Коммуналка ₽/мес</div>
-            <input type="number" id="rp-fc-util" class="form-input" value="${fcEntry.utilities||''}" placeholder="0" style="font-size:12px;padding:5px" oninput="saveFixedCosts()"></div>
-          <div><div style="font-size:11px;color:var(--ink-l);margin-bottom:2px">Прочее ₽/мес</div>
-            <input type="number" id="rp-fc-other" class="form-input" value="${fcEntry.other||''}" placeholder="0" style="font-size:12px;padding:5px" oninput="saveFixedCosts()"></div>
-        </div>
-        <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Итого постоянные: <b>${totalFixed.toLocaleString('ru')} ₽</b></div>
-      </div>
-      <div style="border-top:1px dashed var(--peach);padding-top:10px">
-        <b>Точка безубыточности</b><br>
-        <div style="font-size:11px;color:var(--ink-l);margin:4px 0 6px">
-          Перем. расходы: ${Math.round(varPerStu).toLocaleString('ru')} ₽/уч./мес (зарплата педагогов) ·
-          Маржа: ${margin>0?Math.round(margin).toLocaleString('ru')+' ₽':'<span style="color:var(--coral)">отрицательная</span>'}
-        </div>
-        <div id="rp-breakeven" style="font-weight:700;font-size:13px">
-          ${beStudents!=null?`${beStudents} учеников / ${beRevenue?beRevenue.toLocaleString('ru')+' ₽ выручки':'—'}`:totalFixed===0?'введите расходы':'маржа ≤ 0'}
-        </div>
+      <b>LTV</b> = ${Math.round(avgSubPrice).toLocaleString('ru')} ₽ × ${avgDuration.toFixed(1)} мес = <b>${ltv.toLocaleString('ru')} ₽</b><br>
+      <span style="color:var(--ink-l);font-size:11px">Средний чек абонемента × среднее удержание</span><br><br>
+      <b>Точка безубыточности</b><br>
+      <span style="color:var(--ink-l);font-size:11px">Введите постоянные расходы:</span><br>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <input type="number" id="rp-fixed-costs" class="form-input" placeholder="₽ в месяц" style="font-size:12px;padding:6px" oninput="calcBreakeven()">
+        <span style="align-self:center;font-size:12px" id="rp-breakeven">—</span>
       </div>`;
   }
 
@@ -7452,7 +7304,7 @@ function renderReports(){
         const salaryPerLesson=t.lessons>0?Math.round(t.salary/t.lessons):0;
         const profit=t.revenue-totalSalary;
         return `<div style="background:var(--cream);border-radius:10px;padding:12px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:8px">${t.name}</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px">${esc(t.name)}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;font-size:12px">
             <div><div style="color:var(--ink-l)">Занятий</div><div style="font-weight:700">${t.lessons}</div></div>
             <div><div style="color:var(--ink-l)">Ср. учеников</div><div style="font-weight:700">${avgStudents.toFixed(1)}</div></div>
@@ -7480,9 +7332,9 @@ function renderReports(){
         return `<div style="background:var(--cream);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px">
           <div style="font-size:22px;width:38px;height:38px;background:${s.color};border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${s.emoji}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:14px">${s.name}</div>
-            <div style="font-size:12px;color:var(--ink-l);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${groups}</div>
-            ${s.parentName||s.phone?`<div style="font-size:12px;color:var(--ink-l);margin-top:1px">${s.parentName?s.parentName+' · ':''}${s.phone?`<a href="tel:${s.phone}" style="color:var(--mint-d);text-decoration:none">${s.phone}</a>`:''}</div>`:''}
+            <div style="font-weight:700;font-size:14px">${esc(s.name)}</div>
+            <div style="font-size:12px;color:var(--ink-l);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(groups)}</div>
+            ${s.parentName||s.phone?`<div style="font-size:12px;color:var(--ink-l);margin-top:1px">${s.parentName?esc(s.parentName)+' · ':''}${s.phone?`<a href="tel:${esc(s.phone)}" style="color:var(--mint-d);text-decoration:none">${esc(s.phone)}</a>`:''}</div>`:''}
           </div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-weight:700;font-size:16px;color:${color}">${s.daysSince} дн.</div>
@@ -7506,27 +7358,16 @@ function toggleLoadDetail(){
   if(ch)ch.style.transform=open?'rotate(180deg)':'';
 }
 
-function toggleRetentionDetail(){
-  const el=document.getElementById('rp-ret-detail');
-  const ch=document.getElementById('rp-ret-chevron');
+function calcBreakeven(){
+  const costs=parseFloat(document.getElementById('rp-fixed-costs').value)||0;
+  const {from,to}=getRpDates();
+  const rev=getRevenueInPeriod(from,to);
+  const avgSubPrice=rev.lessonCount>0?rev.total/rev.lessonCount:0;
+  const el=document.getElementById('rp-breakeven');
   if(!el)return;
-  const open=el.style.display==='none';
-  el.style.display=open?'block':'none';
-  if(ch)ch.style.transform=open?'rotate(180deg)':'';
-}
-
-function calcBreakeven(){ renderReports(); }
-
-function saveFixedCosts(){
-  const {from}=getRpDates();
-  const month=from.toISOString().slice(0,7);
-  const rent=parseFloat(document.getElementById('rp-fc-rent')?.value)||0;
-  const utilities=parseFloat(document.getElementById('rp-fc-util')?.value)||0;
-  const other=parseFloat(document.getElementById('rp-fc-other')?.value)||0;
-  const idx=fixedCostsData.findIndex(x=>x.month===month);
-  if(idx>=0) fixedCostsData[idx]={month,rent,utilities,other};
-  else fixedCostsData.push({month,rent,utilities,other});
-  lsSave('fixedCostsData',fixedCostsData);
+  if(!costs||!avgSubPrice){el.textContent='—';return;}
+  const min=Math.ceil(costs/avgSubPrice);
+  el.textContent=`минимум ${min} учеников`;
 }
 
 function saveMarketingCost(){
@@ -7544,7 +7385,7 @@ function saveMarketingCost(){
 function openAddChurn(){
   const sel=document.getElementById('churn-sid');
   if(sel){
-    sel.innerHTML=students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    sel.innerHTML=students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
   }
   const dateEl=document.getElementById('churn-date');
   if(dateEl)dateEl.value=fmtDate(new Date());
@@ -7596,11 +7437,11 @@ function renderChurnLog(){
     <tbody>${churnLog.slice().reverse().map(c=>`
       <tr style="border-top:1px solid var(--cream)">
         <td style="padding:8px">${new Date(c.date).toLocaleDateString('ru-RU')}</td>
-        <td style="padding:8px;font-weight:600">${c.studentName}</td>
+        <td style="padding:8px;font-weight:600">${esc(c.studentName)}</td>
         <td style="padding:8px">${c.months||'—'}</td>
-        <td style="padding:8px">${reasons[c.reason]||'•'} ${c.reason}</td>
-        <td style="padding:8px">${c.source||'—'}</td>
-        <td style="padding:8px;color:var(--ink-l)">${c.note||'—'}</td>
+        <td style="padding:8px">${reasons[c.reason]||'•'} ${esc(c.reason)}</td>
+        <td style="padding:8px">${esc(c.source||'—')}</td>
+        <td style="padding:8px;color:var(--ink-l)">${esc(c.note||'—')}</td>
         <td style="padding:8px"><button class="btn btn-ghost btn-sm" onclick="deleteChurn(${c.id})">✕</button></td>
       </tr>`).join('')}
     </tbody>
@@ -7717,10 +7558,10 @@ function _doExport(){
       if(String(k).includes('_')||v!=='p')return;
       monthlyMap[ym].visits++;
       const sid=+k;
-      if(costs[sid+'_via_sub']){
+      if(costs[sid+K_VIA_SUB]){
         let perL=costs[sid]!==undefined?+costs[sid]:0;
-        if(!perL&&costs[sid+'_sub_price']&&costs[sid+'_sub_total'])
-          perL=+costs[sid+'_sub_price']/+costs[sid+'_sub_total'];
+        if(!perL&&costs[sid+K_SUB_PRICE]&&costs[sid+K_SUB_TOTAL])
+          perL=+costs[sid+K_SUB_PRICE]/+costs[sid+K_SUB_TOTAL];
         monthlyMap[ym].subRev+=perL;
       } else {
         monthlyMap[ym].singleRev+=costs[sid]!==undefined?+costs[sid]:effectivePrice(sid);
@@ -7818,8 +7659,8 @@ function renderGallery(){
         : `<span style="font-size:48px">🎨</span>`}
       </div>
       <div class="gal-info">
-        <div class="gal-title">${p.title||'Без названия'}</div>
-        <div class="gal-meta">${p.author||''}${p.author&&p.date?' · ':''}${p.date||''}</div>
+        <div class="gal-title">${esc(p.title||'Без названия')}</div>
+        <div class="gal-meta">${esc(p.author||'')}${p.author&&p.date?' · ':''}${esc(p.date||'')}</div>
       </div>
       ${isAdmin?`<button class="gal-del" onclick="event.stopPropagation();deletePhoto(${p.id})" title="Удалить">✕</button>`:''}
     </div>`).join('');
@@ -7903,7 +7744,7 @@ function openLightbox(id){
   document.getElementById('lightbox-img').src = p.dataUrl||'';
   document.getElementById('lightbox-img').style.display = p.dataUrl?'block':'none';
   document.getElementById('lightbox-caption').innerHTML =
-    `<b style="font-size:16px">${p.title||'Без названия'}</b>${p.author?`<br><span style="opacity:.7">${p.author}</span>`:''}${p.date?`<br><span style="opacity:.5;font-size:12px">${p.date}</span>`:''}`;
+    `<b style="font-size:16px">${esc(p.title||'Без названия')}</b>${p.author?`<br><span style="opacity:.7">${esc(p.author)}</span>`:''}${p.date?`<br><span style="opacity:.5;font-size:12px">${esc(p.date)}</span>`:''}` ;
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -7931,7 +7772,7 @@ function startClock(){
   // Refresh today's schedule every 60 seconds so "Идёт/Было/Скоро" stays accurate
   _clockInterval=setInterval(()=>{
     if(currentRole==='admin') renderTodaySchedule();
-    else if(currentRole==='parent'){ const pScIds=new Set(_parentStudentIds.flatMap(sid=>enrollments[sid]||[])); updateTodayLabel('parent-today-label',_calSelectedDate); renderTodayList('parent-today-list','parent-live-badge',_calSelectedDate,pScIds); }
+    else if(currentRole==='parent'){ const pScIds=new Set(_parentStudentIds.flatMap(sid=>getEnrolls(sid))); updateTodayLabel('parent-today-label',_calSelectedDate); renderTodayList('parent-today-list','parent-live-badge',_calSelectedDate,pScIds); }
     else if(currentRole==='guest'){ updateTodayLabel('guest-today-label',_calSelectedDate); renderTodayList('guest-today-list','guest-live-badge',_calSelectedDate); }
   }, 60000);
 }
@@ -7950,7 +7791,7 @@ document.addEventListener('keydown', e=>{
 const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
-  'dateEnrollments','dayAssignments','announcements','nextAnnId','subscriptions','sharedSubs','lessonCosts',
+  'dateEnrollments','dayAssignments','announcements','nextAnnId','subscriptions','lessonCosts',
   'globalLessonPrice','teacherReviews','photos','nextPhotoId',
   'achievements','nextAchId','requests','nextReqId',
   'nextTId','nextSId','nextScId','dataVersion'];
@@ -7966,7 +7807,6 @@ function loadStateFromStorage(){
   announcements     = lsLoad('announcements',     []);
   nextAnnId         = lsLoad('nextAnnId',         4);
   subscriptions     = lsLoad('subscriptions',     {});
-  sharedSubs        = lsLoad('sharedSubs',        {});
   lessonCosts       = lsLoad('lessonCosts',       {});
   globalLessonPrice = lsLoad('globalLessonPrice', 500);
   teacherReviews    = lsLoad('teacherReviews',    {});
