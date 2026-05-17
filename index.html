@@ -6944,6 +6944,9 @@ function getRevenuePerTeacher(from,to){
     const schedOnDow=schedule.filter(sc=>sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow)).map(sc=>sc.id);
 
     const resolveScId=sid=>{
+      // 0. Временное назначение в группу на этот день (через "Перенести в группу")
+      const dayAssign=(dayAssignments[dateStr]||{})[String(sid)];
+      if(dayAssign!==undefined)return dayAssign;
       const enrolled=enrollments[String(sid)]||[];
       // 1. Записан + день совпадает
       let f=enrolled.find(scid=>{const sc=scheduleMap[scid];return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);});
@@ -7019,6 +7022,9 @@ function openTeacherSalaryDetail(tid){
     });
     const schedOnDow=schedule.filter(sc=>sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow)).map(sc=>sc.id);
     const resolveScId=sid=>{
+      // 0. Временное назначение в группу на этот день (через "Перенести в группу")
+      const dayAssign=(dayAssignments[dateStr]||{})[String(sid)];
+      if(dayAssign!==undefined)return dayAssign;
       const enrolled=enrollments[String(sid)]||[];
       let f=enrolled.find(scid=>{const sc=scheduleMap[scid];return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);});
       if(f!==undefined)return f;
