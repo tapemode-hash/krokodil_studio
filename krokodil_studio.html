@@ -5532,7 +5532,7 @@ function saveLessonCost(dateKey, attKey, val){
 // ══════════════════════════════════════════════════════════════
 //  ATTENDANCE (mark tab)
 // ══════════════════════════════════════════════════════════════
-function fmtDate(d){ return d.toISOString().split('T')[0]; }
+function fmtDate(d){ const m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return d.getFullYear()+'-'+m+'-'+dd; }
 function setAttDate(delta){ attDate.setDate(attDate.getDate()+delta); renderAttendance(); }
 
 // Attendance key format: 'sid' (single group) or 'sid:scId' (multi-group)
