@@ -788,11 +788,11 @@ body.is-admin .ann-input-area{display:block}
     </div>
     <div class="pw-wrap" id="pw-wrap" style="display:none">
       <label id="pw-label">Пароль</label>
-      <input class="pw-input" type="password" id="pw-input" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="pw-input" type="password" id="pw-input" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')loginClick(document.getElementById('login-btn'))">
     </div>
-    <div class="login-err" id="login-err"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="doLogin()">Войти →</button>
-    <div style="font-size:10px;color:#ccc;text-align:center;margin-top:8px">v2025-05-17c</div>
+    <div id="login-err" style="min-height:18px;margin-bottom:10px;font-size:14px;font-weight:700;color:#E53935;text-align:center"></div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="loginClick(this)">Войти →</button>
+    <div style="font-size:10px;color:#ccc;text-align:center;margin-top:8px">v2025-05-17d</div>
   </div>
 </div>
 
@@ -3819,10 +3819,15 @@ function showMobileUI(role){
   updateMobSheet(role);
 }
 
+function loginClick(btn){
+  btn.textContent = '⏳ Проверяем...';
+  btn.disabled = true;
+  doLogin().finally(()=>{ btn.textContent='Войти →'; btn.disabled=false; });
+}
+
 async function doLogin(){
   const errEl = document.getElementById('login-err');
-  // DEBUG: покажем что происходит
-  toast('🔄 Вход: роль=' + selectedRole);
+  errEl.textContent = '';
   try {
     const pw = document.getElementById('pw-input').value;
     if(selectedRole==='admin'){
