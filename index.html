@@ -942,6 +942,18 @@ body.is-admin .ann-input-area{display:block}
         </div>
         <div class="form-group" style="margin-bottom:10px"><label class="form-label">Группа / направление</label>
           <select class="form-select" id="sub-group-sel"></select></div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)">
+            <input type="checkbox" id="sub-shared" onchange="toggleSharedSub()" style="width:16px;height:16px;accent-color:var(--lav-d);cursor:pointer">
+            👨‍👩‍👧 Общий абонемент (несколько детей)
+          </label>
+        </div>
+        <div id="sub-shared-members" style="display:none;margin-bottom:10px">
+          <label class="form-label">Другие участники <span style="color:var(--coral)">*</span></label>
+          <input class="form-input" id="sub-members-search" type="text" placeholder="🔍 Найти ученика..." oninput="filterSubMembers()" style="margin-bottom:6px;font-size:13px">
+          <div id="sub-members-list" style="max-height:160px;overflow-y:auto;border:1.5px solid var(--cream-d);border-radius:10px;padding:4px;background:white"></div>
+          <div id="sub-members-hint" style="font-size:11px;color:var(--ink-l);margin-top:4px"></div>
+        </div>
         <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="addSubscription()">➕ Добавить абонемент</button>
       </div>
       <div class="modal-actions">
@@ -2091,6 +2103,7 @@ function persist(){
   lsSave('announcements',announcements);
   lsSave('nextAnnId',nextAnnId);
   lsSave('subscriptions',subscriptions);
+  lsSave('sharedSubs',sharedSubs);
   lsSave('lessonCosts',lessonCosts);
   lsSave('globalLessonPrice', globalLessonPrice);
   lsSave('teacherReviews', teacherReviews);
@@ -5044,44 +5057,92 @@ function saveEnrollment(){
   toast(`✅ Запись сохранена! Занятий: ${checked.length} · Дат в календаре: ${dateCount}`);
 }
 
+function _subCardHTML(sub, deductFn, restoreFn, delFn, extraStyle=''){
+  const pct=Math.round(sub.used/sub.total*100);
+  const left=sub.total-sub.used;
+  const exhausted=left<=0;
+  const perLesson=sub.price&&sub.total?Math.round(sub.price/sub.total):0;
+  const remaining=perLesson?perLesson*left:0;
+  const priceInfo=sub.price?`<span style="color:var(--ink-l)">${sub.price.toLocaleString('ru')} ₽ · ${perLesson.toLocaleString('ru')} ₽/зан.</span>`:'';
+  const remainInfo=remaining?`<span style="font-weight:700;color:${exhausted?'var(--coral)':'var(--mint-d)'}"> · Остаток: ${remaining.toLocaleString('ru')} ₽</span>`:'';
+  return `<div class="sub-card" style="${extraStyle}">
+    <div class="sub-icon">${sub.members?'👨‍👩‍👧':'🎫'}</div>
+    <div class="sub-info">
+      <div class="sub-name">${esc(sub.groupName||'Абонемент')}${sub.members?`<span style="font-size:11px;font-weight:400;color:var(--ink-l);margin-left:6px">общий</span>`:''}</div>
+      ${sub.members?`<div style="font-size:11px;color:var(--ink-l);margin-top:1px">Участники: ${sub.members.map(id=>{const s=students.find(x=>x.id===+id);return s?esc(s.name.split(' ')[0]):'?';}).join(', ')}</div>`:''}
+      <div class="sub-meta">${priceInfo}${remainInfo}<br>Занятий: ${left} из ${sub.total} · Добавлен ${esc(sub.createdAt)}</div>
+      <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn btn-sm" style="background:var(--lav);color:var(--lav-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${exhausted?'disabled':''} onclick="${deductFn}" title="Списать 1 занятие вручную">– Списать занятие</button>
+        <button class="btn btn-sm" style="background:var(--mint);color:var(--mint-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${sub.used<=0?'disabled':''} onclick="${restoreFn}" title="Вернуть 1 занятие">+ Вернуть</button>
+      </div>
+    </div>
+    <div class="sub-count" style="color:${exhausted?'var(--coral)':'var(--mint-d)'}">
+      ${left}${perLesson?`<div style="font-size:10px;font-weight:600;margin-top:2px">${remaining.toLocaleString('ru')} ₽</div>`:''}
+    </div>
+    <button class="sub-del" onclick="${delFn}" title="Удалить">✕</button>
+  </div>`;
+}
+
 function renderSubList(){
   const sid = +document.getElementById('s-id').value;
-  const subs = getSubs(sid);
+  const subs = subscriptions[sid] || [];
+  const shared = Object.values(sharedSubs).filter(s=>s.members&&s.members.some(m=>+m===+sid));
   const el = document.getElementById('sub-list');
-  if(!subs.length){
+  if(!subs.length && !shared.length){
     el.innerHTML='<div style="color:var(--ink-l);font-size:13px;padding:10px 0 14px">Абонементов нет</div>';
     return;
   }
-  el.innerHTML = subs.map((sub,i)=>{
-    const pct = Math.round(sub.used/sub.total*100);
-    const left = sub.total - sub.used;
-    const exhausted = left <= 0;
-    const perLesson = sub.price && sub.total ? Math.round(sub.price / sub.total) : 0;
-    const remaining = perLesson ? perLesson * left : 0;
-    const priceInfo = sub.price
-      ? `<span style="color:var(--ink-l)">${sub.price.toLocaleString('ru')} ₽ · ${perLesson.toLocaleString('ru')} ₽/зан.</span>`
-      : '';
-    const remainInfo = remaining
-      ? `<span style="font-weight:700;color:${exhausted?'var(--coral)':'var(--mint-d)'}"> · Остаток: ${remaining.toLocaleString('ru')} ₽</span>`
-      : '';
-    return `<div class="sub-card">
-      <div class="sub-icon">🎫</div>
-      <div class="sub-info">
-        <div class="sub-name">${esc(sub.groupName)}</div>
-        <div class="sub-meta">${priceInfo}${remainInfo}<br>Занятий: ${left} из ${sub.total} · Добавлен ${esc(sub.createdAt)}</div>
-        <div class="sub-progress"><div class="sub-progress-bar" style="width:${pct}%"></div></div>
-        <div style="display:flex;gap:6px;margin-top:8px">
-          <button class="btn btn-sm" style="background:var(--lav);color:var(--lav-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${exhausted?'disabled':''} onclick="deductSub(${sid},${i})" title="Списать 1 занятие вручную">– Списать занятие</button>
-          <button class="btn btn-sm" style="background:var(--mint);color:var(--mint-d);border:none;padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer" ${sub.used<=0?'disabled':''} onclick="restoreSub(${sid},${i})" title="Вернуть 1 занятие">+ Вернуть</button>
-        </div>
-      </div>
-      <div class="sub-count" style="color:${exhausted?'var(--coral)':'var(--mint-d)'}">
-        ${left}
-        ${perLesson?`<div style="font-size:10px;font-weight:600;margin-top:2px">${remaining.toLocaleString('ru')} ₽</div>`:''}
-      </div>
-      <button class="sub-del" onclick="deleteSubscription(${sid},${i})" title="Удалить">✕</button>
-    </div>`;
-  }).join('');
+  const personalHTML = subs.map((sub,i)=>_subCardHTML(sub,`deductSub(${sid},${i})`,`restoreSub(${sid},${i})`,`deleteSubscription(${sid},${i})`)).join('');
+  const sep = shared.length ? `<div style="font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;padding-top:10px;border-top:1px solid var(--cream-d)">Общие абонементы</div>` : '';
+  const sharedHTML = shared.map(sub=>_subCardHTML(sub,`deductSharedSub('${sub.id}')`,`restoreSharedSub('${sub.id}')`,`deleteSharedSub('${sub.id}')`,`border:2px solid var(--lav)`)).join('');
+  el.innerHTML = personalHTML + sep + sharedHTML;
+}
+
+let _subMembersSelected = new Set();
+
+function _renderSubMembersList(q){
+  const sid = +document.getElementById('s-id').value;
+  const list = document.getElementById('sub-members-list');
+  const lower = (q||'').toLowerCase();
+  const filtered = students.filter(s=>s.id!==sid && (!lower || s.name.toLowerCase().includes(lower)));
+  if(!filtered.length){
+    list.innerHTML=`<div style="text-align:center;padding:16px;font-size:13px;color:var(--ink-l)">Ничего не найдено</div>`;
+    _updateSubMembersHint(); return;
+  }
+  list.innerHTML = filtered.map(s=>`
+    <label style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${s.id}" ${_subMembersSelected.has(s.id)?'checked':''} style="width:15px;height:15px;accent-color:var(--lav-d);cursor:pointer;flex-shrink:0" onchange="_toggleSubMember(${s.id},this.checked)">
+      <span style="font-size:16px;flex-shrink:0">${s.emoji}</span>
+      <span style="font-size:13px;font-weight:600">${esc(s.name)}</span>
+    </label>`).join('');
+  _updateSubMembersHint();
+}
+
+function _toggleSubMember(id, isChecked){
+  if(isChecked) _subMembersSelected.add(+id);
+  else _subMembersSelected.delete(+id);
+  _updateSubMembersHint();
+}
+
+function _updateSubMembersHint(){
+  const hint = document.getElementById('sub-members-hint');
+  if(hint) hint.textContent = _subMembersSelected.size ? `Выбрано: ${_subMembersSelected.size} чел.` : '';
+}
+
+function filterSubMembers(){
+  _renderSubMembersList(document.getElementById('sub-members-search').value);
+}
+
+function toggleSharedSub(){
+  const checked = document.getElementById('sub-shared').checked;
+  document.getElementById('sub-shared-members').style.display = checked ? '' : 'none';
+  if(checked){
+    _subMembersSelected = new Set();
+    document.getElementById('sub-members-search').value = '';
+    _renderSubMembersList('');
+    requestAnimationFrame(()=>document.getElementById('sub-members-search').focus());
+  }
 }
 
 function addSubscription(){
@@ -5091,15 +5152,47 @@ function addSubscription(){
   const sc = schedule.find(x=>x.id===scId);
   const total = +document.getElementById('sub-count').value || 8;
   const price = +document.getElementById('sub-price').value || 0;
+  const isShared = document.getElementById('sub-shared').checked;
   const now = new Date();
   const sub = {
     groupName: sc ? sc.name : 'Занятие',
     total, used: 0, price,
     createdAt: `${now.getDate()}.${now.getMonth()+1}.${now.getFullYear()}`
   };
-  if(!subscriptions[sid]) subscriptions[sid]=[];
-  subscriptions[sid].push(sub);
+  if(isShared){
+    const extra = Array.from(_subMembersSelected);
+    if(!extra.length){ toast('⚠️ Выберите хотя бы одного участника'); return; }
+    const id = 'ss' + Date.now();
+    sharedSubs[id] = {...sub, id, members:[sid,...extra]};
+    _subMembersSelected = new Set();
+    document.getElementById('sub-shared').checked = false;
+    document.getElementById('sub-shared-members').style.display = 'none';
+    document.getElementById('sub-members-search').value = '';
+  } else {
+    if(!subscriptions[sid]) subscriptions[sid]=[];
+    subscriptions[sid].push(sub);
+  }
   persist(); renderSubList(); toast('🎫 Абонемент добавлен!');
+}
+
+function deductSharedSub(id){
+  const sub=sharedSubs[id];
+  if(!sub||sub.used>=sub.total){ toast('⚠️ Занятия в абонементе закончились'); return; }
+  sub.used++;
+  persist(); renderSubList();
+  toast(`🎫 Занятие списано · осталось ${sub.total-sub.used}`);
+}
+function restoreSharedSub(id){
+  const sub=sharedSubs[id];
+  if(!sub||sub.used<=0) return;
+  sub.used--;
+  persist(); renderSubList();
+  toast(`↩️ Занятие возвращено · осталось ${sub.total-sub.used}`);
+}
+function deleteSharedSub(id){
+  if(!confirm('Удалить общий абонемент?\nОн будет удалён для всех участников.')) return;
+  delete sharedSubs[id];
+  persist(); renderSubList(); toast('🗑️ Абонемент удалён');
 }
 
 function deleteSubscription(sid, idx){
@@ -5887,8 +5980,22 @@ function renderAttendance(){
 
 // Helper: get active subscription for student (first with remaining sessions)
 function getActiveSub(sid){
-  const subs = getSubs(sid);
-  return subs.find(s=>s.total-s.used>0) || null;
+  const personal = (subscriptions[sid]||[]).find(s=>s.total-s.used>0);
+  if(personal) return personal;
+  return Object.values(sharedSubs).find(s=>s.members&&s.members.some(m=>+m===+sid)&&s.total-s.used>0)||null;
+}
+
+function getActiveSubsForStudent(sid){
+  const personal=(subscriptions[sid]||[]).map((s,i)=>({sub:s,ref:i})).filter(x=>x.sub.total-x.sub.used>0);
+  const shared=Object.values(sharedSubs).filter(s=>s.members&&s.members.some(m=>+m===+sid)&&s.total-s.used>0).map(s=>({sub:s,ref:'ss:'+s.id}));
+  return [...personal,...shared];
+}
+
+function getSubByRef(sid, ref){
+  if(ref===undefined||ref===null) return null;
+  const r=String(ref);
+  if(r.startsWith('ss:')) return sharedSubs[r.slice(3)]||null;
+  return (subscriptions[sid]||[])[+r]||null;
 }
 
 // Helper: effective lesson price for a student (учитывает акцию если нет абонемента)
@@ -6000,25 +6107,25 @@ function removeGroupAssignment(sid){
 let _subSelectCb=null;
 
 function openSubSelectModal(sid, callback){
-  const subs=getSubs(sid);
-  const active=subs.map((s,i)=>({...s,idx:i})).filter(s=>s.total-s.used>0);
+  const active=getActiveSubsForStudent(sid);
   if(!active.length){toast('⚠️ Нет активного абонемента');return;}
-  if(active.length===1){callback(active[0].idx);return;}
+  if(active.length===1){callback(active[0].ref);return;}
   _subSelectCb=callback;
-  document.getElementById('m-sub-select-list').innerHTML=active.map(s=>{
-    const left=s.total-s.used;
-    const per=s.total>0?Math.round(s.price/s.total):0;
-    return `<button onclick="selectSub(${s.idx})" style="width:100%;text-align:left;padding:12px 14px;background:var(--cream);border:2px solid transparent;border-radius:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--lav-d)'" onmouseout="this.style.borderColor='transparent'">
-      <div style="font-weight:700;font-size:14px">${esc(s.groupName||'Абонемент')}</div>
-      <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Осталось: <b>${left}</b> из ${s.total} · ${per.toLocaleString('ru')} ₽/зан.</div>
+  document.getElementById('m-sub-select-list').innerHTML=active.map(({sub,ref})=>{
+    const left=sub.total-sub.used;
+    const per=sub.total>0?Math.round(sub.price/sub.total):0;
+    const refStr=JSON.stringify(ref);
+    return `<button onclick="selectSub(${refStr})" style="width:100%;text-align:left;padding:12px 14px;background:var(--cream);border:2px solid transparent;border-radius:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--lav-d)'" onmouseout="this.style.borderColor='transparent'">
+      <div style="font-weight:700;font-size:14px">${esc(sub.groupName||'Абонемент')}${sub.members?'<span style="font-size:11px;font-weight:400;margin-left:5px;color:var(--lav-d)">общий</span>':''}</div>
+      <div style="font-size:12px;color:var(--ink-l);margin-top:3px">Осталось: <b>${left}</b> из ${sub.total} · ${per.toLocaleString('ru')} ₽/зан.</div>
     </button>`;
   }).join('');
   openM('m-sub-select');
 }
 
-function selectSub(subIdx){
+function selectSub(subRef){
   closeM('m-sub-select');
-  if(_subSelectCb){_subSelectCb(subIdx);_subSelectCb=null;}
+  if(_subSelectCb){_subSelectCb(subRef);_subSelectCb=null;}
 }
 
 function doSwitchToSub(sid, attKey, newSubIdx){
@@ -6059,8 +6166,8 @@ function markAtt(sid, mark, btn, attKey){
     if(mark==='p'){
       const subMeta=(lessonCosts[actualKey]||{})[attKey+K_SUB_IDX];
       if(subMeta!==undefined){
-        const subs=getSubs(sid);
-        if(subs[subMeta]&&subs[subMeta].used>0)subs[subMeta].used--;
+        const sub=getSubByRef(sid,subMeta);
+        if(sub&&sub.used>0)sub.used--;
         if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
         delete lessonCosts[actualKey][attKey+K_SUB_IDX];
         delete lessonCosts[actualKey][attKey+K_VIA_SUB];
@@ -6078,17 +6185,15 @@ function markAtt(sid, mark, btn, attKey){
         lessonCosts[actualKey][attKey+K_AUTO]=true;
         lessonCosts[actualKey][attKey+K_TRIAL]=true;
       } else {
-        const allSubs=getSubs(sid);
-        const activeSubs=allSubs.filter(s=>s.total-s.used>0);
+        const activeSubs=getActiveSubsForStudent(sid);
         if(activeSubs.length>=2){
-          // Multiple active subs — ask which one to use
-          openSubSelectModal(sid,(subIdx)=>{
-            const sub=allSubs[subIdx];
+          openSubSelectModal(sid,(subRef)=>{
+            const sub=getSubByRef(sid,subRef);
             if(!sub)return;
             sub.used++;
             const perLesson=sub.total>0?sub.price/sub.total:0;
             if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
-            lessonCosts[actualKey][attKey+K_SUB_IDX]=subIdx;
+            lessonCosts[actualKey][attKey+K_SUB_IDX]=subRef;
             lessonCosts[actualKey][attKey+K_VIA_SUB]=true;
             lessonCosts[actualKey][attKey+K_SUB_PRICE]=sub.price;
             lessonCosts[actualKey][attKey+K_SUB_TOTAL]=sub.total;
@@ -6099,18 +6204,17 @@ function markAtt(sid, mark, btn, attKey){
             persist();renderAttendance();
             toast(`🎫 ${sub.groupName||'Абонемент'} · осталось ${sub.total-sub.used}`);
           });
-          return; // attendance will be set inside callback
+          return;
         }
-        const sub=activeSubs[0]||null;
-        if(sub){
-          sub.used++;
-          const subIdx=allSubs.indexOf(sub);
-          const perLesson=sub.total>0?sub.price/sub.total:0;
+        const subEntry=activeSubs[0]||null;
+        if(subEntry){
+          subEntry.sub.used++;
+          const perLesson=subEntry.sub.total>0?subEntry.sub.price/subEntry.sub.total:0;
           if(!lessonCosts[actualKey])lessonCosts[actualKey]={};
-          lessonCosts[actualKey][attKey+K_SUB_IDX]=subIdx;
+          lessonCosts[actualKey][attKey+K_SUB_IDX]=subEntry.ref;
           lessonCosts[actualKey][attKey+K_VIA_SUB]=true;
-          lessonCosts[actualKey][attKey+K_SUB_PRICE]=sub.price;
-          lessonCosts[actualKey][attKey+K_SUB_TOTAL]=sub.total;
+          lessonCosts[actualKey][attKey+K_SUB_PRICE]=subEntry.sub.price;
+          lessonCosts[actualKey][attKey+K_SUB_TOTAL]=subEntry.sub.total;
           lessonCosts[actualKey][attKey]=perLesson;
           lessonCosts[actualKey][attKey+K_AUTO]=true;
         } else {
@@ -6131,8 +6235,8 @@ function markAtt(sid, mark, btn, attKey){
     if(mark==='a'&&prev==='p'){
       const subMeta=(lessonCosts[actualKey]||{})[attKey+K_SUB_IDX];
       if(subMeta!==undefined){
-        const subs=getSubs(sid);
-        if(subs[subMeta]&&subs[subMeta].used>0)subs[subMeta].used--;
+        const sub=getSubByRef(sid,subMeta);
+        if(sub&&sub.used>0)sub.used--;
         delete lessonCosts[actualKey][attKey+K_SUB_IDX];
         delete lessonCosts[actualKey][attKey+K_VIA_SUB];
         delete lessonCosts[actualKey][attKey];
@@ -6155,9 +6259,9 @@ function toggleSubMark(sid, attKey){
   const costs=lessonCosts[key];
   const isViaSub=costs[attKey+K_VIA_SUB];
   if(isViaSub){
-    const subIdx=costs[attKey+K_SUB_IDX];
-    const subs=getSubs(sid);
-    if(subIdx!==undefined&&subs[subIdx]&&subs[subIdx].used>0)subs[subIdx].used--;
+    const subRef=costs[attKey+K_SUB_IDX];
+    const sub=getSubByRef(sid,subRef);
+    if(sub&&sub.used>0)sub.used--;
     delete costs[attKey+K_SUB_IDX]; delete costs[attKey+K_VIA_SUB];
     delete costs[attKey+K_SUB_PRICE]; delete costs[attKey+K_SUB_TOTAL];
     const baseP=effectivePrice(sid,true);
@@ -6169,13 +6273,13 @@ function toggleSubMark(sid, attKey){
     }
     toast('💵 Переключено на разовое');
   } else {
-    const applyToggleSub=(subIdx)=>{
-      const sub=(getSubs(sid))[subIdx];
+    const applyToggleSub=(subRef)=>{
+      const sub=getSubByRef(sid,subRef);
       if(!sub||sub.total-sub.used<=0){toast('⚠️ В абонементе нет занятий');return;}
       delete costs[attKey+K_PROMO]; delete costs[attKey+K_BASE_PRICE]; delete costs[attKey+K_AUTO];
       sub.used++;
       const perLesson=sub.total>0?sub.price/sub.total:0;
-      costs[attKey+K_SUB_IDX]=subIdx; costs[attKey+K_VIA_SUB]=true;
+      costs[attKey+K_SUB_IDX]=subRef; costs[attKey+K_VIA_SUB]=true;
       costs[attKey+K_SUB_PRICE]=sub.price; costs[attKey+K_SUB_TOTAL]=sub.total;
       costs[attKey]=perLesson;
       persist();renderAttendance();
@@ -6214,9 +6318,8 @@ function countLessons(sid){
         if(!perLesson&&costs[attKey+K_SUB_PRICE]&&costs[attKey+K_SUB_TOTAL])
           perLesson=+costs[attKey+K_SUB_PRICE]/+costs[attKey+K_SUB_TOTAL];
         if(!perLesson){
-          const subIdx=costs[attKey+K_SUB_IDX];
-          const subs=getSubs(sid);
-          const sub=subIdx!==undefined?subs[subIdx]:null;
+          const subRef=costs[attKey+K_SUB_IDX];
+          const sub=getSubByRef(sid,subRef);
           perLesson=sub&&sub.total>0?sub.price/sub.total:0;
         }
         subRevProrataTotal+=perLesson;
@@ -6606,7 +6709,7 @@ function renderPayments(){
                 dVS++;
                 let perL=costs2[sid]!==undefined?+costs2[sid]:0;
                 if(!perL&&costs2[sid+K_SUB_PRICE]&&costs2[sid+K_SUB_TOTAL])perL=+costs2[sid+K_SUB_PRICE]/+costs2[sid+K_SUB_TOTAL];
-                if(!perL){const subIdx=costs2[sid+K_SUB_IDX];const subs=getSubs(sid);const sub=subIdx!==undefined?subs[subIdx]:null;perL=sub&&sub.total>0?sub.price/sub.total:0;}
+                if(!perL){const subRef=costs2[sid+K_SUB_IDX];const sub=getSubByRef(sid,subRef);perL=sub&&sub.total>0?sub.price/sub.total:0;}
                 dSubI+=perL;
               } else {
                 dSi++;
@@ -7946,7 +8049,7 @@ document.addEventListener('keydown', e=>{
 const FB_URL = 'https://krokodil-studio-default-rtdb.firebaseio.com/krokodil';
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
-  'dateEnrollments','dayAssignments','announcements','nextAnnId','subscriptions','lessonCosts',
+  'dateEnrollments','dayAssignments','announcements','nextAnnId','subscriptions','sharedSubs','lessonCosts',
   'globalLessonPrice','teacherReviews','photos','nextPhotoId',
   'achievements','nextAchId','requests','nextReqId',
   'nextTId','nextSId','nextScId','dataVersion'];
@@ -7962,6 +8065,7 @@ function loadStateFromStorage(){
   announcements     = lsLoad('announcements',     []);
   nextAnnId         = lsLoad('nextAnnId',         4);
   subscriptions     = lsLoad('subscriptions',     {});
+  sharedSubs        = lsLoad('sharedSubs',        {});
   lessonCosts       = lsLoad('lessonCosts',       {});
   globalLessonPrice = lsLoad('globalLessonPrice', 500);
   teacherReviews    = lsLoad('teacherReviews',    {});
