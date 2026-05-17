@@ -3833,7 +3833,14 @@ async function doLogin(){
     _parentStudentIds=matched.map(s=>s.id);
   }
   currentRole=selectedRole;
-  applyRole(); renderAll(); startClock();
+  try {
+    applyRole(); renderAll(); startClock();
+  } catch(e) {
+    document.getElementById('login-err').textContent='❌ Ошибка входа: '+e.message;
+    currentRole='guest'; selectedRole='guest'; _parentStudentIds=[];
+    console.error('doLogin render error:', e);
+    return;
+  }
   document.getElementById('login-screen').classList.add('hidden');
   showMobileUI(currentRole);
 }
@@ -6187,7 +6194,7 @@ function fixLegacySubCosts(){
 // ══ PRICE LIST ══════════════════════════════════════════════
 function renderPriceList(){
   const pl = priceList;
-  const isAdm = isAdmin();
+  const isAdm = currentRole==='admin';
   const colHeaders = ['Разовое','Аб. 4','Аб. 8','Прод. 4','Прод. 8'];
   const fields = ['single','sub4','sub8','renew4','renew8'];
 
@@ -6242,7 +6249,7 @@ function renderPriceList(){
 }
 
 function startEditPrice(span, ci, ri, field){
-  if(!isAdmin()) return;
+  if(currentRole!=='admin') return;
   const cur = priceList.categories[ci].rows[ri][field];
   const input = document.createElement('input');
   input.type='number'; input.min='0';
@@ -6261,7 +6268,7 @@ function startEditPrice(span, ci, ri, field){
 }
 
 function startEditName(span, ci, ri){
-  if(!isAdmin()) return;
+  if(currentRole!=='admin') return;
   const input = document.createElement('input');
   input.type='text'; input.value=priceList.categories[ci].rows[ri].name;
   input.style.cssText='width:200px;padding:3px 6px;border:2px solid var(--lav-d);border-radius:6px;font-family:Nunito,sans-serif;font-size:14px';
@@ -6277,7 +6284,7 @@ function startEditName(span, ci, ri){
 }
 
 function startEditTrial(span){
-  if(!isAdmin()) return;
+  if(currentRole!=='admin') return;
   const input = document.createElement('input');
   input.type='number'; input.min='0'; input.value=priceList.trialPrice;
   input.style.cssText='width:80px;text-align:center;padding:3px 8px;border:2px solid var(--peach-d);border-radius:8px;font-family:Caveat,cursive;font-size:20px;font-weight:700';
