@@ -776,6 +776,7 @@ body.is-admin .ann-input-area{display:block}
     </div>
     <div id="login-err" style="min-height:18px;margin-bottom:10px;font-size:14px;font-weight:700;color:#E53935;text-align:center"></div>
     <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="loginClick(this)">Войти →</button>
+    <div style="margin-top:10px;font-size:11px;color:#bbb;text-align:center">v2025-05-17e</div>
   </div>
 </div>
 
@@ -873,6 +874,7 @@ body.is-admin .ann-input-area{display:block}
       </div>
       <div class="modal-actions">
         <button class="btn btn-danger btn-sm" id="s-del-btn" style="display:none" onclick="deleteStudent()">🗑️ Удалить</button>
+        <button class="btn btn-ghost btn-sm admin-only" id="s-parent-login-btn" style="display:none;color:var(--lav-d)" onclick="loginAsParent(+document.getElementById('s-id').value)">👨‍👩‍👧 Войти как родитель</button>
         <button class="btn btn-ghost" onclick="closeM('m-student')">Отмена</button>
         <button class="btn btn-primary" onclick="saveStudent()">Сохранить</button>
       </div>
@@ -3733,7 +3735,11 @@ async function doLogin(){
         if(!s.phone) return false;
         return String(s.phone).replace(/\D/g,'').slice(-10)===digits.slice(-10);
       });
-      if(!matched.length){ errEl.textContent='❌ Телефон не найден'; return; }
+      if(!matched.length){
+        const withPhone=students.filter(s=>s.phone).length;
+        errEl.textContent='❌ Телефон не найден (в базе '+withPhone+' учеников с телефоном)';
+        return;
+      }
       _parentStudentIds=matched.map(s=>s.id);
     }
     currentRole=selectedRole;
@@ -3745,6 +3751,17 @@ async function doLogin(){
     currentRole='guest'; selectedRole='guest'; _parentStudentIds=[];
     console.error('doLogin error:',e);
   }
+}
+
+function loginAsParent(studentId){
+  if(!studentId) return;
+  closeM('m-student');
+  _parentStudentIds=[studentId];
+  currentRole='parent'; selectedRole='parent';
+  applyRole(); renderAll(); startClock();
+  document.getElementById('login-screen').classList.add('hidden');
+  showMobileUI('parent');
+  toast('👨‍👩‍👧 Просмотр от имени родителя');
 }
 
 function applyRole(){
@@ -4945,6 +4962,7 @@ function openNewStudent(){
   document.getElementById('s-trial-date').value='';
   document.getElementById('s-trial-amount').value='';
   document.getElementById('s-del-btn').style.display='none';
+  document.getElementById('s-parent-login-btn').style.display='none';
   stuTab('info');
   openM('m-student');
 }
@@ -4967,6 +4985,7 @@ function openEditStudent(id){
   onDobChange();
   if(!s.dob) document.getElementById('s-age').value=s.age||'';
   document.getElementById('s-del-btn').style.display='inline-flex';
+  document.getElementById('s-parent-login-btn').style.display='inline-flex';
   stuTab('info');
   openM('m-student');
 }
