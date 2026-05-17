@@ -749,6 +749,22 @@ body.is-admin .ann-input-area{display:block}
 .ph-upload-zone:hover{background:var(--cream)}
 .call-time-btn{padding:5px 12px;border-radius:20px;border:2px solid var(--peach);background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--ink-l);transition:all .15s}
 .call-time-btn.active{background:var(--lav);border-color:var(--lav-d);color:var(--lav-d)}
+/* ── Price list ── */
+.price-header-banner{background:linear-gradient(135deg,var(--lav),var(--peach));border-radius:18px;padding:18px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.price-trial-badge{background:white;border-radius:12px;padding:10px 18px;font-family:'Caveat',cursive;font-size:22px;font-weight:700;color:var(--peach-d);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.price-category{margin-bottom:22px;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.price-cat-header{display:flex;align-items:center;gap:10px;padding:12px 18px;font-weight:800;font-size:16px;color:white}
+.price-cat-header.lav{background:var(--lav-d)}.price-cat-header.mint{background:var(--mint-d)}.price-cat-header.peach{background:var(--peach-d)}.price-cat-header.yel{background:#e8a800}.price-cat-header.rose{background:#c0448a}
+.price-table{width:100%;border-collapse:collapse;background:white}
+.price-table th{background:#f9f5ff;font-size:11px;font-weight:700;color:var(--ink-l);text-transform:uppercase;padding:8px 12px;text-align:center;border-bottom:1px solid var(--cream-d)}
+.price-table th:first-child{text-align:left}
+.price-table td{padding:10px 12px;border-bottom:1px solid var(--cream);font-size:14px}
+.price-table tr:last-child td{border-bottom:none}
+.price-table td:not(:first-child){text-align:center;font-weight:700;color:var(--ink)}
+.price-val.editable{cursor:pointer;border-radius:6px;padding:2px 6px}
+.price-val.editable:hover{background:var(--cream)}
+.price-notes{font-size:11px;color:var(--ink-l);margin-top:12px;line-height:1.6}
+.price-notes span{display:block}
 </style>
 </head>
 <body>
@@ -1280,6 +1296,7 @@ body.is-admin .ann-input-area{display:block}
 
     <div class="nav-label">Главное</div>
     <button class="nav-item active" onclick="nav('dashboard',this);closeMobSidebar()"><span class="nav-icon">🏠</span>Дашборд</button>
+    <button class="nav-item" onclick="nav('pricelist',this);closeMobSidebar()"><span class="nav-icon">💸</span>Прайс</button>
     <button class="nav-item" onclick="nav('schedule',this);closeMobSidebar()"><span class="nav-icon">📅</span>Расписание</button>
     <button class="nav-item admin-only-block" onclick="nav('students',this);closeMobSidebar()"><span class="nav-icon">👦</span>Ученики</button>
     <button class="nav-item" onclick="nav('teachers',this);closeMobSidebar()"><span class="nav-icon">👩‍🏫</span>Педагоги</button>
@@ -1886,6 +1903,17 @@ body.is-admin .ann-input-area{display:block}
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ── PRICELIST ── -->
+    <div class="page" id="page-pricelist">
+      <div class="topbar">
+        <div class="page-title">Прайс 💸<span>Актуальные цены</span></div>
+        <div class="topbar-actions admin-only-flex">
+          <button class="btn btn-sm btn-ghost" onclick="resetPriceList()" title="Вернуть цены по умолчанию">↺ Сбросить</button>
+        </div>
+      </div>
+      <div id="pricelist-content"></div>
     </div>
 
     <!-- ── REPORTS ── -->
@@ -3629,12 +3657,46 @@ let achievements = lsLoad('achievements', [
 let nextAchId = lsLoad('nextAchId', 5);
 let requests  = lsLoad('requests', []);
 let nextReqId = lsLoad('nextReqId', 1);
+const DEFAULT_PRICE_LIST = {
+  trialPrice: 300,
+  trialNote: 'кроме индивидуальных занятий',
+  subNote: 'срок абонемента: 30 дней (4 зан.) / 60 дней (8 зан.)',
+  renewNote: 'при оплате нового абонемента на крайнем занятии текущего',
+  categories: [
+    { id:'drawing', name:'Рисование', emoji:'🎨', color:'lav', note:'от 3 до 15 лет',
+      rows:[{ name:'Живопись и рисунок', single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }] },
+    { id:'sketch', name:'Скетчинг маркерами', emoji:'✏️', color:'mint', note:'от 5 до 15 лет',
+      rows:[{ name:'Скетчинг маркерами', single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }] },
+    { id:'lepka', name:'Лепка', emoji:'🏺', color:'peach', note:'',
+      rows:[
+        { name:'3–5 лет + развитие речи', single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 },
+        { name:'Воздушный пластилин 5+',  single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }
+      ] },
+    { id:'other', name:'Иные курсы', emoji:'🌟', color:'yel', note:'',
+      rows:[
+        { name:'Креативити 5+',            single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 },
+        { name:'Раннее развитие 1–3 года', single:700, sub4:2600, sub8:null, renew4:2500, renew8:null },
+        { name:'Подготовка к школе',       single:750, sub4:2800, sub8:4500, renew4:2600, renew8:4500 }
+      ] },
+    { id:'individual', name:'Индивидуальные занятия', emoji:'👤', color:'rose', note:'',
+      rows:[
+        { name:'Творческое развитие',      single:1250, sub4:4400, sub8:8000, renew4:4200, renew8:7800 },
+        { name:'Музыкальное развитие',     single:1350, sub4:5000, sub8:8500, renew4:null,  renew8:null },
+        { name:'Раннее развитие 1–3 года', single:850,  sub4:3200, sub8:6000, renew4:null,  renew8:null },
+        { name:'Подготовка к школе',       single:1100, sub4:4200, sub8:7600, renew4:null,  renew8:null },
+        { name:'Нейро кружок 4+',          single:1100, sub4:4200, sub8:7600, renew4:null,  renew8:null },
+        { name:'Логопед',                  single:1350, sub4:5000, sub8:8500, renew4:null,  renew8:null }
+      ] }
+  ]
+};
+
 // subscriptions: { studentId: [{id, groupName, total, used, price, createdAt}, ...] }
 let subscriptions = lsLoad('subscriptions', {});
 // lessonCosts: { 'YYYY-MM-DD': { studentId: cost } }
 let lessonCosts   = lsLoad('lessonCosts', {});
 // globalLessonPrice: default price per single visit (₽), overridable per student
 let globalLessonPrice = lsLoad('globalLessonPrice', 500);
+let priceList = lsLoad('priceList', DEFAULT_PRICE_LIST);
 // promo: { type: 'pct'|'fixed'|'free'|'', value: number, name: string }
 let activePromo = lsLoad('activePromo', {type:'', value:0, name:''});
 // teacherReviews: { teacherId: [{stars, comment, role, date}, ...] }
@@ -3852,8 +3914,8 @@ function isStudentActive(sid){
   return _activeIds.has(sid);
 }
 
-const guestPages=['dashboard','schedule','teachers','gallery'];
-const parentPages=['dashboard','schedule','teachers','gallery','attendance'];
+const guestPages=['dashboard','schedule','teachers','gallery','pricelist'];
+const parentPages=['dashboard','schedule','teachers','gallery','attendance','pricelist'];
 
 function nav(page, btn){
   const allowed = currentRole==='admin'
@@ -3875,6 +3937,7 @@ function nav(page, btn){
     else { showAdminAttPanel(); attTab(_attTab||'mark'); renderAttendance(); }
   }
   if(page==='payments') renderPayments();
+  if(page==='pricelist') renderPriceList();
   if(page==='students') renderStudents();
   if(page==='schedule') renderSchedule();
   if(page==='teachers') renderTeachers();
@@ -6118,6 +6181,122 @@ function fixLegacySubCosts(){
   });
   if(fixed>0){persist();toast(`✅ Исправлено ${fixed} записей по абонементу`);renderPayments();}
   else toast('ℹ️ Старых нулевых записей не найдено');
+}
+
+// ══ PRICE LIST ══════════════════════════════════════════════
+function renderPriceList(){
+  const pl = priceList;
+  const isAdm = isAdmin();
+  const colHeaders = ['Разовое','Аб. 4','Аб. 8','Прод. 4','Прод. 8'];
+  const fields = ['single','sub4','sub8','renew4','renew8'];
+
+  const valCell = (ci, ri, field, val) => {
+    const display = val != null ? val.toLocaleString('ru') + ' ₽' : '—';
+    if(!isAdm) return `<td><span class="price-val">${display}</span></td>`;
+    return `<td><span class="price-val editable" onclick="startEditPrice(this,${ci},${ri},'${field}')">${display}</span></td>`;
+  };
+
+  const cats = pl.categories.map((cat, ci) => `
+    <div class="price-category">
+      <div class="price-cat-header ${cat.color}">
+        <span style="font-size:22px">${cat.emoji}</span>
+        <span>${cat.name}</span>
+        ${cat.note ? `<span style="font-weight:400;font-size:13px;opacity:.85">${cat.note}</span>` : ''}
+      </div>
+      <table class="price-table">
+        <thead><tr>
+          <th>Направление</th>
+          ${colHeaders.map(h=>`<th>${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${cat.rows.map((row, ri) => `<tr>
+            <td>${isAdm
+              ? `<span class="price-val editable" onclick="startEditName(this,${ci},${ri})">${row.name}</span>`
+              : row.name}</td>
+            ${fields.map(f => valCell(ci, ri, f, row[f])).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+
+  const trialDisplay = isAdm
+    ? `<span class="price-val editable" onclick="startEditTrial(this)"
+        style="font-family:'Caveat',cursive;font-size:22px;font-weight:700;color:var(--peach-d)">${pl.trialPrice} ₽</span>`
+    : `${pl.trialPrice} ₽`;
+
+  document.getElementById('pricelist-content').innerHTML = `
+    <div class="price-header-banner">
+      <div style="color:white">
+        <div style="font-family:'Caveat',cursive;font-size:28px;font-weight:700">ПЕРВОЕ ПОСЕЩЕНИЕ</div>
+        <div style="font-size:13px;opacity:.85">любого направления · ${pl.trialNote}</div>
+      </div>
+      <div class="price-trial-badge">${trialDisplay}</div>
+    </div>
+    ${cats}
+    <div class="price-notes">
+      <span>* Первое посещение за ${pl.trialPrice} ₽ не распространяется на индивидуальные занятия</span>
+      <span>** ${pl.subNote}</span>
+      <span>*** ${pl.renewNote}</span>
+    </div>`;
+}
+
+function startEditPrice(span, ci, ri, field){
+  if(!isAdmin()) return;
+  const cur = priceList.categories[ci].rows[ri][field];
+  const input = document.createElement('input');
+  input.type='number'; input.min='0';
+  input.value = cur != null ? cur : '';
+  input.placeholder='—';
+  input.style.cssText='width:72px;text-align:center;padding:3px 6px;border:2px solid var(--lav-d);border-radius:6px;font-weight:700;font-family:Nunito,sans-serif;font-size:14px';
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    priceList.categories[ci].rows[ri][field] = input.value.trim()==='' ? null : +input.value;
+    lsSave('priceList', priceList);
+    renderPriceList();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); if(e.key==='Escape') renderPriceList(); });
+}
+
+function startEditName(span, ci, ri){
+  if(!isAdmin()) return;
+  const input = document.createElement('input');
+  input.type='text'; input.value=priceList.categories[ci].rows[ri].name;
+  input.style.cssText='width:200px;padding:3px 6px;border:2px solid var(--lav-d);border-radius:6px;font-family:Nunito,sans-serif;font-size:14px';
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    if(input.value.trim()) priceList.categories[ci].rows[ri].name = input.value.trim();
+    lsSave('priceList', priceList);
+    renderPriceList();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); if(e.key==='Escape') renderPriceList(); });
+}
+
+function startEditTrial(span){
+  if(!isAdmin()) return;
+  const input = document.createElement('input');
+  input.type='number'; input.min='0'; input.value=priceList.trialPrice;
+  input.style.cssText='width:80px;text-align:center;padding:3px 8px;border:2px solid var(--peach-d);border-radius:8px;font-family:Caveat,cursive;font-size:20px;font-weight:700';
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    priceList.trialPrice = +input.value || 0;
+    lsSave('priceList', priceList);
+    renderPriceList();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); });
+}
+
+function resetPriceList(){
+  if(!confirm('Сбросить прайс к значениям по умолчанию?')) return;
+  priceList = JSON.parse(JSON.stringify(DEFAULT_PRICE_LIST));
+  lsSave('priceList', priceList);
+  renderPriceList();
+  toast('✅ Прайс сброшен');
 }
 
 function renderPayments(){
