@@ -6934,28 +6934,39 @@ function getRevenuePerTeacher(from,to){
     const costs=lessonCosts[dateStr]||{};
     const dow=new Date(dateStr+'T12:00:00').getDay();
 
+    // Шаг 0: собрать schedule-ы, активные в этот день через composite-ключи
+    const activeScIds=new Set();
+    Object.keys(att).forEach(k=>{
+      if(!String(k).includes('_')&&String(k).includes(':'))
+        activeScIds.add(parseInt(k.split(':')[1]));
+    });
+    // Расписания, которые ведутся в этот день недели
+    const schedOnDow=schedule.filter(sc=>sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow)).map(sc=>sc.id);
+
+    const resolveScId=sid=>{
+      const enrolled=enrollments[String(sid)]||[];
+      // 1. Записан + день совпадает
+      let f=enrolled.find(scid=>{const sc=scheduleMap[scid];return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);});
+      if(f!==undefined)return f;
+      // 2. Записан + фактически шёл в этот день (composite-ключи других студентов)
+      f=enrolled.find(scid=>activeScIds.has(scid));
+      if(f!==undefined)return f;
+      // 3. Единственный активный schedule этого дня
+      const activeOnDow=schedOnDow.filter(scid=>activeScIds.has(scid));
+      if(activeOnDow.length===1)return activeOnDow[0];
+      // 4. Единственный schedule этого дня в расписании
+      if(schedOnDow.length===1)return schedOnDow[0];
+      // 5. Первый записанный
+      return enrolled[0]??null;
+    };
+
     // Group present students by the schedule they attended
     const perSchedule=new Map(); // scId (or null) -> {revenue, count}
 
     Object.entries(att).forEach(([key,status])=>{
       if(status!=='p'||String(key).includes('_'))return;
       const cost=costs[key]??0;
-
-      let scId=null;
-      if(String(key).includes(':')){
-        // Composite key studentId:scheduleId — schedule is explicit
-        scId=parseInt(key.split(':')[1]);
-      } else {
-        // Plain student key: find their enrolled schedule active on this day
-        const enrolled=enrollments[String(key)]||[];
-        const matched=enrolled.find(scid=>{
-          const sc=scheduleMap[scid];
-          return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
-        });
-        // Fallback: если нет совпадения по дню — берём первое записанное расписание
-        scId=matched??enrolled[0]??null;
-      }
-
+      const scId=String(key).includes(':')?parseInt(key.split(':')[1]):resolveScId(+key);
       const entry=perSchedule.get(scId)||{revenue:0,count:0};
       entry.revenue+=cost;
       entry.count++;
@@ -7001,20 +7012,29 @@ function openTeacherSalaryDetail(tid){
     const costs=lessonCosts[dateStr]||{};
     const dow=new Date(dateStr+'T12:00:00').getDay();
 
-    // Group present students by schedule -> same logic as getRevenuePerTeacher
+    const activeScIds=new Set();
+    Object.keys(att).forEach(k=>{
+      if(!String(k).includes('_')&&String(k).includes(':'))
+        activeScIds.add(parseInt(k.split(':')[1]));
+    });
+    const schedOnDow=schedule.filter(sc=>sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow)).map(sc=>sc.id);
+    const resolveScId=sid=>{
+      const enrolled=enrollments[String(sid)]||[];
+      let f=enrolled.find(scid=>{const sc=scheduleMap[scid];return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);});
+      if(f!==undefined)return f;
+      f=enrolled.find(scid=>activeScIds.has(scid));
+      if(f!==undefined)return f;
+      const activeOnDow=schedOnDow.filter(scid=>activeScIds.has(scid));
+      if(activeOnDow.length===1)return activeOnDow[0];
+      if(schedOnDow.length===1)return schedOnDow[0];
+      return enrolled[0]??null;
+    };
+
+    // Group present students by schedule
     const perSchedule=new Map();
     Object.entries(att).forEach(([key,status])=>{
       if(status!=='p'||String(key).includes('_'))return;
-      let scId=null;
-      if(String(key).includes(':')){ scId=parseInt(key.split(':')[1]); }
-      else {
-        const enrolled=enrollments[String(key)]||[];
-        const matched=enrolled.find(scid=>{
-          const sc=scheduleMap[scid];
-          return sc&&sc.days&&sc.days.split(',').some(d=>DAY_MAP[d.trim()]===dow);
-        });
-        scId=matched??enrolled[0]??null;
-      }
+      const scId=String(key).includes(':')?parseInt(key.split(':')[1]):resolveScId(+key);
       const sc=scId!==null?scheduleMap[scId]:null;
       const tName=sc?sc.teacher||'':'';
       if((teacherByName[tName]??0)!==tid)return; // only this teacher
