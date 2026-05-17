@@ -1344,7 +1344,6 @@ body.is-admin .ann-input-area{display:block}
         </div>
       </div>
       <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
-      <button class="logout-btn admin-only" onclick="resetToDefaults()" style="margin-top:6px;border-color:var(--sky);color:var(--sky-d)">🔄 Сбросить данные</button>
     </div>
   </aside>
 
@@ -3726,6 +3725,12 @@ let priceList = lsLoad('priceList', DEFAULT_PRICE_LIST);
 let activePromo = lsLoad('activePromo', {type:'', value:0, name:''});
 // teacherReviews: { teacherId: [{stars, comment, role, date}, ...] }
 let teacherReviews = lsLoad('teacherReviews', {});
+// One-time migration: clear reviews accumulated before v2026-05-17b
+if(!lsLoad('_mig_reviews_cleared', false)){
+  teacherReviews = {};
+  lsSave('teacherReviews', {});
+  lsSave('_mig_reviews_cleared', true);
+}
 let photos     = lsLoad('photos', []);
 let nextPhotoId = lsLoad('nextPhotoId', 1);
 let nextTId    = lsLoad('nextTId', 4);
