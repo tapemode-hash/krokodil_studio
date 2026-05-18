@@ -5150,8 +5150,39 @@ function saveStudent(){
 }
 function deleteStudent(){
   const id=+document.getElementById('s-id').value;
-  if(!confirm('Удалить ученика?'))return;
+  if(!confirm('Удалить ученика и все его данные?'))return;
+
+  // Основная запись
   students=students.filter(x=>x.id!==id);
+
+  // Группы и даты
+  delete enrollments[id];
+  delete dateEnrollments[id];
+  delete subscriptions[id];
+
+  // Временные назначения в группу по дням
+  Object.keys(dayAssignments).forEach(dateKey=>{
+    delete dayAssignments[dateKey][String(id)];
+    if(!Object.keys(dayAssignments[dateKey]).length) delete dayAssignments[dateKey];
+  });
+
+  // Посещаемость и стоимость занятий
+  Object.keys(attendance).forEach(dateKey=>{
+    const dayAtt=attendance[dateKey];
+    Object.keys(dayAtt).forEach(k=>{
+      if(sidFromAttKey(k)===id) delete dayAtt[k];
+    });
+    if(!Object.keys(dayAtt).length) delete attendance[dateKey];
+  });
+  Object.keys(lessonCosts).forEach(dateKey=>{
+    const dayCosts=lessonCosts[dateKey];
+    Object.keys(dayCosts).forEach(k=>{
+      if(sidFromAttKey(k.replace(/_.*$/,''))===id) delete dayCosts[k];
+    });
+    if(!Object.keys(dayCosts).length) delete lessonCosts[dateKey];
+  });
+
+  invalidateAttCache();
   persist(); renderStudents(); closeM('m-student'); toast('🗑️ Ученик удалён');
 }
 
@@ -7838,6 +7869,19 @@ function loadStateFromStorage(){
   nextTId           = lsLoad('nextTId',           4);
   nextSId           = lsLoad('nextSId',           1411);
   nextScId          = lsLoad('nextScId',          37);
+  // Гарантируем отсутствие коллизий ID после загрузки данных из Firebase
+  if(students.length){
+    const maxSId = Math.max(...students.map(s=>s.id||0));
+    if(nextSId <= maxSId) nextSId = maxSId + 1;
+  }
+  if(teachers.length){
+    const maxTId = Math.max(...teachers.map(t=>t.id||0));
+    if(nextTId <= maxTId) nextTId = maxTId + 1;
+  }
+  if(schedule.length){
+    const maxScId = Math.max(...schedule.map(s=>s.id||0));
+    if(nextScId <= maxScId) nextScId = maxScId + 1;
+  }
   invalidateAttCache();
 }
 
