@@ -3870,6 +3870,7 @@ async function doLogin(){
         return;
       }
       _parentStudentIds=matched.map(s=>s.id);
+      await signInAnonymousFirebase(); // анонимный токен для чтения приватных данных
     }
     currentRole=selectedRole;
     applyRole(); renderAll(); startClock();
@@ -8114,7 +8115,22 @@ async function signInToFirebase(password){
 
 function getFirebaseToken(){
   if(_fbToken && Date.now() < _fbTokenExpiry - 60_000) return _fbToken;
-  return null; // токен есть только у залогиненного администратора
+  return null;
+}
+
+// Анонимный токен для родителей — даёт право читать приватные данные, но не писать
+async function signInAnonymousFirebase(){
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_API_KEY}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({returnSecureToken:true}) }
+    );
+    if(!res.ok) return;
+    const d = await res.json();
+    _fbToken = d.idToken;
+    _fbTokenExpiry = Date.now() + (+d.expiresIn || 3600) * 1000;
+  } catch(e){ console.warn('[Firebase AnonAuth]', e); }
 }
 
 const SYNC_KEYS = ['teachers','students','schedule','attendance','enrollments',
@@ -8152,7 +8168,9 @@ function loadStateFromStorage(){
 
 async function syncFromFirebase(){
   try {
-    const res = await fetch(FB_URL + '.json');
+    const token = getFirebaseToken();
+    const url = token ? `${FB_URL}.json?auth=${token}` : `${FB_URL}.json`;
+    const res = await fetch(url);
     if(!res.ok){ console.error('[Firebase] Ошибка загрузки:', res.status); return false; }
     const data = await res.json();
     if(!data){ console.warn('[Firebase] База пуста'); return false; }
