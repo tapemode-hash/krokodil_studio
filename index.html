@@ -4012,6 +4012,11 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
   const modal = o.querySelector('.modal');
   if(modal) modal.addEventListener('pointerdown', e=>e.stopPropagation());
 });
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  const open=document.querySelector('.modal-overlay.open');
+  if(open) open.classList.remove('open');
+});
 // Rate teacher overlay — separate handling
 const rateOverlay = document.getElementById('m-rate-teacher');
 if(rateOverlay){
@@ -8170,9 +8175,14 @@ async function syncToFirebase(){
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
-    if(!res.ok){ console.error('[Firebase] Ошибка сохранения:', res.status); }
-    else { lsSave('_fbTs', payload._ts); console.log('[Firebase] Сохранено успешно'); }
-  } catch(e){ console.error('[Firebase] Исключение при сохранении:', e); }
+    if(!res.ok){
+      console.error('[Firebase] Ошибка сохранения:', res.status);
+      toast('⚠️ Не удалось сохранить в облако ('+res.status+'). Данные сохранены локально.');
+    } else { lsSave('_fbTs', payload._ts); console.log('[Firebase] Сохранено успешно'); }
+  } catch(e){
+    console.error('[Firebase] Исключение при сохранении:', e);
+    toast('⚠️ Нет связи с облаком. Данные сохранены локально.');
+  }
 }
 
 let _fbPolling = null;
