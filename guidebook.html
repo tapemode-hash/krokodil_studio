@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дизайн-гайдбук — Арт-студия Крокодил</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --cream:    #FFF8F0;
+  --warm:     #FFFDF9;
+  --peach:    #FFD4B8;
+  --coral:    #FF8C69;
+  --coral-l:  #FFB8A0;
+  --mint:     #B8F0D4;
+  --mint-d:   #5ECFA0;
+  --lav:      #D4C4F0;
+  --lav-d:    #9B84D8;
+  --sky:      #C4E4F8;
+  --sky-d:    #5BAED6;
+  --yel:      #FFE97A;
+  --yel-d:    #E8C840;
+  --grn:      #4CAF50;
+  --grn-l:    #A5D6A7;
+  --grn-d:    #388E3C;
+  --ink:      #3A2E2E;
+  --ink-l:    #6B5E5E;
+  --sh:       rgba(58,46,46,.08);
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--cream);
+  font-family: 'Nunito', sans-serif;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+/* ── ambient blobs ── */
+body::before, body::after {
+  content: ''; position: fixed; border-radius: 50%; filter: blur(90px); opacity: .14; pointer-events: none; z-index: 0;
+}
+body::before { width: 700px; height: 700px; background: radial-gradient(circle, var(--peach), var(--lav)); top: -200px; right: -120px; animation: fl1 14s ease-in-out infinite; }
+body::after  { width: 600px; height: 600px; background: radial-gradient(circle, var(--mint), var(--sky)); bottom: -180px; left: -120px; animation: fl2 17s ease-in-out infinite; }
+
+@keyframes fl1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,50px) scale(1.06)} }
+@keyframes fl2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-25px,-35px) scale(1.09)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+@keyframes wobble { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(6deg)} }
+@keyframes croc-tail { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(8deg)} transform-origin: left center; }
+@keyframes croc-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(.1)} }
+
+/* ── LAYOUT ── */
+.gb-wrap { max-width: 960px; margin: 0 auto; padding: 48px 28px 80px; position: relative; z-index: 1; }
+
+/* ── SECTION ── */
+.gb-section { margin-bottom: 64px; }
+.gb-section-title {
+  font-family: 'Caveat', cursive; font-size: 32px; font-weight: 700;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+}
+.gb-section-desc { font-size: 14px; color: var(--ink-l); margin-bottom: 28px; max-width: 600px; }
+.gb-divider {
+  height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--coral), var(--lav), var(--mint), transparent);
+  margin-bottom: 28px;
+}
+
+/* ── HERO ── */
+.gb-hero {
+  background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 55%, #AED581 100%);
+  border-radius: 28px; padding: 52px 48px;
+  display: flex; align-items: center; justify-content: space-between; gap: 32px;
+  margin-bottom: 56px; position: relative; overflow: hidden;
+  box-shadow: 6px 8px 0 #A5D6A7;
+}
+.gb-hero::before {
+  content: ''; position: absolute; top: -60px; right: 160px;
+  width: 240px; height: 240px; border-radius: 50%;
+  background: rgba(255,255,255,.08); pointer-events: none;
+}
+.gb-hero-text h1 {
+  font-family: 'Caveat', cursive; font-size: 52px; font-weight: 700;
+  color: white; line-height: 1; margin-bottom: 8px;
+}
+.gb-hero-text p { color: rgba(255,255,255,.85); font-size: 16px; max-width: 420px; }
+.gb-hero-badge {
+  background: rgba(255,255,255,.22); border: 2px solid rgba(255,255,255,.4);
+  border-radius: 14px; padding: 6px 14px; font-size: 12px; font-weight: 700;
+  color: white; margin-top: 16px; display: inline-block; letter-spacing: .5px;
+}
+.gb-hero-croc { flex-shrink: 0; }
+
+/* ── NAV BAR (sticky) ── */
+.gb-nav {
+  position: sticky; top: 16px; z-index: 100;
+  background: rgba(255,248,240,.92); backdrop-filter: blur(12px);
+  border: 2px solid var(--peach); border-radius: 16px;
+  padding: 10px 20px; margin-bottom: 52px;
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  box-shadow: 0 4px 20px var(--sh);
+}
+.gb-nav-logo {
+  font-family: 'Caveat', cursive; font-size: 18px; font-weight: 700;
+  color: var(--grn); margin-right: 10px;
+}
+.gb-nav a {
+  padding: 5px 12px; border-radius: 9px; text-decoration: none;
+  font-size: 13px; font-weight: 700; color: var(--ink-l); transition: all .2s;
+}
+.gb-nav a:hover { background: var(--peach); color: var(--ink); }
+
+/* ── COLOR PALETTE ── */
+.color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.color-chip {
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 3px 4px 0 var(--sh); transition: transform .2s;
+}
+.color-chip:hover { transform: translateY(-4px); }
+.color-swatch { height: 80px; }
+.color-info { background: white; padding: 12px 14px; }
+.color-name { font-weight: 700; font-size: 13px; }
+.color-var  { font-size: 11px; color: var(--ink-l); font-family: monospace; margin-top: 2px; }
+.color-hex  { font-size: 11px; color: var(--ink-l); }
+.color-group-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--ink-l); margin: 24px 0 10px;
+}
+
+/* ── TYPOGRAPHY ── */
+.type-showcase { background: white; border-radius: var(--radius-lg); padding: 32px; border: 2px solid var(--cream); margin-bottom: 14px; }
+.type-sample-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-l); margin-bottom: 12px; border-bottom: 1px solid var(--cream); padding-bottom: 8px; }
+.type-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.type-block { padding: 20px 24px; border-radius: var(--radius-md); background: var(--cream); }
+.font-tag { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: .5px; margin-bottom: 10px; }
+.font-tag.caveat { background: var(--lav); color: var(--lav-d); }
+.font-tag.nunito { background: var(--mint); color: var(--mint-d); }
+
+/* ── TYPE SCALE ── */
+.type-scale { display: flex; flex-direction: column; gap: 10px; padding: 24px; background: white; border-radius: var(--radius-lg); border: 2px solid var(--cream); }
+.ts-row { display: flex; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--cream); }
+.ts-row:last-child { border: none; }
+.ts-meta { min-width: 90px; font-size: 11px; color: var(--ink-l); font-weight: 700; }
+
+/* ── COMPONENTS ── */
+.comp-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; }
+.comp-label { font-size: 12px; font-weight: 700; color: var(--ink-l); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+/* ── BUTTONS ── */
+.btn { padding: 9px 18px; border-radius: 11px; border: none; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--coral); color: white; box-shadow: 3px 4px 0 var(--coral-l); }
+.btn-primary:hover { transform: translate(-1px,-2px); box-shadow: 4px 6px 0 var(--coral-l); }
+.btn-green { background: var(--grn); color: white; box-shadow: 3px 4px 0 var(--grn-l); }
+.btn-green:hover { transform: translate(-1px,-2px); box-shadow: 4px 6px 0 var(--grn-l); }
+.btn-ghost { background: white; color: var(--ink); border: 2px solid var(--peach); }
+.btn-ghost:hover { background: var(--peach); }
+.btn-lav { background: var(--lav-d); color: white; box-shadow: 3px 4px 0 var(--lav); }
+.btn-danger { background: none; border: 2px solid #FFCDD2; color: #E53935; }
+.btn-danger:hover { background: #FFF0F0; }
+.btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 9px; }
+.btn-lg { padding: 13px 26px; font-size: 15px; border-radius: 13px; }
+
+/* ── CARDS ── */
+.card-demo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card { background: white; border-radius: var(--radius-lg); padding: 22px; border: 2px solid var(--cream); }
+.card-title { font-family: 'Caveat', cursive; font-size: 21px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.stat-card { background: white; border-radius: var(--radius-lg); padding: 20px 16px; border: 2px solid; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 90px; height: 90px; border-radius: 50%; opacity: .15; }
+.stat-card.peach { border-color: var(--peach); box-shadow: 4px 5px 0 var(--peach); } .stat-card.peach::before { background: var(--coral); }
+.stat-card.mint  { border-color: var(--mint);  box-shadow: 4px 5px 0 var(--mint);  } .stat-card.mint::before  { background: var(--mint-d); }
+.stat-card.lav   { border-color: var(--lav);   box-shadow: 4px 5px 0 var(--lav);   } .stat-card.lav::before   { background: var(--lav-d); }
+.stat-icon  { font-size: 24px; margin-bottom: 9px; display: block; }
+.stat-value { font-family: 'Caveat', cursive; font-size: 42px; font-weight: 700; line-height: 1; }
+.stat-label { font-size: 11px; font-weight: 600; color: var(--ink-l); margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge.green  { background: var(--mint); color: var(--mint-d); }
+.badge.red    { background: #FFE0E0; color: #E53935; }
+.badge.blue   { background: var(--sky); color: var(--sky-d); }
+.badge.yellow { background: var(--yel); color: var(--yel-d); }
+.badge.purple { background: var(--lav); color: var(--lav-d); }
+
+/* ── FORM INPUTS ── */
+.form-group  { margin-bottom: 14px; }
+.form-label  { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-l); margin-bottom: 5px; }
+.form-input  { width: 100%; padding: 9px 13px; border-radius: 11px; border: 2px solid var(--peach); font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 600; outline: none; background: var(--cream); }
+.form-input:focus { border-color: var(--coral); background: white; }
+.form-select { width: 100%; padding: 9px 13px; border-radius: 11px; border: 2px solid var(--peach); font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 600; outline: none; background: var(--cream); cursor: pointer; }
+.forms-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ── NAV ITEMS ── */
+.nav-demo { background: var(--warm); border: 2px dashed var(--peach); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 14px; border-radius: 11px; cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--ink-l); border: none; background: none; width: 100%; }
+.nav-item.active { background: var(--peach); color: var(--ink); box-shadow: 2px 3px 0 var(--coral-l); }
+.nav-item:hover { background: var(--cream); color: var(--ink); }
+.nav-icon { font-size: 17px; width: 22px; text-align: center; }
+
+/* ── SHADOW SHOWCASE ── */
+.shadow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.shadow-chip { background: white; border-radius: var(--radius-lg); padding: 24px; text-align: center; }
+.shadow-chip .name { font-weight: 700; font-size: 13px; margin-top: 10px; }
+.shadow-chip .val  { font-size: 11px; color: var(--ink-l); font-family: monospace; margin-top: 4px; }
+
+/* ── RADIUS SHOWCASE ── */
+.radius-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+.radius-chip { width: 80px; height: 80px; background: var(--lav); display: flex; align-items: center; justify-content: center; }
+.radius-chip .r-label { font-size: 11px; font-weight: 700; color: var(--lav-d); text-align: center; }
+
+/* ── ANIMATION DEMOS ── */
+.anim-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+.anim-chip { background: white; border-radius: var(--radius-lg); border: 2px solid var(--cream); padding: 20px 24px; text-align: center; min-width: 140px; }
+.anim-name { font-size: 12px; font-weight: 700; color: var(--ink-l); margin-top: 10px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ── MASCOT SECTION ── */
+.mascot-section {
+  background: linear-gradient(135deg, #F0FFF8, #F5F0FF);
+  border: 2px solid var(--mint); border-radius: 28px; padding: 48px;
+  display: grid; grid-template-columns: auto 1fr; gap: 48px; align-items: start;
+}
+.mascot-states { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 24px; }
+.mascot-state-item { text-align: center; }
+.mascot-state-label { font-size: 12px; font-weight: 700; color: var(--ink-l); margin-top: 8px; text-transform: uppercase; letter-spacing: .5px; }
+.mascot-usage { margin-top: 24px; }
+.mascot-usage-title { font-family: 'Caveat', cursive; font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+.usage-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 11px; background: white; border: 2px solid var(--cream); margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+.usage-icon { font-size: 16px; width: 22px; text-align: center; }
+.usage-where { color: var(--ink-l); font-size: 12px; font-weight: 400; margin-left: auto; }
+
+/* ── LOGO ANATOMY ── */
+.logo-demo { display: flex; align-items: center; gap: 12px; padding: 20px 24px; background: white; border-radius: var(--radius-lg); border: 2px solid var(--cream); }
+.logo-icon { width: 46px; height: 46px; background: linear-gradient(135deg, #4CAF50, #8BC34A); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 3px 4px 0 #A5D6A7; transform: rotate(-3deg); }
+.logo-text { font-family: 'Caveat', cursive; font-size: 23px; font-weight: 700; line-height: 1.1; }
+.logo-text span { color: #4CAF50; }
+.logo-sub { font-size: 11px; color: var(--ink-l); font-weight: 600; }
+
+/* ── TOAST DEMO ── */
+.toast-demo { background: var(--ink); color: white; padding: 13px 18px; border-radius: 13px; font-weight: 700; font-size: 13.5px; display: inline-flex; align-items: center; gap: 9px; }
+
+/* ── FOOTER ── */
+.gb-footer { text-align: center; padding: 40px 0 0; border-top: 2px dashed var(--peach); color: var(--ink-l); font-size: 12px; }
+.gb-footer-croc { font-size: 36px; display: block; margin-bottom: 10px; animation: wobble 3s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="gb-wrap">
+
+  <!-- HERO -->
+  <div class="gb-hero">
+    <div class="gb-hero-text">
+      <h1>Дизайн-гайдбук</h1>
+      <p>Цвета, типографика, компоненты и маскот — всё что нужно для поддержания единого стиля Арт-студии Крокодил</p>
+      <span class="gb-hero-badge">v 1.0 · 2025</span>
+    </div>
+    <div class="gb-hero-croc">
+      <!-- Hero crocodile — large, friendly -->
+      <svg width="180" height="140" viewBox="0 0 180 140" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(4px 6px 0 #388E3C)">
+        <!-- tail -->
+        <path d="M148 85 Q165 78 172 68 Q176 62 170 58 Q162 54 155 64 Q150 72 148 80Z" fill="#388E3C"/>
+        <!-- body -->
+        <rect x="40" y="60" width="115" height="42" rx="21" fill="#4CAF50"/>
+        <!-- belly -->
+        <rect x="55" y="75" width="88" height="20" rx="10" fill="#A5D6A7"/>
+        <!-- front leg left -->
+        <rect x="48" y="98" width="18" height="24" rx="9" fill="#4CAF50"/>
+        <!-- front leg right -->
+        <rect x="72" y="98" width="18" height="24" rx="9" fill="#4CAF50"/>
+        <!-- back leg left -->
+        <rect x="100" y="98" width="18" height="24" rx="9" fill="#388E3C"/>
+        <!-- back leg right -->
+        <rect x="124" y="98" width="18" height="24" rx="9" fill="#388E3C"/>
+        <!-- head -->
+        <rect x="6" y="54" width="68" height="44" rx="18" fill="#4CAF50"/>
+        <!-- snout / lower jaw -->
+        <path d="M8 76 Q6 94 28 96 L62 96 Q72 96 72 88 L72 76Z" fill="#388E3C"/>
+        <!-- upper jaw line -->
+        <path d="M8 76 Q36 80 72 76" stroke="#2E7D32" stroke-width="2" fill="none"/>
+        <!-- smile teeth -->
+        <rect x="20" y="76" width="7"  height="9" rx="2" fill="white"/>
+        <rect x="31" y="76" width="7"  height="9" rx="2" fill="white"/>
+        <rect x="42" y="76" width="7"  height="9" rx="2" fill="white"/>
+        <rect x="53" y="76" width="7"  height="9" rx="2" fill="white"/>
+        <!-- nostril dots -->
+        <circle cx="22" cy="63" r="4" fill="#388E3C"/>
+        <circle cx="35" cy="61" r="4" fill="#388E3C"/>
+        <!-- eye sockets -->
+        <circle cx="28" cy="44" r="13" fill="white"/>
+        <circle cx="52" cy="42" r="13" fill="white"/>
+        <!-- pupils -->
+        <circle cx="30" cy="45" r="7" fill="#2E7D32"/>
+        <circle cx="54" cy="43" r="7" fill="#2E7D32"/>
+        <!-- eye shine -->
+        <circle cx="33" cy="42" r="3" fill="white"/>
+        <circle cx="57" cy="40" r="3" fill="white"/>
+        <!-- eyebrow (happy) -->
+        <path d="M20 34 Q28 30 36 34" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <path d="M44 32 Q52 28 60 32" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <!-- ridge bumps on head -->
+        <circle cx="54" cy="56" r="4" fill="#388E3C" opacity=".5"/>
+        <circle cx="66" cy="54" r="3" fill="#388E3C" opacity=".5"/>
+        <!-- back spikes -->
+        <path d="M75 64 L82 52 L89 64Z" fill="#2E7D32"/>
+        <path d="M91 62 L98 50 L105 62Z" fill="#2E7D32"/>
+        <path d="M107 62 L114 51 L121 62Z" fill="#2E7D32"/>
+        <path d="M122 64 L128 54 L134 64Z" fill="#2E7D32"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="gb-nav">
+    <span class="gb-nav-logo">🐊 Крокодил</span>
+    <a href="#brand">Бренд</a>
+    <a href="#mascot">Маскот</a>
+    <a href="#colors">Цвета</a>
+    <a href="#typography">Типографика</a>
+    <a href="#buttons">Кнопки</a>
+    <a href="#cards">Карточки</a>
+    <a href="#badges">Бейджи</a>
+    <a href="#forms">Формы</a>
+    <a href="#nav-section">Навигация</a>
+    <a href="#tokens">Токены</a>
+    <a href="#motion">Анимации</a>
+  </nav>
+
+  <!-- 1. BRAND -->
+  <section class="gb-section" id="brand">
+    <div class="gb-section-title">🎨 Бренд</div>
+    <div class="gb-section-desc">Основные элементы айдентики: логотип, шрифты и тональность. Стиль — детский, тёплый, живой. Никакого корпоратива.</div>
+    <div class="gb-divider"></div>
+
+    <div class="comp-label">Логотип</div>
+    <div class="logo-demo">
+      <div class="logo-icon">🐊</div>
+      <div>
+        <div class="logo-text"><span>Крокодил</span></div>
+        <div class="logo-sub">Арт-студия</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="comp-label">Принципы стиля</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px">
+        <div class="card" style="border-color:var(--mint)">
+          <div style="font-size:28px;margin-bottom:8px">🌿</div>
+          <div style="font-weight:700;margin-bottom:4px">Тепло и живость</div>
+          <div style="font-size:13px;color:var(--ink-l)">Кремовые фоны, пастельные акценты, рукописные шрифты</div>
+        </div>
+        <div class="card" style="border-color:var(--peach)">
+          <div style="font-size:28px;margin-bottom:8px">🎭</div>
+          <div style="font-weight:700;margin-bottom:4px">Дерзость деталей</div>
+          <div style="font-size:13px;color:var(--ink-l)">Смещённые тени, пунктирные рамки, лёгкие вращения</div>
+        </div>
+        <div class="card" style="border-color:var(--lav)">
+          <div style="font-size:28px;margin-bottom:8px">👶</div>
+          <div style="font-weight:700;margin-bottom:4px">Детская аудитория</div>
+          <div style="font-size:13px;color:var(--ink-l)">Крупные мишени касания, весёлые иконки, читаемость</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. MASCOT -->
+  <section class="gb-section" id="mascot">
+    <div class="gb-section-title">🐊 Маскот — Крокодил</div>
+    <div class="gb-section-desc">Дружелюбный крокодил — главный персонаж студии. Появляется на странице входа, в шапках разделов и как декоративный элемент.</div>
+    <div class="gb-divider"></div>
+
+    <div class="mascot-section">
+      <!-- Main mascot SVG -->
+      <div>
+        <div class="comp-label" style="margin-bottom:16px">Основной маскот</div>
+        <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(3px 5px 0 #A5D6A7)">
+          <!-- tail -->
+          <path d="M165 96 Q184 88 192 76 Q197 69 190 64 Q181 58 172 70 Q167 80 165 90Z" fill="#388E3C"/>
+          <!-- body -->
+          <rect x="45" y="70" width="128" height="48" rx="24" fill="#4CAF50"/>
+          <!-- belly -->
+          <rect x="62" y="86" width="98" height="22" rx="11" fill="#C8E6C9"/>
+          <!-- front leg left -->
+          <rect x="54" y="112" width="20" height="28" rx="10" fill="#4CAF50"/>
+          <!-- front leg right -->
+          <rect x="80" y="112" width="20" height="28" rx="10" fill="#4CAF50"/>
+          <!-- back leg left -->
+          <rect x="112" y="112" width="20" height="28" rx="10" fill="#388E3C"/>
+          <!-- back leg right -->
+          <rect x="138" y="112" width="20" height="28" rx="10" fill="#388E3C"/>
+          <!-- head -->
+          <rect x="6" y="62" width="76" height="50" rx="20" fill="#4CAF50"/>
+          <!-- lower jaw -->
+          <path d="M9 86 Q7 108 32 110 L72 110 Q82 110 82 100 L82 86Z" fill="#388E3C"/>
+          <!-- jaw split line -->
+          <path d="M9 86 Q42 91 82 86" stroke="#2E7D32" stroke-width="1.5" fill="none"/>
+          <!-- teeth -->
+          <rect x="20" y="86" width="8"  height="10" rx="2" fill="white"/>
+          <rect x="33" y="86" width="8"  height="10" rx="2" fill="white"/>
+          <rect x="46" y="86" width="8"  height="10" rx="2" fill="white"/>
+          <rect x="59" y="86" width="8"  height="10" rx="2" fill="white"/>
+          <!-- nostril dots -->
+          <circle cx="24" cy="73" r="4.5" fill="#388E3C"/>
+          <circle cx="38" cy="71" r="4.5" fill="#388E3C"/>
+          <!-- eye whites -->
+          <circle cx="30" cy="50" r="15" fill="white"/>
+          <circle cx="57" cy="48" r="15" fill="white"/>
+          <!-- pupils (animated blink) -->
+          <circle cx="32" cy="51" r="8" fill="#1B5E20" style="animation:croc-blink 4s ease-in-out infinite"/>
+          <circle cx="59" cy="49" r="8" fill="#1B5E20" style="animation:croc-blink 4s ease-in-out infinite 0.1s"/>
+          <!-- eye shine -->
+          <circle cx="36" cy="47" r="3.5" fill="white"/>
+          <circle cx="63" cy="45" r="3.5" fill="white"/>
+          <!-- happy eyebrows -->
+          <path d="M20 37 Q30 32 40 37" stroke="#2E7D32" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <path d="M47 35 Q57 30 67 35" stroke="#2E7D32" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <!-- head ridge -->
+          <circle cx="60" cy="66" r="4.5" fill="#388E3C" opacity=".5"/>
+          <circle cx="73" cy="64" r="3.5" fill="#388E3C" opacity=".5"/>
+          <!-- dorsal spikes -->
+          <path d="M84 72 L93 57 L102 72Z" fill="#2E7D32"/>
+          <path d="M104 70 L113 55 L122 70Z" fill="#2E7D32"/>
+          <path d="M122 70 L131 56 L140 70Z" fill="#2E7D32"/>
+          <path d="M138 72 L146 59 L154 72Z" fill="#2E7D32"/>
+        </svg>
+
+        <!-- Small states -->
+        <div class="comp-label" style="margin-top:28px;margin-bottom:12px">Состояния</div>
+        <div class="mascot-states">
+          <!-- Tiny mascot (emoji style) -->
+          <div class="mascot-state-item">
+            <svg width="56" height="44" viewBox="0 0 56 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="16" width="40" height="22" rx="11" fill="#4CAF50"/>
+              <rect x="8" y="21" width="28" height="11" rx="5" fill="#C8E6C9"/>
+              <rect x="1" y="18" width="22" height="16" rx="8" fill="#4CAF50"/>
+              <path d="M2 26 Q1 34 10 35 L22 35 Q26 35 26 30 L26 26Z" fill="#388E3C"/>
+              <rect x="6"  y="26" width="3" height="4" rx="1" fill="white"/>
+              <rect x="11" y="26" width="3" height="4" rx="1" fill="white"/>
+              <rect x="16" y="26" width="3" height="4" rx="1" fill="white"/>
+              <circle cx="8"  cy="14" r="5" fill="white"/>
+              <circle cx="18" cy="13" r="5" fill="white"/>
+              <circle cx="9"  cy="15" r="3" fill="#1B5E20"/>
+              <circle cx="19" cy="14" r="3" fill="#1B5E20"/>
+              <circle cx="11" cy="13" r="1.5" fill="white"/>
+              <circle cx="21" cy="12" r="1.5" fill="white"/>
+            </svg>
+            <div class="mascot-state-label">Малый</div>
+          </div>
+
+          <!-- Waving mascot -->
+          <div class="mascot-state-item">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- body -->
+              <ellipse cx="34" cy="40" rx="22" ry="15" fill="#4CAF50"/>
+              <ellipse cx="34" cy="44" rx="16" ry="7" fill="#C8E6C9"/>
+              <!-- raised arm/wave -->
+              <path d="M18 30 Q10 18 6 10 Q4 6 8 5 Q12 4 15 12 Q18 20 20 28Z" fill="#4CAF50"/>
+              <circle cx="7"  cy="7"  r="4" fill="#4CAF50"/>
+              <!-- head -->
+              <ellipse cx="24" cy="28" rx="14" ry="12" fill="#4CAF50"/>
+              <path d="M11 31 Q10 40 18 41 L34 41 Q38 41 38 36 L38 31Z" fill="#388E3C"/>
+              <rect x="15" y="31" width="4" height="5" rx="1.5" fill="white"/>
+              <rect x="22" y="31" width="4" height="5" rx="1.5" fill="white"/>
+              <rect x="29" y="31" width="4" height="5" rx="1.5" fill="white"/>
+              <circle cx="18" cy="20" r="5.5" fill="white"/>
+              <circle cx="29" cy="19" r="5.5" fill="white"/>
+              <circle cx="19" cy="21" r="3" fill="#1B5E20"/>
+              <circle cx="30" cy="20" r="3" fill="#1B5E20"/>
+              <circle cx="21" cy="19" r="1.5" fill="white"/>
+              <circle cx="32" cy="18" r="1.5" fill="white"/>
+              <!-- spikes -->
+              <path d="M38 32 L42 26 L46 32Z" fill="#2E7D32"/>
+              <path d="M46 32 L50 27 L54 32Z" fill="#2E7D32"/>
+            </svg>
+            <div class="mascot-state-label">Приветствие</div>
+          </div>
+
+          <!-- Thinking mascot -->
+          <div class="mascot-state-item">
+            <svg width="64" height="60" viewBox="0 0 64 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- body -->
+              <ellipse cx="36" cy="44" rx="22" ry="12" fill="#4CAF50"/>
+              <ellipse cx="36" cy="48" rx="15" ry="6" fill="#C8E6C9"/>
+              <!-- chin resting on hand -->
+              <rect x="14" y="36" width="10" height="18" rx="5" fill="#4CAF50"/>
+              <ellipse cx="19" cy="37" rx="6" ry="5" fill="#4CAF50"/>
+              <!-- head (slightly tilted) -->
+              <ellipse cx="26" cy="26" rx="16" ry="13" fill="#4CAF50" transform="rotate(-8 26 26)"/>
+              <!-- lower jaw -->
+              <path d="M13 29 Q11 38 20 40 L36 40 Q40 40 40 35 L40 30Z" fill="#388E3C" transform="rotate(-4 26 35)"/>
+              <!-- teeth closed -->
+              <path d="M15 30 Q26 33 38 30" stroke="#2E7D32" stroke-width="1.5" fill="none" transform="rotate(-4 26 30)"/>
+              <!-- thought-bubble eyes (squinting/thinking) -->
+              <ellipse cx="20" cy="18" rx="6" ry="4" fill="white"/>
+              <ellipse cx="32" cy="16" rx="6" ry="4" fill="white"/>
+              <ellipse cx="21" cy="18" rx="3" ry="2.5" fill="#1B5E20"/>
+              <ellipse cx="33" cy="16" rx="3" ry="2.5" fill="#1B5E20"/>
+              <!-- one eyebrow raised -->
+              <path d="M14 12 Q20 9 26 13" stroke="#2E7D32" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <path d="M27 10 Q33 8 38 12" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" fill="none" transform="rotate(-5 32 11)"/>
+              <!-- thought dots -->
+              <circle cx="48" cy="10" r="5" fill="#E8F5E9" stroke="#A5D6A7" stroke-width="1.5"/>
+              <circle cx="56" cy="4"  r="3" fill="#E8F5E9" stroke="#A5D6A7" stroke-width="1.5"/>
+              <circle cx="60" cy="10" r="2" fill="#E8F5E9" stroke="#A5D6A7" stroke-width="1.5"/>
+              <!-- spikes -->
+              <path d="M40 32 L44 25 L48 32Z" fill="#2E7D32"/>
+              <path d="M48 33 L52 27 L56 33Z" fill="#2E7D32"/>
+            </svg>
+            <div class="mascot-state-label">Думает</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage guidelines -->
+      <div>
+        <div class="mascot-usage-title">Где используется</div>
+        <div class="usage-item"><span class="usage-icon">🔐</span>Экран входа — большой крокодил <span class="usage-where">login-croc</span></div>
+        <div class="usage-item"><span class="usage-icon">🏠</span>Дашборд родителя — watermark <span class="usage-where">parent-hero::after</span></div>
+        <div class="usage-item"><span class="usage-icon">🖨️</span>Печатная шапка отчёта <span class="usage-where">print-header</span></div>
+        <div class="usage-item"><span class="usage-icon">📌</span>Логотип в сайдбаре <span class="usage-where">logo-icon</span></div>
+        <div class="usage-item"><span class="usage-icon">🎨</span>Промо-материалы и посты <span class="usage-where">брендинг</span></div>
+
+        <div style="margin-top:24px">
+          <div class="mascot-usage-title">Правила использования</div>
+          <div style="font-size:13px;color:var(--ink-l);line-height:1.9">
+            <div>✅ Всегда улыбается — крокодил дружелюбный</div>
+            <div>✅ Зелёная гамма строго #4CAF50 / #388E3C</div>
+            <div>✅ Белые глаза с зелёным зрачком</div>
+            <div>✅ Белые зубы видны в улыбке</div>
+            <div>❌ Не менять цвет на красный или синий</div>
+            <div>❌ Не убирать гребень на спине</div>
+            <div>❌ Не делать агрессивным / злым</div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px">
+          <div class="mascot-usage-title">Цвета маскота</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="text-align:center">
+              <div style="width:44px;height:44px;border-radius:11px;background:#4CAF50;margin:0 auto 4px;box-shadow:2px 3px 0 #A5D6A7"></div>
+              <div style="font-size:10px;font-weight:700;color:var(--ink-l)">Тело<br>#4CAF50</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:44px;height:44px;border-radius:11px;background:#388E3C;margin:0 auto 4px;box-shadow:2px 3px 0 #A5D6A7"></div>
+              <div style="font-size:10px;font-weight:700;color:var(--ink-l)">Тени<br>#388E3C</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:44px;height:44px;border-radius:11px;background:#2E7D32;margin:0 auto 4px;box-shadow:2px 3px 0 #A5D6A7"></div>
+              <div style="font-size:10px;font-weight:700;color:var(--ink-l)">Гребень<br>#2E7D32</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:44px;height:44px;border-radius:11px;background:#C8E6C9;margin:0 auto 4px;box-shadow:2px 3px 0 #A5D6A7"></div>
+              <div style="font-size:10px;font-weight:700;color:var(--ink-l)">Живот<br>#C8E6C9</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. COLORS -->
+  <section class="gb-section" id="colors">
+    <div class="gb-section-title">🎨 Цветовая палитра</div>
+    <div class="gb-section-desc">Все цвета объявлены как CSS-переменные в :root. Используй только их — никаких хардкодных hex-значений вне компонентов маскота.</div>
+    <div class="gb-divider"></div>
+
+    <div class="color-group-label">Основные / фоновые</div>
+    <div class="color-grid">
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#FFF8F0"></div>
+        <div class="color-info"><div class="color-name">Cream</div><div class="color-var">--cream</div><div class="color-hex">#FFF8F0</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#FFFDF9"></div>
+        <div class="color-info"><div class="color-name">Warm</div><div class="color-var">--warm</div><div class="color-hex">#FFFDF9</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#FFD4B8"></div>
+        <div class="color-info"><div class="color-name">Peach</div><div class="color-var">--peach</div><div class="color-hex">#FFD4B8</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#FF8C69"></div>
+        <div class="color-info"><div class="color-name">Coral</div><div class="color-var">--coral</div><div class="color-hex">#FF8C69</div></div>
+      </div>
+    </div>
+
+    <div class="color-group-label">Акценты</div>
+    <div class="color-grid">
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#B8F0D4"></div>
+        <div class="color-info"><div class="color-name">Mint</div><div class="color-var">--mint</div><div class="color-hex">#B8F0D4</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#5ECFA0"></div>
+        <div class="color-info"><div class="color-name">Mint Dark</div><div class="color-var">--mint-d</div><div class="color-hex">#5ECFA0</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#D4C4F0"></div>
+        <div class="color-info"><div class="color-name">Lavender</div><div class="color-var">--lav</div><div class="color-hex">#D4C4F0</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#9B84D8"></div>
+        <div class="color-info"><div class="color-name">Lavender Dark</div><div class="color-var">--lav-d</div><div class="color-hex">#9B84D8</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#C4E4F8"></div>
+        <div class="color-info"><div class="color-name">Sky</div><div class="color-var">--sky</div><div class="color-hex">#C4E4F8</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#FFE97A"></div>
+        <div class="color-info"><div class="color-name">Yellow</div><div class="color-var">--yel</div><div class="color-hex">#FFE97A</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#4CAF50"></div>
+        <div class="color-info"><div class="color-name">Green (бренд)</div><div class="color-var">--grn</div><div class="color-hex">#4CAF50</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#A5D6A7"></div>
+        <div class="color-info"><div class="color-name">Green Light</div><div class="color-var">--grn-l</div><div class="color-hex">#A5D6A7</div></div>
+      </div>
+    </div>
+
+    <div class="color-group-label">Текст</div>
+    <div class="color-grid">
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#3A2E2E"></div>
+        <div class="color-info"><div class="color-name">Ink</div><div class="color-var">--ink</div><div class="color-hex">#3A2E2E</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#6B5E5E"></div>
+        <div class="color-info"><div class="color-name">Ink Light</div><div class="color-var">--ink-l</div><div class="color-hex">#6B5E5E</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. TYPOGRAPHY -->
+  <section class="gb-section" id="typography">
+    <div class="gb-section-title">✏️ Типографика</div>
+    <div class="gb-section-desc">Два шрифта: Caveat для заголовков и декоративных элементов, Nunito для интерфейса. Оба загружаются с Google Fonts.</div>
+    <div class="gb-divider"></div>
+
+    <div class="type-pair" style="margin-bottom:20px">
+      <div class="type-block">
+        <span class="font-tag caveat">Caveat</span>
+        <div style="font-family:'Caveat',cursive;font-size:38px;font-weight:700;line-height:1.2">Арт-студия<br>Крокодил 🐊</div>
+        <div style="font-size:12px;color:var(--ink-l);margin-top:12px">Использование: заголовки страниц, логотип, статистика, акценты, скорописные метки</div>
+      </div>
+      <div class="type-block">
+        <span class="font-tag nunito">Nunito</span>
+        <div style="font-size:16px;line-height:1.7">Детская арт-студия творчества в Архангельске. Занятия рисованием, лепкой и творческим развитием для детей от 1,5 лет.</div>
+        <div style="font-size:12px;color:var(--ink-l);margin-top:12px">Использование: весь UI-текст, кнопки, формы, таблицы, описания</div>
+      </div>
+    </div>
+
+    <div class="comp-label">Шкала размеров</div>
+    <div class="type-scale">
+      <div class="ts-row">
+        <div class="ts-meta">52px · 700</div>
+        <div style="font-family:'Caveat',cursive;font-size:52px;font-weight:700;line-height:1">Дашборд</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">40px · 700</div>
+        <div style="font-family:'Caveat',cursive;font-size:40px;font-weight:700;line-height:1">Заголовок страницы</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">26px · 700</div>
+        <div style="font-family:'Caveat',cursive;font-size:26px;font-weight:700">Заголовок модального окна</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">21px · 700</div>
+        <div style="font-family:'Caveat',cursive;font-size:21px;font-weight:700">Заголовок карточки</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">15px · 600</div>
+        <div style="font-size:15px;font-weight:600">Основной текст — крупный</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">13.5px · 400</div>
+        <div style="font-size:13.5px">Основной текст — стандартный</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">12px · 600</div>
+        <div style="font-size:12px;font-weight:600">Вспомогательный текст</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">11px · 700 CAPS</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-l)">Метки, заголовки колонок</div>
+      </div>
+      <div class="ts-row">
+        <div class="ts-meta">10px · 700 CAPS</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink-l)">Секционные метки навигации</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. BUTTONS -->
+  <section class="gb-section" id="buttons">
+    <div class="gb-section-title">🔘 Кнопки</div>
+    <div class="gb-section-desc">Все кнопки используют класс .btn как базу. Offset-shadow (3–4px) — характерная деталь стиля. Hover поднимает кнопку на -2px.</div>
+    <div class="gb-divider"></div>
+
+    <div class="comp-label">Размеры</div>
+    <div class="comp-row" style="margin-bottom:28px;align-items:center">
+      <button class="btn btn-primary btn-lg">Крупная ·  .btn-lg</button>
+      <button class="btn btn-primary">Стандартная · .btn</button>
+      <button class="btn btn-primary btn-sm">Малая · .btn-sm</button>
+    </div>
+
+    <div class="comp-label">Варианты</div>
+    <div class="comp-row">
+      <button class="btn btn-primary">✅ Основная</button>
+      <button class="btn btn-green">🌿 Зелёная</button>
+      <button class="btn btn-lav">💜 Лавандовая</button>
+      <button class="btn btn-ghost">👻 Ghost</button>
+      <button class="btn btn-danger">🗑️ Danger</button>
+    </div>
+
+    <div style="margin-top:20px;background:white;border-radius:14px;padding:20px;border:2px solid var(--cream)">
+      <div class="comp-label" style="margin-bottom:12px">CSS-правило</div>
+      <pre style="font-size:12px;color:var(--ink-l);background:var(--cream);border-radius:9px;padding:14px;overflow-x:auto;line-height:1.8"><code>.btn-primary {
+  background: var(--coral);
+  color: white;
+  box-shadow: 3px 4px 0 var(--coral-l);   /* характерная тень со смещением */
+}
+.btn-primary:hover {
+  transform: translate(-1px, -2px);        /* "поднятие" при наведении */
+  box-shadow: 4px 6px 0 var(--coral-l);
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- 6. CARDS -->
+  <section class="gb-section" id="cards">
+    <div class="gb-section-title">🃏 Карточки</div>
+    <div class="gb-section-desc">Базовая карточка — .card. Stat-карточки имеют цветную рамку и offset-тень в тон. Декоративный круг в правом верхнем углу — opacity: .15.</div>
+    <div class="gb-divider"></div>
+
+    <div class="comp-label">Базовая карточка</div>
+    <div class="card" style="max-width:360px;margin-bottom:24px">
+      <div class="card-title">🎨 Галерея работ</div>
+      <p style="font-size:13.5px;color:var(--ink-l)">Здесь хранятся фотографии детских работ, выполненных на занятиях студии.</p>
+    </div>
+
+    <div class="comp-label">Stat-карточки</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+      <div class="stat-card peach">
+        <span class="stat-icon">👦</span>
+        <div class="stat-value">42</div>
+        <div class="stat-label">Учеников</div>
+      </div>
+      <div class="stat-card mint">
+        <span class="stat-icon">✅</span>
+        <div class="stat-value">87%</div>
+        <div class="stat-label">Посещаемость</div>
+      </div>
+      <div class="stat-card lav">
+        <span class="stat-icon">💰</span>
+        <div class="stat-value">38 400</div>
+        <div class="stat-label">Доход, ₽</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. BADGES -->
+  <section class="gb-section" id="badges">
+    <div class="gb-section-title">🏷️ Бейджи и метки</div>
+    <div class="gb-section-desc">Pill-бейджи с насыщенным текстом на пастельном фоне. Всегда font-weight: 700, border-radius: 20px.</div>
+    <div class="gb-divider"></div>
+    <div class="comp-row">
+      <span class="badge green">Присутствовал</span>
+      <span class="badge red">Пропустил</span>
+      <span class="badge blue">Гость</span>
+      <span class="badge yellow">Активный</span>
+      <span class="badge purple">Абонемент</span>
+    </div>
+    <div style="margin-top:16px">
+      <div class="comp-label">Роли пользователей</div>
+      <div class="comp-row">
+        <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:#4CAF50;color:white">Администратор</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:var(--sky);color:var(--sky-d)">Гость</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:var(--lav);color:var(--lav-d)">Родитель</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. FORMS -->
+  <section class="gb-section" id="forms">
+    <div class="gb-section-title">📝 Формы</div>
+    <div class="gb-section-desc">Поля ввода на кремовом фоне, рамка --peach → --coral при фокусе. Все лейблы — ALL CAPS, font-size: 11px.</div>
+    <div class="gb-divider"></div>
+
+    <div style="background:white;border-radius:var(--radius-lg);padding:28px;border:2px solid var(--cream);max-width:480px">
+      <div class="forms-row">
+        <div class="form-group">
+          <label class="form-label">Имя</label>
+          <input class="form-input" placeholder="Алиса" value="Алиса">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Фамилия</label>
+          <input class="form-input" placeholder="Иванова">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Направление</label>
+        <select class="form-select">
+          <option>🎨 Рисование</option>
+          <option>🏺 Лепка</option>
+          <option>✏️ Скетчинг</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Телефон родителя</label>
+        <input class="form-input" placeholder="+7 (902) 702-75-57" style="border-color:var(--coral);background:white">
+        <div style="font-size:11px;color:var(--coral);margin-top:4px;font-weight:700">⚠ Обязательное поле</div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-ghost btn-sm">Отмена</button>
+        <button class="btn btn-primary btn-sm">Сохранить</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. NAVIGATION -->
+  <section class="gb-section" id="nav-section">
+    <div class="gb-section-title">📌 Навигация</div>
+    <div class="gb-section-desc">Боковой сайдбар шириной 240px на --warm фоне с пунктирной рамкой --peach. Активный пункт — фон --peach с offset-тенью.</div>
+    <div class="gb-divider"></div>
+    <div class="nav-demo" style="max-width:240px">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>Дашборд</div>
+      <div class="nav-item"><span class="nav-icon">📅</span>Расписание</div>
+      <div class="nav-item"><span class="nav-icon">✅</span>Посещение</div>
+      <div class="nav-item"><span class="nav-icon">👦</span>Ученики</div>
+      <div class="nav-item"><span class="nav-icon">💸</span>Прайс</div>
+    </div>
+  </section>
+
+  <!-- 10. DESIGN TOKENS -->
+  <section class="gb-section" id="tokens">
+    <div class="gb-section-title">⚙️ Дизайн-токены</div>
+    <div class="gb-section-desc">Тени, скругления и отступы. Характерная деталь — offset box-shadow без blur (hard shadow).</div>
+    <div class="gb-divider"></div>
+
+    <div class="comp-label">Скругления</div>
+    <div class="radius-grid" style="margin-bottom:28px">
+      <div style="text-align:center">
+        <div class="radius-chip" style="border-radius:var(--radius-sm)"><span class="r-label">sm<br>9px</span></div>
+        <div style="font-size:11px;color:var(--ink-l);font-weight:700;margin-top:6px">Кнопки-sm<br>Бейджи</div>
+      </div>
+      <div style="text-align:center">
+        <div class="radius-chip" style="border-radius:var(--radius-md)"><span class="r-label">md<br>14px</span></div>
+        <div style="font-size:11px;color:var(--ink-l);font-weight:700;margin-top:6px">Nav items<br>Inputs</div>
+      </div>
+      <div style="text-align:center">
+        <div class="radius-chip" style="border-radius:var(--radius-lg)"><span class="r-label">lg<br>18px</span></div>
+        <div style="font-size:11px;color:var(--ink-l);font-weight:700;margin-top:6px">Карточки<br>Галерея</div>
+      </div>
+      <div style="text-align:center">
+        <div class="radius-chip" style="border-radius:var(--radius-xl)"><span class="r-label">xl<br>24px</span></div>
+        <div style="font-size:11px;color:var(--ink-l);font-weight:700;margin-top:6px">Модалки<br>Hero</div>
+      </div>
+      <div style="text-align:center">
+        <div class="radius-chip" style="border-radius:50%"><span class="r-label">50%</span></div>
+        <div style="font-size:11px;color:var(--ink-l);font-weight:700;margin-top:6px">Аватары<br>Точки</div>
+      </div>
+    </div>
+
+    <div class="comp-label">Тени (offset hard shadow)</div>
+    <div class="shadow-grid">
+      <div class="shadow-chip" style="box-shadow:2px 3px 0 var(--peach)">
+        <div class="name">Малая</div>
+        <div class="val">2px 3px 0 --peach</div>
+      </div>
+      <div class="shadow-chip" style="box-shadow:3px 4px 0 var(--coral-l)">
+        <div class="name">Стандартная</div>
+        <div class="val">3px 4px 0 --coral-l</div>
+      </div>
+      <div class="shadow-chip" style="box-shadow:4px 5px 0 var(--peach)">
+        <div class="name">Карточки</div>
+        <div class="val">4px 5px 0 --peach</div>
+      </div>
+      <div class="shadow-chip" style="box-shadow:6px 8px 0 var(--peach)">
+        <div class="name">Модалки</div>
+        <div class="val">6px 8px 0 --peach</div>
+      </div>
+      <div class="shadow-chip" style="box-shadow:8px 10px 0 var(--peach)">
+        <div class="name">Login box</div>
+        <div class="val">8px 10px 0 --peach</div>
+      </div>
+      <div class="shadow-chip" style="box-shadow:0 4px 20px rgba(58,46,46,.08)">
+        <div class="name">Мягкая (overlay)</div>
+        <div class="val">0 4px 20px rgba(ink,.08)</div>
+      </div>
+    </div>
+
+    <div class="comp-label" style="margin-top:28px">Уведомление (Toast)</div>
+    <div class="toast-demo">💾 Данные сохранены</div>
+
+    <div style="margin-top:24px">
+      <div class="comp-label">Декоративная рамка</div>
+      <div style="border:2px dashed var(--peach);border-radius:14px;padding:18px 22px;font-size:13px;color:var(--ink-l);max-width:360px">
+        Пунктирная рамка <code style="background:var(--cream);padding:2px 6px;border-radius:5px">border: 2px dashed var(--peach)</code> — используется в сайдбаре, футере, зонах загрузки
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. MOTION -->
+  <section class="gb-section" id="motion">
+    <div class="gb-section-title">✨ Анимации</div>
+    <div class="gb-section-desc">Четыре ключевых анимации. Принцип: быстро (0.2–0.4s), с лёгким overshoot через cubic-bezier(.34,1.56,.64,1).</div>
+    <div class="gb-divider"></div>
+
+    <div class="anim-grid">
+      <div class="anim-chip">
+        <div style="animation:fadeUp 2s ease-in-out infinite;display:inline-block">
+          <div style="width:44px;height:44px;background:var(--peach);border-radius:12px;margin:0 auto"></div>
+        </div>
+        <div class="anim-name">fadeUp</div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Страницы, карточки</div>
+      </div>
+      <div class="anim-chip">
+        <div style="animation:wobble 2.5s ease-in-out infinite;display:inline-block;font-size:36px">🐊</div>
+        <div class="anim-name">wobble</div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Маскот на входе</div>
+      </div>
+      <div class="anim-chip">
+        <div style="animation:pulse 1.5s ease-in-out infinite;display:inline-block">
+          <div style="width:12px;height:12px;background:#FF4444;border-radius:50%;margin:0 auto"></div>
+        </div>
+        <div class="anim-name">pulse</div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Live-индикатор</div>
+      </div>
+      <div class="anim-chip">
+        <div style="animation:fl1 6s ease-in-out infinite;display:inline-block">
+          <div style="width:44px;height:44px;background:radial-gradient(circle,var(--peach),var(--lav));border-radius:50%;filter:blur(8px);opacity:.5"></div>
+        </div>
+        <div class="anim-name">fl1 / fl2</div>
+        <div style="font-size:11px;color:var(--ink-l);margin-top:4px">Фоновые блобы</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;background:white;border-radius:14px;padding:20px;border:2px solid var(--cream)">
+      <div class="comp-label" style="margin-bottom:12px">Transition по умолчанию</div>
+      <pre style="font-size:12px;color:var(--ink-l);background:var(--cream);border-radius:9px;padding:14px;line-height:1.8"><code>transition: all 0.2s;                              /* hover-переходы */
+transition: all 0.35s cubic-bezier(.34,1.56,.64,1); /* toast/save-indicator */
+animation: fadeUp 0.3s ease;                        /* появление страниц */</code></pre>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="gb-footer">
+    <span class="gb-footer-croc">🐊</span>
+    <strong>Арт-студия Крокодил</strong> — Дизайн-гайдбук v1.0<br>
+    Архангельск · ТРЦ Соломбала Молл, 3 этаж
+  </footer>
+
+</div>
+</body>
+</html>
