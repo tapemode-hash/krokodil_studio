@@ -4075,6 +4075,14 @@ function renderWorkingHours(){
 }
 
 function renderAll(){
+  // Если кто-то поставил currentRole='admin' через DevTools без реального входа —
+  // сбрасываем в guest: у настоящего администратора всегда есть живой Firebase-токен
+  if(currentRole==='admin' && !getFirebaseToken()){
+    currentRole='guest'; selectedRole='guest';
+    document.body.classList.remove('is-admin');
+    document.getElementById('login-screen').classList.remove('hidden');
+    return;
+  }
   renderAnnouncements();
   renderAchievements();
   renderRequests();
