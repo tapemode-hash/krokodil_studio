@@ -1,0 +1,143 @@
+<svg width="600" height="766" viewBox="0 0 180 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g-body" x1="90" y1="108" x2="90" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#43A047"/>
+    </linearGradient>
+    <linearGradient id="g-head" x1="90" y1="14" x2="90" y2="126" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5CB860"/>
+      <stop offset="100%" stop-color="#43A047"/>
+    </linearGradient>
+    <radialGradient id="g-belly" cx="50%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#F1F8E9"/>
+      <stop offset="100%" stop-color="#C8E6C9"/>
+    </radialGradient>
+    <radialGradient id="g-iris" cx="36%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#43A047"/>
+      <stop offset="52%" stop-color="#1B5E20"/>
+      <stop offset="100%" stop-color="#0A2E0A"/>
+    </radialGradient>
+    <radialGradient id="g-eye" cx="50%" cy="44%" r="56%">
+      <stop offset="0%" stop-color="#FEFEFE"/>
+      <stop offset="100%" stop-color="#EFF4EF"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ground shadow -->
+  <ellipse cx="90" cy="224" rx="54" ry="6" fill="#2E7D32" opacity="0.14"/>
+
+  <!-- TAIL (right side, curls behind body) -->
+  <path d="M126 166 Q150 170 164 158 Q174 148 168 138 Q160 128 149 140 Q138 152 128 162Z" fill="#43A047"/>
+  <path d="M126 166 Q144 168 157 158 Q165 150 161 142 Q155 134 147 143 Q138 153 128 163Z" fill="#5CB860" opacity="0.24"/>
+
+  <!-- LEFT ARM (relaxed, hangs slightly out) -->
+  <path d="M50 136 Q34 148 26 163 Q22 173 29 179 Q38 185 46 173 Q54 160 54 143Z" fill="#4CAF50"/>
+  <path d="M50 136 Q38 146 31 159 Q28 167 33 173 Q30 165 36 156 Q44 146 51 138Z" fill="#66BB6A" opacity="0.28"/>
+  <!-- left fingers -->
+  <circle cx="27" cy="179" r="9"   fill="#3D9141"/>
+  <circle cx="19" cy="172" r="7"   fill="#3D9141"/>
+  <circle cx="19" cy="184" r="6.5" fill="#3D9141"/>
+  <circle cx="28" cy="187" r="6"   fill="#388E3C"/>
+
+  <!-- RIGHT ARM (raised, waving!) -->
+  <path d="M130 128 Q145 112 155 96 Q161 84 154 76 Q146 68 137 79 Q128 92 122 108 Q118 122 123 132Z" fill="#4CAF50"/>
+  <path d="M130 128 Q142 114 150 100 Q155 88 150 81 Q144 75 139 84 Q130 97 124 112 Q120 124 124 132Z" fill="#66BB6A" opacity="0.28"/>
+  <!-- right fingers (waving, spread) -->
+  <circle cx="154" cy="73"  r="9"   fill="#3D9141"/>
+  <circle cx="163" cy="80"  r="7"   fill="#3D9141"/>
+  <circle cx="161" cy="65"  r="7"   fill="#3D9141"/>
+  <circle cx="148" cy="63"  r="6.5" fill="#3D9141"/>
+  <circle cx="165" cy="72"  r="5.5" fill="#388E3C"/>
+
+  <!-- BODY -->
+  <ellipse cx="90" cy="158" rx="44" ry="46" fill="url(#g-body)"/>
+  <!-- body top sheen -->
+  <ellipse cx="79" cy="126" rx="20" ry="7" fill="#81C784" opacity="0.26"/>
+
+  <!-- BELLY -->
+  <ellipse cx="90" cy="163" rx="30" ry="34" fill="url(#g-belly)"/>
+
+  <!-- LEFT LEG -->
+  <rect x="57" y="193" width="25" height="32" rx="12.5" fill="#3D9141"/>
+  <!-- RIGHT LEG -->
+  <rect x="98" y="193" width="25" height="32" rx="12.5" fill="#3D9141"/>
+  <!-- leg sheens -->
+  <rect x="60" y="197" width="8"  height="14" rx="4" fill="#5CB860" opacity="0.3"/>
+  <rect x="101" y="197" width="8" height="14" rx="4" fill="#5CB860" opacity="0.3"/>
+
+  <!-- LEFT FOOT -->
+  <ellipse cx="69"  cy="222" rx="18" ry="8"   fill="#2E7D32"/>
+  <ellipse cx="55"  cy="220" rx="8"  ry="5.5"  fill="#2E7D32"/>
+  <ellipse cx="83"  cy="221" rx="7"  ry="5"    fill="#2E7D32"/>
+
+  <!-- RIGHT FOOT -->
+  <ellipse cx="111" cy="222" rx="18" ry="8"   fill="#2E7D32"/>
+  <ellipse cx="97"  cy="221" rx="7"  ry="5"    fill="#2E7D32"/>
+  <ellipse cx="125" cy="220" rx="8"  ry="5.5"  fill="#2E7D32"/>
+
+  <!-- HEAD (big chibi circle) -->
+  <ellipse cx="90" cy="72" rx="57" ry="55" fill="url(#g-head)"/>
+  <!-- head top sheen -->
+  <ellipse cx="78" cy="32" rx="28" ry="10" fill="#81C784" opacity="0.28"/>
+
+  <!-- DORSAL CREST (3 spikes on crown) -->
+  <polygon points="64,22  71,4   78,22"  fill="#2E7D32"/>
+  <polygon points="80,17  90,0   100,17" fill="#2E7D32"/>
+  <polygon points="102,22 109,4  116,22" fill="#2E7D32"/>
+  <!-- spike left-face highlights -->
+  <polygon points="64,22  69,9   73,22"  fill="#388E3C" opacity="0.42"/>
+  <polygon points="80,17  87,3   92,17"  fill="#388E3C" opacity="0.42"/>
+  <polygon points="102,22 107,9 111,22"  fill="#388E3C" opacity="0.42"/>
+
+  <!-- SNOUT (slightly protruding lower face) -->
+  <ellipse cx="90" cy="103" rx="37" ry="22" fill="#3D9141"/>
+  <ellipse cx="90" cy="96"  rx="29" ry="13" fill="#4CAF50"/>
+
+  <!-- NOSTRILS -->
+  <ellipse cx="79"  cy="93" rx="5.5" ry="4"   fill="#388E3C"/>
+  <ellipse cx="101" cy="93" rx="5.5" ry="4"   fill="#388E3C"/>
+  <ellipse cx="79"  cy="93" rx="2.5" ry="2"   fill="#1B5E20"/>
+  <ellipse cx="101" cy="93" rx="2.5" ry="2"   fill="#1B5E20"/>
+
+  <!-- SMILE (open, happy) -->
+  <path d="M56 110 Q90 134 124 110" fill="#1A4A1A"/>
+  <path d="M58 110 Q90 130 122 110 Q90 124 58 110Z" fill="#0D3010"/>
+  <!-- TEETH upper row -->
+  <rect x="68"  y="109" width="9"  height="10" rx="3.5" fill="white"/>
+  <rect x="81"  y="109" width="9"  height="10" rx="3.5" fill="white"/>
+  <rect x="94"  y="109" width="9"  height="10" rx="3.5" fill="white"/>
+  <rect x="107" y="109" width="8"  height="9"  rx="3"   fill="white"/>
+  <!-- TEETH lower peek -->
+  <rect x="73"  y="112" width="7"  height="8"  rx="3"   fill="#F1F8E9"/>
+  <rect x="86"  y="112" width="7"  height="8"  rx="3"   fill="#F1F8E9"/>
+  <rect x="100" y="112" width="7"  height="8"  rx="3"   fill="#F1F8E9"/>
+
+  <!-- EYE WHITES -->
+  <circle cx="66"  cy="62" r="23" fill="url(#g-eye)"/>
+  <circle cx="114" cy="62" r="23" fill="url(#g-eye)"/>
+  <circle cx="66"  cy="62" r="23" fill="none" stroke="#C8E6C9" stroke-width="1.5"/>
+  <circle cx="114" cy="62" r="23" fill="none" stroke="#C8E6C9" stroke-width="1.5"/>
+
+  <!-- IRISES -->
+  <circle cx="68"  cy="63" r="14" fill="url(#g-iris)"/>
+  <circle cx="116" cy="63" r="14" fill="url(#g-iris)"/>
+
+  <!-- PUPILS (vertical slit) -->
+  <ellipse cx="69"  cy="64" rx="6" ry="9" fill="#040E04"/>
+  <ellipse cx="117" cy="64" rx="6" ry="9" fill="#040E04"/>
+
+  <!-- EYE SHINES main -->
+  <circle cx="75"  cy="56" r="5.5" fill="white"/>
+  <circle cx="123" cy="56" r="5.5" fill="white"/>
+  <!-- secondary shine -->
+  <circle cx="62"  cy="72" r="2.5" fill="white" opacity="0.48"/>
+  <circle cx="110" cy="72" r="2.5" fill="white" opacity="0.48"/>
+
+  <!-- EYEBROWS (happy raised arches) -->
+  <path d="M47 42 Q66 31 86 40"  stroke="#1B5E20" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <path d="M94 40 Q114 31 133 42" stroke="#1B5E20" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+  <!-- CHEEK BLUSH -->
+  <ellipse cx="42"  cy="80" rx="13" ry="9" fill="#EF9A9A" opacity="0.17"/>
+  <ellipse cx="138" cy="80" rx="13" ry="9" fill="#EF9A9A" opacity="0.17"/>
+</svg>
