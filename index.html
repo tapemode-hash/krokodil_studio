@@ -63,7 +63,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--min
 @keyframes fl2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,-30px) scale(1.08)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
-@keyframes wobble{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes wobble{0%,100%{transform:rotate(-6deg) translateY(2px)}25%{transform:rotate(-2deg) translateY(-3px)}50%{transform:rotate(6deg) translateY(2px)}75%{transform:rotate(2deg) translateY(-3px)}}
 
 /* ── LAYOUT ── */
 .layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh;position:relative;z-index:1}
@@ -336,7 +336,7 @@ body.is-admin .admin-only-block{display:block!important}
 .login-screen{position:fixed;inset:0;z-index:9000;background:var(--cream);display:flex;align-items:center;justify-content:center}
 .login-screen.hidden{display:none}
 .login-box{background:white;border-radius:26px;padding:38px 42px;border:3px solid var(--peach);box-shadow:8px 10px 0 var(--peach);width:400px;max-width:95vw;text-align:center;animation:fadeUp .4s ease}
-.login-croc{font-size:52px;display:block;animation:wobble 2.5s ease-in-out infinite}
+.login-croc{display:block;margin:0 auto 6px;animation:wobble 2.6s ease-in-out infinite;transform-origin:50% 88%}
 .login-title{font-family:'Caveat',cursive;font-size:34px;font-weight:700}
 .login-title span{color:#4CAF50}
 .login-sub{font-size:13px;color:var(--ink-l);margin:5px 0 24px}
@@ -778,7 +778,129 @@ body.is-admin .ann-input-area{display:block}
 <!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
-    <span class="login-croc">🐊</span>
+    <div class="login-croc">
+<svg width="148" height="116" viewBox="0 0 200 157" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lc-body" x1="100" y1="62" x2="100" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#43A047"/>
+    </linearGradient>
+    <linearGradient id="lc-head" x1="158" y1="56" x2="158" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5CB860"/>
+      <stop offset="100%" stop-color="#388E3C"/>
+    </linearGradient>
+    <linearGradient id="lc-jaw" x1="165" y1="86" x2="165" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3D9141"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    <radialGradient id="lc-iris" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#43A047"/>
+      <stop offset="55%" stop-color="#1B5E20"/>
+      <stop offset="100%" stop-color="#0D4011"/>
+    </radialGradient>
+    <radialGradient id="lc-eye-bg" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#FAFAFA"/>
+      <stop offset="100%" stop-color="#F0F4F0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ground shadow -->
+  <ellipse cx="97" cy="150" rx="64" ry="7" fill="#2E7D32" opacity="0.13"/>
+
+  <!-- TAIL -->
+  <path d="M37 98 Q17 91 7 75 Q2 62 13 59 Q24 56 30 70 Q35 83 37 97Z" fill="#43A047"/>
+  <path d="M37 95 Q22 89 15 77 Q10 68 16 65 Q21 62 27 72 Q33 83 36 94Z" fill="#5CB860" opacity="0.28"/>
+
+  <!-- BODY -->
+  <rect x="32" y="67" width="120" height="46" rx="23" fill="url(#lc-body)"/>
+  <!-- body top sheen -->
+  <ellipse cx="88" cy="73" rx="48" ry="7" fill="#81C784" opacity="0.32"/>
+
+  <!-- BELLY -->
+  <ellipse cx="88" cy="102" rx="53" ry="13" fill="#C8E6C9"/>
+  <ellipse cx="78" cy="99" rx="22" ry="5" fill="#E8F5E9" opacity="0.75"/>
+
+  <!-- BACK LEGS -->
+  <rect x="44"  y="106" width="22" height="38" rx="11" fill="#43A047"/>
+  <rect x="72"  y="106" width="22" height="38" rx="11" fill="#43A047"/>
+  <rect x="48"  y="110" width="7"  height="15" rx="3.5" fill="#66BB6A" opacity="0.38"/>
+  <rect x="76"  y="110" width="7"  height="15" rx="3.5" fill="#66BB6A" opacity="0.38"/>
+
+  <!-- FRONT LEGS -->
+  <rect x="102" y="106" width="22" height="38" rx="11" fill="#4CAF50"/>
+  <rect x="130" y="106" width="22" height="38" rx="11" fill="#4CAF50"/>
+  <rect x="106" y="110" width="7"  height="15" rx="3.5" fill="#66BB6A" opacity="0.38"/>
+  <rect x="134" y="110" width="7"  height="15" rx="3.5" fill="#66BB6A" opacity="0.38"/>
+
+  <!-- HEAD -->
+  <ellipse cx="154" cy="83" rx="42" ry="29" fill="url(#lc-head)"/>
+  <!-- head sheen -->
+  <ellipse cx="148" cy="74" rx="22" ry="7" fill="#81C784" opacity="0.30"/>
+
+  <!-- UPPER SNOUT -->
+  <path d="M140 76 Q154 69 170 71 Q186 72 194 81 Q192 90 176 92 Q157 94 140 87Z" fill="#4CAF50"/>
+  <path d="M141 76 Q156 71 172 73 Q186 74 194 81 Q186 78 171 77 Q156 76 141 80Z" fill="#81C784" opacity="0.35"/>
+
+  <!-- LOWER JAW -->
+  <path d="M141 87 Q158 87 176 89 Q190 91 194 99 Q190 110 173 112 Q155 114 141 106Z" fill="url(#lc-jaw)"/>
+  <path d="M144 88 Q161 89 178 90 Q190 92 194 99" stroke="#2E7D32" stroke-width="1.5" fill="none" opacity="0.4"/>
+
+  <!-- TEETH upper -->
+  <rect x="151" y="87" width="8"  height="10" rx="3" fill="white"/>
+  <rect x="163" y="87" width="8"  height="10" rx="3" fill="white"/>
+  <rect x="175" y="88" width="7"  height="9"  rx="2.5" fill="white"/>
+  <!-- TEETH lower peek -->
+  <rect x="155" y="89" width="6"  height="8"  rx="2.5" fill="#F1F8E9"/>
+  <rect x="167" y="90" width="6"  height="8"  rx="2.5" fill="#F1F8E9"/>
+
+  <!-- NOSTRIL BUMPS -->
+  <ellipse cx="182" cy="74" rx="5.5" ry="4.5" fill="#388E3C"/>
+  <ellipse cx="191" cy="76" rx="4.5" ry="3.5" fill="#388E3C"/>
+  <ellipse cx="182" cy="74" rx="2.5" ry="2"   fill="#2E7D32"/>
+  <ellipse cx="191" cy="76" rx="2"   ry="1.5"  fill="#2E7D32"/>
+
+  <!-- DORSAL SPIKES -->
+  <polygon points="50,66  58,47  66,66" fill="#2E7D32"/>
+  <polygon points="68,63  77,44  86,63" fill="#2E7D32"/>
+  <polygon points="86,61  95,42 104,61" fill="#2E7D32"/>
+  <polygon points="104,62 112,44 120,62" fill="#2E7D32"/>
+  <polygon points="119,63 126,47 133,63" fill="#2E7D32"/>
+  <!-- spike left-face highlights -->
+  <polygon points="50,66  56,52  60,66" fill="#388E3C" opacity="0.45"/>
+  <polygon points="68,63  74,50  79,63" fill="#388E3C" opacity="0.45"/>
+  <polygon points="86,61  92,48  97,61" fill="#388E3C" opacity="0.45"/>
+
+  <!-- HEAD RIDGE BUMPS -->
+  <circle cx="131" cy="72" r="5.5" fill="#3D9141" opacity="0.65"/>
+  <circle cx="140" cy="69" r="4.5" fill="#3D9141" opacity="0.55"/>
+
+  <!-- EYE WHITES (raised bumps) -->
+  <circle cx="137" cy="60" r="18" fill="url(#lc-eye-bg)"/>
+  <circle cx="158" cy="57" r="18" fill="url(#lc-eye-bg)"/>
+  <!-- subtle eye rim -->
+  <circle cx="137" cy="60" r="18" fill="none" stroke="#C8E6C9" stroke-width="1.5"/>
+  <circle cx="158" cy="57" r="18" fill="none" stroke="#C8E6C9" stroke-width="1.5"/>
+
+  <!-- IRISES -->
+  <circle cx="139" cy="61" r="11" fill="url(#lc-iris)"/>
+  <circle cx="160" cy="58" r="11" fill="url(#lc-iris)"/>
+
+  <!-- PUPILS (vertical slit like a real croc) -->
+  <ellipse cx="140" cy="62" rx="5" ry="8" fill="#081408"/>
+  <ellipse cx="161" cy="59" rx="5" ry="8" fill="#081408"/>
+
+  <!-- EYE SHINES main -->
+  <circle cx="144" cy="57" r="4"   fill="white"/>
+  <circle cx="165" cy="54" r="4"   fill="white"/>
+  <!-- secondary shine -->
+  <circle cx="135" cy="67" r="2.2" fill="white" opacity="0.5"/>
+  <circle cx="156" cy="64" r="2.2" fill="white" opacity="0.5"/>
+
+  <!-- EYEBROWS (happy arches) -->
+  <path d="M124 46 Q138 38 151 44" stroke="#1B5E20" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M147 42 Q161 35 174 41" stroke="#1B5E20" stroke-width="4" stroke-linecap="round" fill="none"/>
+</svg>
+    </div>
     <div class="login-title"><span>Крокодил</span></div>
     <div class="login-sub">Детская арт-студия · Выберите роль</div>
     <div class="role-select">
